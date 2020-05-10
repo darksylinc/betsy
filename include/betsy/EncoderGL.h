@@ -10,6 +10,7 @@ namespace betsy
 	enum PixelFormat
 	{
 		PFG_RGBA32_UINT,
+		PFG_RGBA32_FLOAT,
 		PFG_RGBA16_FLOAT,
 		PFG_RGBA8_UNORM_SRGB,
 		/// BC6H format (unsigned 16 bit float)

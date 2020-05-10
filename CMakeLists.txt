@@ -11,8 +11,11 @@ include( CMake/Dependencies/FindSDL2.cmake )
 
 find_package( SDL2 REQUIRED )
 
+add_subdirectory( Dependencies )
+
 include_directories( "./include" )
 include_directories( ${SDL2_INCLUDE_DIR} )
+include_directories( "./Dependencies/FreeImage/Source" )
 
 add_recursive( ./src SOURCES )
 add_recursive( ./include HEADERS )
@@ -22,9 +25,11 @@ if( APPLE )
 	set( RESOURCES ${RESOURCES} ./Data/Resources.cfg ./bin/Data )
 endif()
 
+add_library( FreeImage_betsy ALIAS FreeImage )
+
 add_executable( ${PROJECT_NAME} WIN32 MACOSX_BUNDLE ${SOURCES} ${HEADERS} ${RESOURCES} )
 
-target_link_libraries( ${PROJECT_NAME} ${SDL2_LIBRARY} dl )
+target_link_libraries( ${PROJECT_NAME} ${SDL2_LIBRARY} dl FreeImage_betsy )
 
 if( APPLE )
 	set_target_properties( ${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_ENABLE_BITCODE "NO" )
