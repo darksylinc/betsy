@@ -1,0 +1,9 @@
+syntax: glob
+build/
+bin/Debug
+bin/MinSizeRel
+bin/Release
+bin/RelWithDebInfo
+CMakeLists.txt.user
+.git
+*.pyc
