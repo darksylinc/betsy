@@ -21,10 +21,12 @@ namespace betsy
 		height( 0 ),
 		format( PFG_RGBA16_FLOAT )
 	{
-		FIBITMAP *fiBitmap = FreeImage_Load( FIF_UNKNOWN, fullpath );
+		const FREE_IMAGE_FORMAT fif = FreeImage_GetFIFFromFilename( fullpath );
+
+		FIBITMAP *fiBitmap = FreeImage_Load( fif, fullpath );
 		if( !fiBitmap )
 		{
-			printf( "Failed to load %s\n", fullpath );
+			fprintf( stderr, "Failed to load %s\n", fullpath );
 			return;
 		}
 
@@ -131,7 +133,7 @@ namespace betsy
 			if( bpp == 24 )
 				RGB8toRGBA8( srcData, bytesPerRow );
 			else if( bpp == 32 )
-				memcpy( data, srcData, neededBytes );
+				BGRANtoRGBAN( srcData, bytesPerRow );
 			break;
 		case FIT_FLOAT:
 			R32toRGBA32( reinterpret_cast<const uint32_t *>( srcData ), bytesPerRow );
@@ -140,7 +142,7 @@ namespace betsy
 			RGB32toRGBA32( reinterpret_cast<const uint32_t *>( srcData ), bytesPerRow );
 			break;
 		case FIT_RGBAF:
-			memcpy( data, srcData, neededBytes );
+			BGRANtoRGBAN<uint32_t>( reinterpret_cast<const uint32_t *>( srcData ), bytesPerRow );
 			break;
 		default:
 			break;
@@ -189,17 +191,21 @@ namespace betsy
 	{
 		const size_t imgHeight = height;
 		const size_t imgWidth = width;
-		uint32_t *__restrict dstData = reinterpret_cast<uint32_t *__restrict>( data );
+		uint8_t *__restrict dstData = reinterpret_cast<uint8_t *__restrict>( data );
 		for( size_t i = 0u; i < imgHeight; ++i )
 		{
-			for( size_t i = 0u; i <imgWidth; ++i )
+			for( size_t i = 0u; i < imgWidth; ++i )
 			{
-				*dstData++ = *srcData++;
-				*dstData++ = *srcData++;
-				*dstData++ = *srcData++;
+				const uint8_t b = *srcData++;
+				const uint8_t g = *srcData++;
+				const uint8_t r = *srcData++;
+				*dstData++ = r;
+				*dstData++ = g;
+				*dstData++ = b;
 				*dstData++ = 0xff;
 			}
 
+			// dstData's bytePerRow is already multiple of 4 (our natural alignment)
 			srcData += bytesPerRow - imgWidth * 3u;
 		}
 	}
@@ -229,11 +235,39 @@ namespace betsy
 		{
 			for( size_t i = 0u; i < ( bytesPerRow >> 2u ); ++i )
 			{
-				*dstData++ = *srcData++;
-				*dstData++ = *srcData++;
-				*dstData++ = *srcData++;
+				const uint32_t b = *srcData++;
+				const uint32_t g = *srcData++;
+				const uint32_t r = *srcData++;
+				*dstData++ = r;
+				*dstData++ = g;
+				*dstData++ = b;
 				*dstData++ = 0x3f800000;  // 1.0f
 			}
+		}
+	}
+	//-------------------------------------------------------------------------
+	template <typename T>
+	void CpuImage::BGRANtoRGBAN( T const *__restrict srcData, size_t bytesPerRow )
+	{
+		const size_t imgWidth = width;
+		const size_t imgHeight = height;
+		T *__restrict dstData = reinterpret_cast<T *__restrict>( data );
+		for( size_t i = 0u; i < imgHeight; ++i )
+		{
+			for( size_t i = 0u; i < imgWidth; ++i )
+			{
+				const T b = *srcData++;
+				const T g = *srcData++;
+				const T r = *srcData++;
+				const T a = *srcData++;
+				*dstData++ = r;
+				*dstData++ = g;
+				*dstData++ = b;
+				*dstData++ = a;
+			}
+
+			// dstData's bytePerRow is already multiple of 4 (our natural alignment)
+			srcData += bytesPerRow - imgWidth * 4u * sizeof( T );
 		}
 	}
 }  // namespace betsy

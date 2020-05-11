@@ -26,5 +26,7 @@ namespace betsy
 		void RGB8toRGBA8( uint8_t const *__restrict srcData, size_t bytesPerRow );
 		void R32toRGBA32( uint32_t const *__restrict srcData, size_t bytesPerRow );
 		void RGB32toRGBA32( uint32_t const *__restrict srcData, size_t bytesPerRow );
+		template <typename T>
+		void BGRANtoRGBAN( T const *__restrict srcData, size_t bytesPerRow );
 	};
 }  // namespace betsy
