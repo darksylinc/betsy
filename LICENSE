@@ -9,3 +9,4 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 This software uses code from:
  * GPURealTimeBC6H (https://github.com/knarkowicz/GPURealTimeBC6H) under public domain. Modifications by Matias N. Goldberg
+ * rg_etc1 (https://github.com/richgel999/rg-etc1/) written by Rich Geldreich under the ZLIB license. Extensive modifications by Matias N. Goldberg to adapt it as a compute shader
