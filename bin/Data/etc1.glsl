@@ -15,10 +15,14 @@
 
 #define cLowQuality 0
 
-shared float3 g_srcPixelsBlock[16 * 2 * 4 * 4];  // 2 sets of 16 float3 for each ETC block
+// 2 sets of 16 float3 (rgba8_unorm) for each ETC block
+// We use rgba8_unorm encoding because it's 6kb vs 1.5kb of LDS. The former kills occupancy
+shared uint g_srcPixelsBlock[16 * 2 * 4 * 4];
 
 uniform float p_quality;
 
+// srcTex MUST be in rgba8_unorm otherwise severe dataloss could happen (i.e. do NOT use sRGB)
+// This is due to packing in g_srcPixelsBlock
 uniform sampler2D srcTex;
 
 /*layout( local_size_x = 8,
@@ -102,7 +106,7 @@ bool evaluate_solution( const float3 blockRgbInt, const bool bUseColor4, const f
 
 		for( uint c = 0u; c < n; ++c )
 		{
-			const float3 srcPixel = g_srcPixelSubblock[c];
+			const float3 srcPixel = unpackUnorm4x8( g_srcPixelsBlock[c] );
 
 			float best_selector_index = 0;
 			float best_error = calcError( srcPixel, blockColorsInt[0] );
@@ -267,8 +271,6 @@ bool etc1_optimizer_compute( const float scanDeltaAbsMin, const float scanDeltaA
 					const float3 blockRgbInt1 =
 						clamp( round( ( avgColour - avgDelta ) * limit * ( 1.0f / 255.0f ) ), 0, limit );
 
-					bool skip = false;
-
 					if( ( blockRgbInt.r == blockRgbInt1.r &&  //
 						  blockRgbInt.g == blockRgbInt1.g &&  //
 						  blockRgbInt.b == blockRgbInt1.b ) ||
@@ -308,7 +310,7 @@ void main()
 	//	1. There is no "best candidate" because they're all processed in parallel
 	//	2. Even if there were, GPUs would very likely loop due to branch divergence
 	//	   from different ETC blocks being processed by the same threadgroup
-	const uint options = gl_LocalInvocationIndex & 0x07u;
+	const uint options = gl_LocalInvocationID.x;
 
 	const uint subblockIdx = options & 0x01u;
 	const bool bFlip = ( options & 0x02u ) != 0u;
@@ -329,14 +331,16 @@ void main()
 	const float3 srcPixels0 = OGRE_Load2D( srcTex, pixelsToLoad, 0 ).xyz;
 	const float3 srcPixels1 = OGRE_Load2D( srcTex, pixelsToLoad + uint2( 1u, 0u ), 0 ).xyz;
 
-	uint blockStart = gl_LocalInvocationIndex >> 3u;
+	const uint blockStart = gl_LocalInvocationIndex >> 3u;
 	// Linear (horizontal, aka flip = off)
-	g_srcPixelsBlock[blockStart + ( options << 1u ) + 0u] = srcPixels0;
-	g_srcPixelsBlock[blockStart + ( options << 1u ) + 1u] = srcPixels1;
+	g_srcPixelsBlock[blockStart + ( options << 1u ) + 0u] = packUnorm4x8( srcPixels0 );
+	g_srcPixelsBlock[blockStart + ( options << 1u ) + 1u] = packUnorm4x8( srcPixels1 );
 
 	// Non-linear (vertical, aka flip = on)
-	g_srcPixelSubblock[TODO] = srcPixels0;
-	g_srcPixelSubblock[TODO] = srcPixels1;
+	const uint subblockOffset = subblockIdx << 3u;  //= subblockIdx == 0u ? 0u : 8u
+	const uint subblockStart = blockStart + 16u + subblockOffset + ( options >> 2u );
+	g_srcPixelsBlock[subblockStart + 0u] = packUnorm4x8( srcPixels0 );
+	g_srcPixelsBlock[subblockStart + 4u] = packUnorm4x8( srcPixels1 );
 
 	__sharedOnlyBarrier;
 }
