@@ -15,10 +15,15 @@
 
 #define cLowQuality 0
 
-shared float3 srcPixelsBlock[16];
-shared float3 srcPixelSubblock[8];
+shared float3 g_srcPixelsBlock[16 * 2 * 4 * 4];  // 2 sets of 16 float3 for each ETC block
 
 uniform float p_quality;
+
+uniform sampler2D srcTex;
+
+/*layout( local_size_x = 8,
+		local_size_y = 4,
+		local_size_z = 4 ) in;*/
 
 static const float4 g_etc1_inten_tables[cETC1IntenModifierValues] = {
 	float4( -8, -2, 2, 8 ),       float4( -17, -5, 5, 17 ),    float4( -29, -9, 9, 29 ),
@@ -97,7 +102,7 @@ bool evaluate_solution( const float3 blockRgbInt, const bool bUseColor4, const f
 
 		for( uint c = 0u; c < n; ++c )
 		{
-			const float3 srcPixel = srcPixelSubblock[c];
+			const float3 srcPixel = g_srcPixelSubblock[c];
 
 			float best_selector_index = 0;
 			float best_error = calcError( srcPixel, blockColorsInt[0] );
@@ -244,7 +249,7 @@ bool etc1_optimizer_compute( const float scanDeltaAbsMin, const float scanDeltaA
 					const float4 pIntenTable = g_etc1_inten_tables[bestSolution.intenTable];
 
 					float3 deltaSum = float3( 0.0f, 0.0f, 0.0f );
-					float3 base_color = getScaledColor( bestSolution.rgbInt, bUseColor4 );
+					float3 base_color = getScaledColor( bestSolution.rgbIntLS, bUseColor4 );
 
 					for( uint r = 0u; r < 8u; ++r )
 					{
@@ -292,4 +297,46 @@ bool etc1_optimizer_compute( const float scanDeltaAbsMin, const float scanDeltaA
 
 void main()
 {
+	// 8 threads per ETC block. Each pair of threads tries a different mode
+	// combination (flip & useColor4); while we also split subgroups into 2 threads
+	//
+	// The 2 subgroups cannot be merged arbitrarily. In Rich Geldrich's implementation the algorithm
+	// would stop if the 1st subgroup error is already higher the combined error of the
+	// best pair of candidates.
+	//
+	// We can't do that because:
+	//	1. There is no "best candidate" because they're all processed in parallel
+	//	2. Even if there were, GPUs would very likely loop due to branch divergence
+	//	   from different ETC blocks being processed by the same threadgroup
+	const uint options = gl_LocalInvocationIndex & 0x07u;
+
+	const uint subblockIdx = options & 0x01u;
+	const bool bFlip = ( options & 0x02u ) != 0u;
+	const bool bUseColor4 = ( options & 0x03u ) != 0u;
+
+	const uint2 pixelsToLoadBase = gl_GlobalInvocationID.yz << 1u;
+
+	// We need to load a block of 4x4 pixels from src (16 pixels), and we have 8 threads per block
+	// Have each thread load 2 pixels:
+	//	2x1 2x1
+	//	2x1 2x1
+	//	2x1 2x1
+	//	2x1 2x1
+	uint2 pixelsToLoad = pixelsToLoadBase;
+	pixelsToLoad.x += ( options & 0x01u ) << 1u;  //+= (options % 2) ? 0 : 2;
+	pixelsToLoad.y += options >> 1u;              //+= options / 2;
+
+	const float3 srcPixels0 = OGRE_Load2D( srcTex, pixelsToLoad, 0 ).xyz;
+	const float3 srcPixels1 = OGRE_Load2D( srcTex, pixelsToLoad + uint2( 1u, 0u ), 0 ).xyz;
+
+	uint blockStart = gl_LocalInvocationIndex >> 3u;
+	// Linear (horizontal, aka flip = off)
+	g_srcPixelsBlock[blockStart + ( options << 1u ) + 0u] = srcPixels0;
+	g_srcPixelsBlock[blockStart + ( options << 1u ) + 1u] = srcPixels1;
+
+	// Non-linear (vertical, aka flip = on)
+	g_srcPixelSubblock[TODO] = srcPixels0;
+	g_srcPixelSubblock[TODO] = srcPixels1;
+
+	__sharedOnlyBarrier;
 }
