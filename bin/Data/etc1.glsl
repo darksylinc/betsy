@@ -35,8 +35,8 @@ uniform sampler2D srcTex;
 
 layout( rg32ui ) uniform restrict writeonly uimage2D dstTexture;
 
-layout( local_size_x = 4,
-		local_size_y = 4,
+layout( local_size_x = 4,  //
+		local_size_y = 4,  //
 		local_size_z = 4 ) in;
 
 static const float4 g_etc1_inten_tables[cETC1IntenModifierValues] = {
@@ -68,8 +68,9 @@ float calcError( float3 a, float3 b )
 	return dot( diff, diff );
 }
 
-bool evaluate_solution( const float3 blockRgbInt, const bool bUseColor4, const float3 baseColor5,
-						const bool constrainAgainstBaseColor5, inout PotentialSolution &bestSolution )
+bool evaluate_solution( const uint subblockStart, const float3 blockRgbInt, const bool bUseColor4,
+						const float3 baseColor5, const bool constrainAgainstBaseColor5,
+						inout PotentialSolution &bestSolution )
 {
 	PotentialSolution trialSolution;
 
@@ -106,7 +107,7 @@ bool evaluate_solution( const float3 blockRgbInt, const bool bUseColor4, const f
 
 		for( uint c = 0u; c < n; ++c )
 		{
-			const float3 srcPixel = unpackUnorm4x8( g_srcPixelsBlock[c + TODO_idx] );
+			const float3 srcPixel = unpackUnorm4x8( g_srcPixelsBlock[c + subblockStart] ).xyz;
 
 			float best_selector_index = 0;
 			float best_error = calcError( srcPixel, blockColorsInt[0] );
@@ -186,8 +187,9 @@ float getScanDelta( const float iDeltai, const float scanDeltaAbsMin, const floa
 	True if we found a solution
 	False if we failed to find any
 */
-bool etc1_optimizer_compute( const float scanDeltaAbsMin, const float scanDeltaAbsMax, float3 avgColour,
-							 float3 avgColourLS, const bool bUseColor4, const float3 baseColor5,
+bool etc1_optimizer_compute( const float scanDeltaAbsMin, const float scanDeltaAbsMax,
+							 const uint subblockStart, const float3 avgColour, const float3 avgColourLS,
+							 const bool bUseColor4, const float3 baseColor5,
 							 const bool constrainAgainstBaseColor5,
 							 inout PotentialSolution &bestSolution )
 {
@@ -360,8 +362,6 @@ void main()
 	g_srcPixelsBlock[subblockStart1 + 0u] = packUnorm4x8( float4( srcPixels2, 1.0f ) );
 	g_srcPixelsBlock[subblockStart1 + 4u] = packUnorm4x8( float4( srcPixels3, 1.0f ) );
 
-	const uint subblockStart = bFlip ? subblockStart1 : subblockStartH;
-
 	__sharedOnlyBarrier;
 
 	PotentialSolution results[2];
@@ -382,6 +382,9 @@ void main()
 		const bool constrainAgainstBaseColor5 = !bUseColor4 && subblockIdx != 0u;
 		const float3 baseColor5 = results[0].rgbIntLS;
 
+		const uint subblockStart =
+			bFlip ? ( blockStart + 16u + ( subblockIdx == 0u ? 0u : 8u ) ) : subblockStartH;
+
 		// Have all threads compute average.
 		//
 		// We don't do parallel reduction because it'd consume too
@@ -389,7 +392,7 @@ void main()
 		float3 avgColour = float3( 0, 0, 0 );
 		for( uint i = 0; i < 8u; ++i )
 		{
-			const float3 srcPixel = unpackUnorm4x8( g_srcPixelsBlock[i + TODO_idx] );
+			const float3 srcPixel = unpackUnorm4x8( g_srcPixelsBlock[i + subblockStart] ).xyz;
 			avgColour += srcPixel;
 		}
 		avgColour *= 1.0f / 8.0f;
@@ -397,8 +400,8 @@ void main()
 		const float limit = bUseColor4 ? 15 : 31;
 		const float3 avgColourLS = clamp( round( avgColour * limit * ( 1.0f / 255.0f ) ), 0, limit );
 
-		const bool bResult = etc1_optimizer_compute( p_scanDeltaAbsMin, p_scanDeltaAbsMax, avgColour,
-													 avgColourLS, bUseColor4, baseColor5,
+		const bool bResult = etc1_optimizer_compute( p_scanDeltaAbsMin, p_scanDeltaAbsMax, subblockStart,
+													 avgColour, avgColourLS, bUseColor4, baseColor5,
 													 constrainAgainstBaseColor5, results[subblockIdx] );
 
 		if( !allInvocationsARB( bResult ) )
@@ -406,6 +409,8 @@ void main()
 
 		if( p_quality >= cMediumQuality )
 		{
+			bool refinerResult = true;
+
 			const float refinement_error_thresh0 = 3000;
 			const float refinement_error_thresh1 = 6000;
 			if( results[subblockIdx].error > refinement_error_thresh0 )
@@ -418,8 +423,6 @@ void main()
 				}
 				else
 				{
-					static const int s_scan_delta_5_to_5[] = { -5, 5 };
-					static const int s_scan_delta_5_to_8[] = { -8, -7, -6, -5, 5, 6, 7, 8 };
 					scanDeltaAbsMin = 5;
 					if( results[subblockIdx].error > refinement_error_thresh1 )
 						scanDeltaAbsMax = 8;
@@ -427,13 +430,13 @@ void main()
 						scanDeltaAbsMax = 5;
 				}
 
-				const bool refinerResult = etc1_optimizer_compute(
-					p_scanDeltaAbsMin, p_scanDeltaAbsMax, avgColour, avgColourLS, bUseColor4, baseColor5,
-					constrainAgainstBaseColor5, results[subblockIdx] );
-
-				if( !allInvocationsARB( refinerResult ) )
-					break;
+				refinerResult = etc1_optimizer_compute(
+					scanDeltaAbsMin, scanDeltaAbsMax, subblockStart, avgColour, avgColourLS, bUseColor4,
+					baseColor5, constrainAgainstBaseColor5, results[subblockIdx] );
 			}
+
+			if( !allInvocationsARB( refinerResult ) )
+				break;
 
 			if( results[2].m_error < results[subblockIdx].m_error )
 				results[subblockIdx] = results[2];
