@@ -55,8 +55,8 @@ namespace betsy
 
 		glUniform2f( 0, 1.0f / m_width, 1.0f / m_height );
 
-		glDispatchCompute( alignToNextMultiple( m_width, 8u ) / 32u,
-						   alignToNextMultiple( m_height, 8u ) / 32u, 1u );
+		glDispatchCompute( alignToNextMultiple( m_width, 32u ) / 32u,
+						   alignToNextMultiple( m_height, 32u ) / 32u, 1u );
 	}
 	//-------------------------------------------------------------------------
 	void EncoderBC6H::execute02()
