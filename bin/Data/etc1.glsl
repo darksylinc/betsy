@@ -55,6 +55,24 @@ struct PotentialSolution
 	float error;
 };
 
+void storeErrorToLds( float error, uint threadId )
+{
+	g_srcPixelsBlock[threadId] = floatBitsToUint( error );
+}
+float loadErrorFromLds( uint threadId )
+{
+	return uintBitsToFloat( g_srcPixelsBlock[threadId] );
+}
+
+void storeBestBlockThreadIdxToLds( uint bestIdx, uint threadId )
+{
+	g_srcPixelsBlock[threadId] = bestIdx;
+}
+uint loadBestBlockThreadIdxFromLds( uint threadId )
+{
+	return g_srcPixelsBlock[threadId];
+}
+
 inline float3 getScaledColor( const float3 rgbInt, const bool bUseColor4 )
 {
 	const float a = bUseColor4 ? 1.0f : 0.25f;
@@ -321,10 +339,10 @@ void main()
 	//	1. There is no "best candidate" because they're all processed in parallel
 	//	2. Even if there were, GPUs would very likely loop due to branch divergence
 	//	   from different ETC blocks being processed by the same threadgroup
-	const uint options = gl_LocalInvocationID.x;
+	const uint blockThreadId = gl_LocalInvocationID.x;
 
-	const bool bFlip = ( options & 0x01u ) != 0u;
-	const bool bUseColor4 = ( options & 0x02u ) != 0u;
+	const bool bFlip = ( blockThreadId & 0x01u ) != 0u;
+	const bool bUseColor4 = ( blockThreadId & 0x02u ) != 0u;
 
 	const uint2 pixelsToLoadBase = gl_GlobalInvocationID.yz << 1u;
 
@@ -336,7 +354,7 @@ void main()
 	//	4x1
 	// and distribute it into shared memory
 	uint2 pixelsToLoad = pixelsToLoadBase;
-	pixelsToLoad.y += options >> 2u;  //+= options / 4;
+	pixelsToLoad.y += blockThreadId >> 2u;  //+= blockThreadId / 4;
 
 	const float3 srcPixels0 = OGRE_Load2D( srcTex, pixelsToLoad, 0 ).xyz;
 	const float3 srcPixels1 = OGRE_Load2D( srcTex, pixelsToLoad + uint2( 1u, 0u ), 0 ).xyz;
@@ -345,7 +363,7 @@ void main()
 
 	const uint blockStart = gl_LocalInvocationIndex >> 2u;
 	// Linear (horizontal, aka flip = off)
-	const uint subblockStartH = blockStart + ( options << 2u );  // = blockStart + blockThreadId * 4u;
+	const uint subblockStartH = blockStart + ( blockThreadId << 2u );
 	g_srcPixelsBlock[subblockStartH + 0u] = packUnorm4x8( float4( srcPixels0, 1.0f ) );
 	g_srcPixelsBlock[subblockStartH + 1u] = packUnorm4x8( float4( srcPixels1, 1.0f ) );
 	g_srcPixelsBlock[subblockStartH + 2u] = packUnorm4x8( float4( srcPixels2, 1.0f ) );
@@ -353,12 +371,12 @@ void main()
 
 	// Non-linear (vertical, aka flip = on)
 	const uint subblockOffset0 = 0u;  // subblockIdx = 0
-	const uint subblockStart0 = blockStart + 16u + subblockOffset0 + options;
+	const uint subblockStart0 = blockStart + 16u + subblockOffset0 + blockThreadId;
 	g_srcPixelsBlock[subblockStart0 + 0u] = packUnorm4x8( float4( srcPixels0, 1.0f ) );
 	g_srcPixelsBlock[subblockStart0 + 4u] = packUnorm4x8( float4( srcPixels1, 1.0f ) );
 
 	const uint subblockOffset1 = 8u;  // subblockIdx = 1
-	const uint subblockStart1 = blockStart + 16u + subblockOffset1 + options;
+	const uint subblockStart1 = blockStart + 16u + subblockOffset1 + blockThreadId;
 	g_srcPixelsBlock[subblockStart1 + 0u] = packUnorm4x8( float4( srcPixels2, 1.0f ) );
 	g_srcPixelsBlock[subblockStart1 + 4u] = packUnorm4x8( float4( srcPixels3, 1.0f ) );
 
@@ -442,121 +460,164 @@ void main()
 				results[subblockIdx] = results[2];
 		}
 
+		const float trialError = results[0].error + results[1].error;
+		trial_error += results[subblock].m_error;
+		if( trial_error >= best_error )
+			break;
+
 		TODO_end;
 	}
 
-	const bool bBestFlip = TODO;
-	const bool bBestUseColor4 = TODO;
+	//
+	// IMPORTANT: From now on g_srcPixelsBlock will be used for sync and
+	// selecting the best result thus its old contents will become garbage
+	//
 
-	float4 bytes;
-	if( bUseColor4 )
+	// Ensure execution reaches here; otherwise we could
+	// overwrite g_srcPixelsBlock while it's in use
+	barrier();
+
+	// Save everyone's error to LDS
+	storeErrorToLds( results[0].error + results[1].error, gl_LocalInvocationIndex );
+	__sharedOnlyBarrier;
+
+	if( blockThreadId == 0u )
 	{
-		bytes.xyz = results[1].rgbIntLS + results[0].rgbIntLS * 16.0f;
-	}
-	else
-	{
-		float3 delta = results[1].rgbIntLS - results[0].rgbIntLS;
-		if( delta.x < 0.0f )
-			delta.x += 8.0f;
-		if( delta.y < 0.0f )
-			delta.y += 8.0f;
-		if( delta.z < 0.0f )
-			delta.z += 8.0f;
+		float bestError = results[0].error + results[1].error;
 
-		bytes.xyz = delta + results[0].rgbIntLS * 8.0f;
-	}
-
-	bytes.w = ( results[1].intenTable * 4.0f ) + ( results[0].intenTable * 32.0f ) +
-			  ( bBestUseColor4 ? 0.0f : 2.0f ) + ( bBestFlip ? 1.0f : 0.0f );
-
-	uint2 outputBytes;
-	outputBytes.x = packUnorm4x8( bytes * ( 1.0f / 255.0f ) );
-
-	float selector0 = 0, selector1 = 0;
-	if( bBestFlip )
-	{
-		// flipped:
-		// { 0, 0 }, { 1, 0 }, { 2, 0 }, { 3, 0 },
-		// { 0, 1 }, { 1, 1 }, { 2, 1 }, { 3, 1 }
-		//
-		// { 0, 2 }, { 1, 2 }, { 2, 2 }, { 3, 2 },
-		// { 0, 3 }, { 1, 3 }, { 2, 3 }, { 3, 3 }
-		float4 pSelectors00 = unpackUnorm4x8( results[0].selectors[0] ) * 255.0f;
-		float4 pSelectors01 = unpackUnorm4x8( results[0].selectors[1] ) * 255.0f;
-		float4 pSelectors10 = unpackUnorm4x8( results[1].selectors[0] ) * 255.0f;
-		float4 pSelectors11 = unpackUnorm4x8( results[1].selectors[1] ) * 255.0f;
-		for( uint x = 4u; x--; )
+		// Find the best result
+		for( uint i = 1u; i < 4u; ++i )
 		{
-			float b, bHalf;
-			b = selector_index_to_etc1( pSelectors11[x] );
-			bHalf = floor( b * 0.5f );
-			selector0 = ( selector0 * 2.0f ) + ( b - bHalf * 2.0f );
-			selector1 = ( selector1 * 2.0f ) + ( bHalf );
-
-			b = selector_index_to_etc1( pSelectors10[x] );
-			bHalf = floor( b * 0.5f );
-			selector0 = ( selector0 * 2.0f ) + ( b - bHalf * 2.0f );
-			selector1 = ( selector1 * 2.0f ) + ( bHalf );
-
-			b = selector_index_to_etc1( pSelectors01[x] );
-			bHalf = floor( b * 0.5f );
-			selector0 = ( selector0 * 2.0f ) + ( b - bHalf * 2.0f );
-			selector1 = ( selector1 * 2.0f ) + ( bHalf );
-
-			b = selector_index_to_etc1( pSelectors00[x] );
-			bHalf = floor( b * 0.5f );
-			selector0 = ( selector0 * 2.0f ) + ( b - bHalf * 2.0f );
-			selector1 = ( selector1 * 2.0f ) + ( bHalf );
+			float otherError = loadErrorFromLds( gl_LocalInvocationIndex + i );
+			if( otherError < bestError )
+			{
+				bestError = otherError;
+				// Write down which thread has the best error in our private LDS region
+				storeBestBlockThreadIdxToLds( i, gl_LocalInvocationIndex );
+			}
 		}
 	}
-	else
+
+	__sharedOnlyBarrier;
+
+	// Load threadIdx with best error which was written down by thread blockThreadId == 0u
+	const uint blockThreadWithBestError =
+		loadBestBlockThreadIdxFromLds( gl_LocalInvocationIndex & ~0x03u );
+
+	if( blockThreadWithBestError == blockThreadId )
 	{
-		// non-flipped:
-		// { 0, 0 }, { 0, 1 }, { 0, 2 }, { 0, 3 },
-		// { 1, 0 }, { 1, 1 }, { 1, 2 }, { 1, 3 }
-		//
-		// { 2, 0 }, { 2, 1 }, { 2, 2 }, { 2, 3 },
-		// { 3, 0 }, { 3, 1 }, { 3, 2 }, { 3, 3 }
-		for( uint subblockIdx = 2u; subblockIdx--; )
+		// This thread was selected as the one with the best result.
+		// Thus this one will write to output
+		float4 bytes;
+		if( bUseColor4 )
 		{
-			for( uint i = 2u; i--; )
+			bytes.xyz = results[1].rgbIntLS + results[0].rgbIntLS * 16.0f;
+		}
+		else
+		{
+			float3 delta = results[1].rgbIntLS - results[0].rgbIntLS;
+			if( delta.x < 0.0f )
+				delta.x += 8.0f;
+			if( delta.y < 0.0f )
+				delta.y += 8.0f;
+			if( delta.z < 0.0f )
+				delta.z += 8.0f;
+
+			bytes.xyz = delta + results[0].rgbIntLS * 8.0f;
+		}
+
+		bytes.w = ( results[1].intenTable * 4.0f ) + ( results[0].intenTable * 32.0f ) +
+				  ( bUseColor4 ? 0.0f : 2.0f ) + ( bFlip ? 1.0f : 0.0f );
+
+		uint2 outputBytes;
+		outputBytes.x = packUnorm4x8( bytes * ( 1.0f / 255.0f ) );
+
+		float selector0 = 0, selector1 = 0;
+		if( bFlip )
+		{
+			// flipped:
+			// { 0, 0 }, { 1, 0 }, { 2, 0 }, { 3, 0 },
+			// { 0, 1 }, { 1, 1 }, { 2, 1 }, { 3, 1 }
+			//
+			// { 0, 2 }, { 1, 2 }, { 2, 2 }, { 3, 2 },
+			// { 0, 3 }, { 1, 3 }, { 2, 3 }, { 3, 3 }
+			float4 pSelectors00 = unpackUnorm4x8( results[0].selectors[0] ) * 255.0f;
+			float4 pSelectors01 = unpackUnorm4x8( results[0].selectors[1] ) * 255.0f;
+			float4 pSelectors10 = unpackUnorm4x8( results[1].selectors[0] ) * 255.0f;
+			float4 pSelectors11 = unpackUnorm4x8( results[1].selectors[1] ) * 255.0f;
+			for( uint x = 4u; x--; )
 			{
-				float4 pSelectors = unpackUnorm4x8( results[subblockIdx].selectors[i] ) * 255.0f;
-
 				float b, bHalf;
-				b = selector_index_to_etc1( pSelectors[3] );
+				b = selector_index_to_etc1( pSelectors11[x] );
 				bHalf = floor( b * 0.5f );
 				selector0 = ( selector0 * 2.0f ) + ( b - bHalf * 2.0f );
 				selector1 = ( selector1 * 2.0f ) + ( bHalf );
 
-				b = selector_index_to_etc1( pSelectors[2] );
+				b = selector_index_to_etc1( pSelectors10[x] );
 				bHalf = floor( b * 0.5f );
 				selector0 = ( selector0 * 2.0f ) + ( b - bHalf * 2.0f );
 				selector1 = ( selector1 * 2.0f ) + ( bHalf );
 
-				b = selector_index_to_etc1( pSelectors[1] );
+				b = selector_index_to_etc1( pSelectors01[x] );
 				bHalf = floor( b * 0.5f );
 				selector0 = ( selector0 * 2.0f ) + ( b - bHalf * 2.0f );
 				selector1 = ( selector1 * 2.0f ) + ( bHalf );
 
-				b = selector_index_to_etc1( pSelectors[0] );
+				b = selector_index_to_etc1( pSelectors00[x] );
 				bHalf = floor( b * 0.5f );
 				selector0 = ( selector0 * 2.0f ) + ( b - bHalf * 2.0f );
 				selector1 = ( selector1 * 2.0f ) + ( bHalf );
 			}
 		}
-	}
+		else
+		{
+			// non-flipped:
+			// { 0, 0 }, { 0, 1 }, { 0, 2 }, { 0, 3 },
+			// { 1, 0 }, { 1, 1 }, { 1, 2 }, { 1, 3 }
+			//
+			// { 2, 0 }, { 2, 1 }, { 2, 2 }, { 2, 3 },
+			// { 3, 0 }, { 3, 1 }, { 3, 2 }, { 3, 3 }
+			for( uint subblockIdx = 2u; subblockIdx--; )
+			{
+				for( uint i = 2u; i--; )
+				{
+					float4 pSelectors = unpackUnorm4x8( results[subblockIdx].selectors[i] ) * 255.0f;
+
+					float b, bHalf;
+					b = selector_index_to_etc1( pSelectors[3] );
+					bHalf = floor( b * 0.5f );
+					selector0 = ( selector0 * 2.0f ) + ( b - bHalf * 2.0f );
+					selector1 = ( selector1 * 2.0f ) + ( bHalf );
+
+					b = selector_index_to_etc1( pSelectors[2] );
+					bHalf = floor( b * 0.5f );
+					selector0 = ( selector0 * 2.0f ) + ( b - bHalf * 2.0f );
+					selector1 = ( selector1 * 2.0f ) + ( bHalf );
+
+					b = selector_index_to_etc1( pSelectors[1] );
+					bHalf = floor( b * 0.5f );
+					selector0 = ( selector0 * 2.0f ) + ( b - bHalf * 2.0f );
+					selector1 = ( selector1 * 2.0f ) + ( bHalf );
+
+					b = selector_index_to_etc1( pSelectors[0] );
+					bHalf = floor( b * 0.5f );
+					selector0 = ( selector0 * 2.0f ) + ( b - bHalf * 2.0f );
+					selector1 = ( selector1 * 2.0f ) + ( bHalf );
+				}
+			}
+		}
 
 #ifdef CHECKING_ORDER
-	bytes.x = selector1 / 256.0f;
-	bytes.y = selector1 - floor( selector1 / 256.0f ) * 256.0f;
-	bytes.z = selector0 / 256.0f;
-	bytes.w = selector0 - floor( selector0 / 256.0f ) * 256.0f;
-	outputBytes.y = packUnorm4x8( bytes * ( 1.0f / 255.0f ) );
+		bytes.x = selector1 / 256.0f;
+		bytes.y = selector1 - floor( selector1 / 256.0f ) * 256.0f;
+		bytes.z = selector0 / 256.0f;
+		bytes.w = selector0 - floor( selector0 / 256.0f ) * 256.0f;
+		outputBytes.y = packUnorm4x8( bytes * ( 1.0f / 255.0f ) );
 #else
-	outputBytes.y = packUnorm2x16( float2( selector1, selector0 ) * ( 1.0f / 65535.0f ) );
+		outputBytes.y = packUnorm2x16( float2( selector1, selector0 ) * ( 1.0f / 65535.0f ) );
 #endif
 
-	uint2 dstUV = gl_GlobalInvocationID.yz >> 2u;
-	imageStore( dstTexture, int2( dstUV ), outputBytes );
+		uint2 dstUV = gl_GlobalInvocationID.yz >> 2u;
+		imageStore( dstTexture, int2( dstUV ), outputBytes );
+	}
 }
