@@ -12,9 +12,12 @@ namespace betsy
 		PFG_RGBA32_UINT,
 		PFG_RGBA32_FLOAT,
 		PFG_RGBA16_FLOAT,
+		PFG_RG32_UINT,
 		PFG_RGBA8_UNORM_SRGB,
 		/// BC6H format (unsigned 16 bit float)
-		PFG_BC6H_UF16
+		PFG_BC6H_UF16,
+		/// ETC1 (Ericsson Texture Compression)
+		PFG_ETC1_RGB8_UNORM
 	};
 
 	namespace ResourceAccess

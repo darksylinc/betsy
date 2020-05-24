@@ -90,7 +90,7 @@ float calcError( float3 a, float3 b )
 
 bool evaluate_solution( const uint subblockStart, const float3 blockRgbInt, const bool bUseColor4,
 						const float3 baseColor5, const bool constrainAgainstBaseColor5,
-						inout PotentialSolution &bestSolution )
+						inout PotentialSolution bestSolution )
 {
 	PotentialSolution trialSolution;
 
@@ -211,7 +211,7 @@ bool etc1_optimizer_compute( const float scanDeltaAbsMin, const float scanDeltaA
 							 const uint subblockStart, const float3 avgColour, const float3 avgColourLS,
 							 const bool bUseColor4, const float3 baseColor5,
 							 const bool constrainAgainstBaseColor5,
-							 inout PotentialSolution &bestSolution )
+							 inout PotentialSolution bestSolution )
 {
 	// const float numSrcPixels = 8;  // Subblock of 2x4 or 4x2
 
@@ -349,7 +349,7 @@ void main()
 	const bool bFlip = ( blockThreadId & 0x01u ) != 0u;
 	const bool bUseColor4 = ( blockThreadId & 0x02u ) != 0u;
 
-	const uint2 pixelsToLoadBase = gl_GlobalInvocationID.yz << 1u;
+	const uint2 pixelsToLoadBase = gl_GlobalInvocationID.yz << 2u;
 
 	// We need to load a block of 4x4 pixels from src (16 pixels), and we have 4 threads per block
 	// Thus each thread gets to load 4 pixels:
@@ -359,7 +359,7 @@ void main()
 	//	4x1
 	// and distribute it into shared memory
 	uint2 pixelsToLoad = pixelsToLoadBase;
-	pixelsToLoad.y += blockThreadId >> 2u;  //+= blockThreadId / 4;
+	pixelsToLoad.y += blockThreadId;
 
 	const float3 srcPixels0 = OGRE_Load2D( srcTex, int2( pixelsToLoad ), 0 ).xyz;
 	const float3 srcPixels1 = OGRE_Load2D( srcTex, int2( pixelsToLoad + uint2( 1u, 0u ) ), 0 ).xyz;
@@ -615,7 +615,7 @@ void main()
 		outputBytes.y = packUnorm2x16( float2( selector1, selector0 ) * ( 1.0f / 65535.0f ) );
 #endif
 
-		uint2 dstUV = gl_GlobalInvocationID.yz >> 2u;
+		uint2 dstUV = gl_GlobalInvocationID.yz;
 		imageStore( dstTexture, int2( dstUV ), uint4( outputBytes, 0u, 0u ) );
 	}
 }

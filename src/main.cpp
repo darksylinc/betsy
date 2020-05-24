@@ -1,6 +1,7 @@
 
 #include "betsy/CpuImage.h"
 #include "betsy/EncoderBC6H.h"
+#include "betsy/EncoderETC1.h"
 
 #include <stdio.h>
 
@@ -17,7 +18,7 @@ int main()
 	betsy::initBetsyPlatform();
 
 	betsy::CpuImage cpuImage( "/home/matias/untitled.png" );
-	betsy::EncoderBC6H encoderBC6H;
+	betsy::EncoderETC1 encoderBC6H;
 
 	encoderBC6H.initResources( cpuImage );
 

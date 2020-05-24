@@ -44,10 +44,14 @@ namespace betsy
 			return GL_RGBA32F;
 		case PFG_RGBA16_FLOAT:
 			return GL_RGBA16F;
+		case PFG_RG32_UINT:
+			return GL_RG32UI;
 		case PFG_RGBA8_UNORM_SRGB:
 			return GL_SRGB8_ALPHA8;
 		case PFG_BC6H_UF16:
 			return GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT_ARB;
+		case PFG_ETC1_RGB8_UNORM:
+			return GL_COMPRESSED_RGB8_ETC2;
 		}
 		return GL_NONE;
 	}
@@ -59,12 +63,16 @@ namespace betsy
 		case PFG_RGBA32_UINT:
 			format = GL_RGBA_INTEGER;
 			break;
+		case PFG_RG32_UINT:
+			format = GL_RG_INTEGER;
+			break;
 		case PFG_RGBA32_FLOAT:
 		case PFG_RGBA16_FLOAT:
 		case PFG_RGBA8_UNORM_SRGB:
 			format = GL_RGBA;
 			break;
 		case PFG_BC6H_UF16:
+		case PFG_ETC1_RGB8_UNORM:
 			format = GL_NONE;
 			assert( false &&
 					"This should never happen. Compressed formats must use "
@@ -81,12 +89,14 @@ namespace betsy
 			type = GL_FLOAT;
 			break;
 		case PFG_RGBA32_UINT:
+		case PFG_RG32_UINT:
 			type = GL_UNSIGNED_INT;
 			break;
 		case PFG_RGBA8_UNORM_SRGB:
 			type = GL_UNSIGNED_INT_8_8_8_8_REV;
 			break;
 		case PFG_BC6H_UF16:
+		case PFG_ETC1_RGB8_UNORM:
 			format = GL_NONE;
 			assert( false &&
 					"This should never happen. Compressed formats must use "
