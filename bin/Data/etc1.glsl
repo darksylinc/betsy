@@ -25,7 +25,7 @@
 // We use rgba8_unorm encoding because it's 6kb vs 1.5kb of LDS. The former kills occupancy
 shared uint g_srcPixelsBlock[16 * 2 * 4 * 4];
 
-uniform float4 params;
+layout( location = 0 ) uniform float4 params;
 
 #define p_quality params.x
 #define p_scanDeltaAbsMin params.y
@@ -189,7 +189,7 @@ float getScanDelta( const float iDeltai, const float scanDeltaAbsMin, const floa
 	if( iDeltai < numAbsDeltas )
 		return -scanDeltaAbsMax + iDeltai;
 	else
-		return scanDeltaAbsMin + iDeltai;
+		return scanDeltaAbsMin + iDeltai + ( scanDeltaAbsMin == 0.0f ? 1.0f : 0.0f ) - numAbsDeltas;
 }
 
 /**
@@ -217,7 +217,8 @@ bool etc1_optimizer_compute( const float scanDeltaAbsMin, const float scanDeltaA
 
 	const float limit = bUseColor4 ? 15 : 31;
 
-	const float scanDeltaSize = ( scanDeltaAbsMax - scanDeltaAbsMin ) * 2.0f;
+	const float scanDeltaSize =
+		( scanDeltaAbsMax - scanDeltaAbsMin ) * 2.0f + ( scanDeltaAbsMin == 0.0f ? 1.0f : 2.0f );
 
 	for( float zdi = 0; zdi < scanDeltaSize; ++zdi )
 	{
