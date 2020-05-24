@@ -1,6 +1,8 @@
 #version 430 core
 
-#include "/media/matias/Datos/SyntaxHighlightingMisc.h"
+#extension GL_ARB_shader_group_vote : require
+
+// #include "/media/matias/Datos/SyntaxHighlightingMisc.h"
 
 #include "CrossPlatformSettings_piece_all.glsl"
 #include "UavCrossPlatform_piece_all.glsl"
@@ -39,7 +41,7 @@ layout( local_size_x = 4,  //
 		local_size_y = 4,  //
 		local_size_z = 4 ) in;
 
-static const float4 g_etc1_inten_tables[cETC1IntenModifierValues] = {
+const float4 g_etc1_inten_tables[cETC1IntenModifierValues] = {
 	float4( -8, -2, 2, 8 ),       float4( -17, -5, 5, 17 ),    float4( -29, -9, 9, 29 ),
 	float4( -42, -13, 13, 42 ),   float4( -60, -18, 18, 60 ),  float4( -80, -24, 24, 80 ),
 	float4( -106, -33, 33, 106 ), float4( -183, -47, 47, 183 )
@@ -73,7 +75,7 @@ uint loadBestBlockThreadIdxFromLds( uint threadId )
 	return g_srcPixelsBlock[threadId];
 }
 
-inline float3 getScaledColor( const float3 rgbInt, const bool bUseColor4 )
+float3 getScaledColor( const float3 rgbInt, const bool bUseColor4 )
 {
 	const float a = bUseColor4 ? 1.0f : 0.25f;
 	const float b = bUseColor4 ? 16.0f : 8.0f;
@@ -245,8 +247,8 @@ bool etc1_optimizer_compute( const float scanDeltaAbsMin, const float scanDeltaA
 				else if( blockRgbInt.r > limit )
 					break;
 
-				if( !evaluate_solution( blockRgbInt, bUseColor4, baseColor5, constrainAgainstBaseColor5,
-										bestSolution ) )
+				if( !evaluate_solution( subblockStart, blockRgbInt, bUseColor4, baseColor5,
+										constrainAgainstBaseColor5, bestSolution ) )
 				{
 					continue;
 				}
@@ -266,7 +268,7 @@ bool etc1_optimizer_compute( const float scanDeltaAbsMin, const float scanDeltaA
 				pSelectors[1] = unpackUnorm4x8( bestSolution.selectors[1] ) * 255.0f;
 
 				const int maxRefinementTrials =
-					p_quality == cLowQuality ? 2 : ( ( ( xd == 0 | yd == 0 | zd == 0 ) == 0 ) ? 4 : 2 );
+					p_quality == cLowQuality ? 2 : ( ( xd == 0 && yd == 0 && zd == 0 ) ? 4 : 2 );
 				for( int refinementTrial = 0; refinementTrial < maxRefinementTrials; ++refinementTrial )
 				{
 					const float4 pIntenTable = g_etc1_inten_tables[bestSolution.intenTable];
@@ -277,7 +279,7 @@ bool etc1_optimizer_compute( const float scanDeltaAbsMin, const float scanDeltaA
 					for( uint r = 0u; r < 8u; ++r )
 					{
 						const uint s = uint( pSelectors[r >> 2u][r & 0x04u] * 255.0f );
-						const int yd = pIntenTable[s];
+						const float yd = pIntenTable[s];
 						// Compute actual delta being applied to each pixel,
 						// taking into account clamping.
 						deltaSum += clamp( base_color + yd, 0.0, 255.0 ) - base_color;
@@ -304,7 +306,7 @@ bool etc1_optimizer_compute( const float scanDeltaAbsMin, const float scanDeltaA
 						break;
 					}
 
-					if( !evaluate_solution( blockRgbInt1, bUseColor4, baseColor5,
+					if( !evaluate_solution( subblockStart, blockRgbInt1, bUseColor4, baseColor5,
 											constrainAgainstBaseColor5, bestSolution ) )
 					{
 						break;
@@ -314,6 +316,8 @@ bool etc1_optimizer_compute( const float scanDeltaAbsMin, const float scanDeltaA
 			}
 		}
 	}
+
+	return bestSolution.error != FLT_MAX;
 }
 
 /// Replaces g_selector_index_to_etc1[cETC1SelectorValues] from original code
@@ -356,10 +360,10 @@ void main()
 	uint2 pixelsToLoad = pixelsToLoadBase;
 	pixelsToLoad.y += blockThreadId >> 2u;  //+= blockThreadId / 4;
 
-	const float3 srcPixels0 = OGRE_Load2D( srcTex, pixelsToLoad, 0 ).xyz;
-	const float3 srcPixels1 = OGRE_Load2D( srcTex, pixelsToLoad + uint2( 1u, 0u ), 0 ).xyz;
-	const float3 srcPixels2 = OGRE_Load2D( srcTex, pixelsToLoad + uint2( 2u, 0u ), 0 ).xyz;
-	const float3 srcPixels3 = OGRE_Load2D( srcTex, pixelsToLoad + uint2( 3u, 0u ), 0 ).xyz;
+	const float3 srcPixels0 = OGRE_Load2D( srcTex, int2( pixelsToLoad ), 0 ).xyz;
+	const float3 srcPixels1 = OGRE_Load2D( srcTex, int2( pixelsToLoad + uint2( 1u, 0u ) ), 0 ).xyz;
+	const float3 srcPixels2 = OGRE_Load2D( srcTex, int2( pixelsToLoad + uint2( 2u, 0u ) ), 0 ).xyz;
+	const float3 srcPixels3 = OGRE_Load2D( srcTex, int2( pixelsToLoad + uint2( 3u, 0u ) ), 0 ).xyz;
 
 	const uint blockStart = gl_LocalInvocationIndex >> 2u;
 	// Linear (horizontal, aka flip = off)
@@ -456,16 +460,9 @@ void main()
 			if( !allInvocationsARB( refinerResult ) )
 				break;
 
-			if( results[2].m_error < results[subblockIdx].m_error )
-				results[subblockIdx] = results[2];
+			/*if( results[2].m_error < results[subblockIdx].m_error )
+				results[subblockIdx] = results[2];*/
 		}
-
-		const float trialError = results[0].error + results[1].error;
-		trial_error += results[subblock].m_error;
-		if( trial_error >= best_error )
-			break;
-
-		TODO_end;
 	}
 
 	//
@@ -507,7 +504,7 @@ void main()
 	if( blockThreadWithBestError == blockThreadId )
 	{
 		// This thread was selected as the one with the best result.
-		// Thus this one will write to output
+		// Thus this one (the winner) will write to output
 		float4 bytes;
 		if( bUseColor4 )
 		{
@@ -545,7 +542,7 @@ void main()
 			float4 pSelectors01 = unpackUnorm4x8( results[0].selectors[1] ) * 255.0f;
 			float4 pSelectors10 = unpackUnorm4x8( results[1].selectors[0] ) * 255.0f;
 			float4 pSelectors11 = unpackUnorm4x8( results[1].selectors[1] ) * 255.0f;
-			for( uint x = 4u; x--; )
+			for( uint x = 4u; x-- > 0u; )
 			{
 				float b, bHalf;
 				b = selector_index_to_etc1( pSelectors11[x] );
@@ -577,9 +574,9 @@ void main()
 			//
 			// { 2, 0 }, { 2, 1 }, { 2, 2 }, { 2, 3 },
 			// { 3, 0 }, { 3, 1 }, { 3, 2 }, { 3, 3 }
-			for( uint subblockIdx = 2u; subblockIdx--; )
+			for( uint subblockIdx = 2u; subblockIdx-- > 0u; )
 			{
-				for( uint i = 2u; i--; )
+				for( uint i = 2u; i-- > 0u; )
 				{
 					float4 pSelectors = unpackUnorm4x8( results[subblockIdx].selectors[i] ) * 255.0f;
 
@@ -618,6 +615,6 @@ void main()
 #endif
 
 		uint2 dstUV = gl_GlobalInvocationID.yz >> 2u;
-		imageStore( dstTexture, int2( dstUV ), outputBytes );
+		imageStore( dstTexture, int2( dstUV ), uint4( outputBytes, 0u, 0u ) );
 	}
 }
