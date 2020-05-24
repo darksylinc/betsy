@@ -127,7 +127,7 @@ bool evaluate_solution( const uint subblockStart, const float3 blockRgbInt, cons
 
 		for( uint c = 0u; c < n; ++c )
 		{
-			const float3 srcPixel = unpackUnorm4x8( g_srcPixelsBlock[c + subblockStart] ).xyz;
+			const float3 srcPixel = unpackUnorm4x8( g_srcPixelsBlock[c + subblockStart] ).xyz * 255.0f;
 
 			float best_selector_index = 0;
 			float best_error = calcError( srcPixel, blockColorsInt[0] );
@@ -421,7 +421,8 @@ void main()
 		avgColour *= 1.0f / 8.0f;
 
 		const float limit = bUseColor4 ? 15 : 31;
-		const float3 avgColourLS = clamp( round( avgColour * limit * ( 1.0f / 255.0f ) ), 0, limit );
+		const float3 avgColourLS = clamp( round( avgColour * limit ), 0, limit );
+		avgColour = round( avgColour * 255.0f );
 
 		const bool bResult = etc1_optimizer_compute( p_scanDeltaAbsMin, p_scanDeltaAbsMax, subblockStart,
 													 avgColour, avgColourLS, bUseColor4, baseColor5,
