@@ -46,6 +46,8 @@ namespace betsy
 			return GL_RGBA16F;
 		case PFG_RG32_UINT:
 			return GL_RG32UI;
+		case PFG_RGBA8_UNORM:
+			return GL_RGBA8;
 		case PFG_RGBA8_UNORM_SRGB:
 			return GL_SRGB8_ALPHA8;
 		case PFG_BC6H_UF16:
@@ -68,6 +70,7 @@ namespace betsy
 			break;
 		case PFG_RGBA32_FLOAT:
 		case PFG_RGBA16_FLOAT:
+		case PFG_RGBA8_UNORM:
 		case PFG_RGBA8_UNORM_SRGB:
 			format = GL_RGBA;
 			break;
@@ -92,6 +95,7 @@ namespace betsy
 		case PFG_RG32_UINT:
 			type = GL_UNSIGNED_INT;
 			break;
+		case PFG_RGBA8_UNORM:
 		case PFG_RGBA8_UNORM_SRGB:
 			type = GL_UNSIGNED_INT_8_8_8_8_REV;
 			break;
@@ -152,14 +156,19 @@ namespace betsy
 
 		glBufferStorage( GL_COPY_WRITE_BUFFER, (GLsizeiptr)sizeBytes, 0, flags );
 
+		GLbitfield mapFlags = GL_MAP_PERSISTENT_BIT;
+
+		if( forUpload )
+			mapFlags |= GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT | GL_MAP_FLUSH_EXPLICIT_BIT;
+		else
+			mapFlags |= GL_MAP_READ_BIT;
+
 		retVal.pixelFormat = format;
-		retVal.rowLength = CpuImage::getSizeBytes( width, 1u, 1u, 1u, format );
+		retVal.bytesPerRow = CpuImage::getSizeBytes( width, 1u, 1u, 1u, format );
 		retVal.width = width;
 		retVal.height = height;
 		retVal.sizeBytes = sizeBytes;
-		retVal.data = glMapBufferRange( GL_COPY_WRITE_BUFFER, 0, (GLsizeiptr)sizeBytes,
-										GL_MAP_WRITE_BIT | GL_MAP_FLUSH_EXPLICIT_BIT |
-											GL_MAP_UNSYNCHRONIZED_BIT | GL_MAP_PERSISTENT_BIT );
+		retVal.data = glMapBufferRange( GL_COPY_WRITE_BUFFER, 0, (GLsizeiptr)sizeBytes, mapFlags );
 
 		glBindBuffer( GL_COPY_WRITE_BUFFER, 0 );
 
@@ -171,7 +180,7 @@ namespace betsy
 		const size_t bytesPerPixel = CpuImage::getBytesPerPixel( stagingTex.pixelFormat );
 
 		glPixelStorei( GL_UNPACK_ALIGNMENT, 4 );
-		glPixelStorei( GL_UNPACK_ROW_LENGTH, ( GLint )( stagingTex.rowLength / bytesPerPixel ) );
+		glPixelStorei( GL_UNPACK_ROW_LENGTH, ( GLint )( stagingTex.bytesPerRow / bytesPerPixel ) );
 		glPixelStorei( GL_UNPACK_IMAGE_HEIGHT, (GLint)stagingTex.height );
 
 		glBindBuffer( GL_PIXEL_UNPACK_BUFFER, stagingTex.bufferName );
@@ -187,6 +196,36 @@ namespace betsy
 
 		glBindBuffer( GL_PIXEL_UNPACK_BUFFER, 0 );
 		glBindTexture( GL_TEXTURE_2D, 0 );
+	}
+	//-------------------------------------------------------------------------
+	void EncoderGL::downloadStagingTexture( GLuint srcTexture, const StagingTexture &stagingTex )
+	{
+		const size_t bytesPerPixel = CpuImage::getBytesPerPixel( stagingTex.pixelFormat );
+
+		const GLint bytesPerRow =
+			bytesPerPixel > 0 ? GLint( stagingTex.bytesPerRow / bytesPerPixel ) : 0;
+		const GLint imageHeight = ( stagingTex.bytesPerRow > 0 ) ? GLint( stagingTex.height ) : 0;
+
+		glPixelStorei( GL_PACK_ALIGNMENT, 4 );
+		glPixelStorei( GL_PACK_ROW_LENGTH, bytesPerRow );
+		glPixelStorei( GL_PACK_IMAGE_HEIGHT, imageHeight );
+
+		const GLint mipLevel = 0;
+
+		glBindTexture( GL_TEXTURE_2D, srcTexture );
+		glBindBuffer( GL_PIXEL_PACK_BUFFER, stagingTex.bufferName );
+
+		// We can use glGetTexImage & glGetCompressedTexImage (cubemaps need a special path)
+		if( !CpuImage::isCompressed( stagingTex.pixelFormat ) )
+		{
+			GLenum format, type;
+			EncoderGL::getFormatAndType( stagingTex.pixelFormat, format, type );
+			glGetTexImage( GL_TEXTURE_2D, mipLevel, format, type, 0 );
+		}
+		else
+		{
+			glGetCompressedTexImage( GL_TEXTURE_2D, mipLevel, 0 );
+		}
 	}
 	//-------------------------------------------------------------------------
 	void EncoderGL::destroyStagingTexture( const StagingTexture &stagingTex )

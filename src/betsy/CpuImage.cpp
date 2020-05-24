@@ -171,20 +171,53 @@ namespace betsy
 			return 2u * 4u;
 		case PFG_RG32_UINT:
 			return 4u * 2u;
+		case PFG_RGBA8_UNORM:
 		case PFG_RGBA8_UNORM_SRGB:
 			return 1u * 4u;
+		case PFG_ETC1_RGB8_UNORM:
 		case PFG_BC6H_UF16:
 			return 0u;
+		}
+	}
+	//-----------------------------------------------------------------------------------
+	bool CpuImage::isCompressed( PixelFormat pixelFormat )
+	{
+		switch( pixelFormat )
+		{
+		case PFG_BC6H_UF16:
+		case PFG_ETC1_RGB8_UNORM:
+			return true;
+		default:
+			return false;
 		}
 	}
 	//-------------------------------------------------------------------------
 	size_t CpuImage::getSizeBytes( uint32_t width, uint32_t height, uint32_t depth, uint32_t slices,
 								   PixelFormat format, uint32_t rowAlignment )
 	{
-		size_t retVal = width * getBytesPerPixel( format );
-		retVal = alignToNextMultiple( retVal, (size_t)rowAlignment );
+		size_t retVal;
 
-		retVal *= height * depth * slices;
+		if( isCompressed( format ) )
+		{
+			switch( format )
+			{
+			case PFG_ETC1_RGB8_UNORM:
+				retVal = ( ( width + 3u ) / 4u ) * ( ( height + 3u ) / 4u ) * 8u * depth * slices;
+				break;
+			case PFG_BC6H_UF16:
+				retVal = ( ( width + 3u ) / 4u ) * ( ( height + 3u ) / 4u ) * 16u * depth * slices;
+				break;
+			default:
+				retVal = 0u;
+			}
+		}
+		else
+		{
+			retVal = width * getBytesPerPixel( format );
+			retVal = alignToNextMultiple( retVal, (size_t)rowAlignment );
+
+			retVal *= height * depth * slices;
+		}
 
 		return retVal;
 	}

@@ -13,6 +13,7 @@ namespace betsy
 		PFG_RGBA32_FLOAT,
 		PFG_RGBA16_FLOAT,
 		PFG_RG32_UINT,
+		PFG_RGBA8_UNORM,
 		PFG_RGBA8_UNORM_SRGB,
 		/// BC6H format (unsigned 16 bit float)
 		PFG_BC6H_UF16,
@@ -63,7 +64,7 @@ namespace betsy
 	struct StagingTexture
 	{
 		GLuint      bufferName;
-		size_t      rowLength;
+		size_t      bytesPerRow;
 		uint32_t    width;
 		uint32_t    height;
 		PixelFormat pixelFormat;
@@ -90,6 +91,7 @@ namespace betsy
 		StagingTexture createStagingTexture( uint32_t width, uint32_t height, PixelFormat format,
 											 bool forUpload );
 		void           uploadStagingTexture( const StagingTexture &stagingTex, GLuint dstTexture );
+		void           downloadStagingTexture( GLuint srcTexture, const StagingTexture &stagingTex );
 		void           destroyStagingTexture( const StagingTexture &stagingTex );
 
 		ComputePso createComputePsoFromFile( const char *shaderFilename, const char *relativePath );

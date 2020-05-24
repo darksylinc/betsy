@@ -5,6 +5,7 @@
 
 #include <assert.h>
 #include <memory.h>
+#include <stdio.h>
 
 namespace betsy
 {
@@ -17,8 +18,10 @@ namespace betsy
 		m_width = srcImage.width;
 		m_height = srcImage.height;
 
-		m_srcTexture =
-			createTexture( TextureParams( m_width, m_height, srcImage.format, "m_srcTexture" ) );
+		const PixelFormat srcFormat =
+			srcImage.format == PFG_RGBA8_UNORM_SRGB ? PFG_RGBA8_UNORM : srcImage.format;
+
+		m_srcTexture = createTexture( TextureParams( m_width, m_height, srcFormat, "m_srcTexture" ) );
 
 		m_compressTargetRes = createTexture( TextureParams( m_width >> 2u, m_height >> 2u, PFG_RG32_UINT,
 															"m_compressTargetRes", TextureFlags::Uav ) );
@@ -96,5 +99,15 @@ namespace betsy
 		glCopyImageSubData( m_compressTargetRes, GL_TEXTURE_2D, 0, 0, 0, 0,  //
 							m_dstTexture, GL_TEXTURE_2D, 0, 0, 0, 0,         //
 							( GLsizei )( m_width >> 2u ), ( GLsizei )( m_height >> 2u ), 1 );
+
+		StagingTexture stagingTex = createStagingTexture( m_width, m_height, PFG_RG32_UINT, false );
+		downloadStagingTexture( m_compressTargetRes, stagingTex );
+		glFinish();
+
+		const uint8_t *result = (const uint8_t *)stagingTex.data;
+		for( size_t i = 0u; i < 8u; ++i )
+			printf( "%02X ", result[i] );
+		printf( "\n" );
+		destroyStagingTexture( stagingTex );
 	}
 }  // namespace betsy

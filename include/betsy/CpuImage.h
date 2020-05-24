@@ -19,6 +19,8 @@ namespace betsy
 
 		static size_t getBytesPerPixel( PixelFormat format );
 
+		static bool isCompressed( PixelFormat pixelFormat );
+
 		static size_t getSizeBytes( uint32_t width, uint32_t height, uint32_t depth, uint32_t slices,
 									PixelFormat format, uint32_t rowAlignment = 4u );
 
