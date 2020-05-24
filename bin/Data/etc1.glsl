@@ -153,7 +153,7 @@ bool evaluate_solution( const uint subblockStart, const float3 blockRgbInt, cons
 				best_selector_index = 3;
 			}
 
-			tempSelectors[c >> 2u][c & 0x04u] = best_selector_index;
+			tempSelectors[c >> 2u][c & 0x03u] = best_selector_index;
 
 			total_error += best_error;
 			if( total_error >= trialSolution.error )
@@ -279,7 +279,7 @@ bool etc1_optimizer_compute( const float scanDeltaAbsMin, const float scanDeltaA
 
 					for( uint r = 0u; r < 8u; ++r )
 					{
-						const uint s = uint( pSelectors[r >> 2u][r & 0x04u] * 255.0f );
+						const uint s = uint( pSelectors[r >> 2u][r & 0x03u] * 255.0f );
 						const float yd = pIntenTable[s];
 						// Compute actual delta being applied to each pixel,
 						// taking into account clamping.
@@ -366,7 +366,8 @@ void main()
 	const float3 srcPixels2 = OGRE_Load2D( srcTex, int2( pixelsToLoad + uint2( 2u, 0u ) ), 0 ).xyz;
 	const float3 srcPixels3 = OGRE_Load2D( srcTex, int2( pixelsToLoad + uint2( 3u, 0u ) ), 0 ).xyz;
 
-	const uint blockStart = gl_LocalInvocationIndex >> 2u;
+	const uint blockStart = ( gl_LocalInvocationID.y + gl_LocalInvocationID.z * 4u ) * 32u;
+	//const uint blockStart = ( gl_LocalInvocationIndex & 0x60u ) << 3u;
 	// Linear (horizontal, aka flip = off)
 	const uint subblockStartH = blockStart + ( blockThreadId << 2u );
 	g_srcPixelsBlock[subblockStartH + 0u] = packUnorm4x8( float4( srcPixels0, 1.0f ) );
@@ -405,8 +406,7 @@ void main()
 		const bool constrainAgainstBaseColor5 = !bUseColor4 && subblockIdx != 0u;
 		const float3 baseColor5 = results[0].rgbIntLS;
 
-		const uint subblockStart =
-			bFlip ? ( blockStart + 16u + ( subblockIdx == 0u ? 0u : 8u ) ) : subblockStartH;
+		const uint subblockStart = blockStart + ( bFlip ? 16u : 0u ) + ( subblockIdx == 0u ? 0u : 8u );
 
 		// Have all threads compute average.
 		//
