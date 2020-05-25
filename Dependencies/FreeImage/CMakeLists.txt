@@ -89,9 +89,6 @@ set(FreeImage_SOURCES
 	Source/OpenEXR/Imath/ImathVec.cpp
 	Source/OpenEXR/Imath/ImathBox.cpp
 	Source/OpenEXR/IlmThread/IlmThreadPool.cpp
-	Source/OpenEXR/IlmThread/IlmThreadMutex.cpp
-	Source/OpenEXR/IlmThread/IlmThreadSemaphore.cpp
-	Source/OpenEXR/IlmThread/IlmThread.cpp
 	Source/OpenEXR/IlmImf/ImfTestFile.cpp
 	Source/OpenEXR/IlmImf/ImfPreviewImage.cpp
 	Source/OpenEXR/IlmImf/ImfStdIO.cpp
@@ -490,19 +487,25 @@ if( WIN32 )
 	Source/OpenEXR/IlmThread/IlmThreadMutexWin32.cpp
 	Source/OpenEXR/IlmThread/IlmThreadWin32.cpp
 	Source/LibTIFF4/tif_win32.c
-	Source/LibTIFF4/tif_unix.c
 	)
-elif( APPLE )
+elseif( APPLE )
 	set(FreeImage_SOURCES ${FreeImage_SOURCES}
 	Source/OpenEXR/IlmThread/IlmThreadMutexPosix.cpp
 	Source/OpenEXR/IlmThread/IlmThreadSemaphorePosixCompat.cpp
 	Source/OpenEXR/IlmThread/IlmThreadPosix.cpp
+	Source/OpenEXR/IlmThread/IlmThreadMutex.cpp
+	Source/OpenEXR/IlmThread/IlmThreadSemaphore.cpp
+	Source/OpenEXR/IlmThread/IlmThread.cpp
+	Source/LibTIFF4/tif_unix.c
 	)
 else()
 	set(FreeImage_SOURCES ${FreeImage_SOURCES}
 	Source/OpenEXR/IlmThread/IlmThreadMutexPosix.cpp
 	Source/OpenEXR/IlmThread/IlmThreadSemaphorePosix.cpp
 	Source/OpenEXR/IlmThread/IlmThreadPosix.cpp
+	Source/OpenEXR/IlmThread/IlmThreadMutex.cpp
+	Source/OpenEXR/IlmThread/IlmThreadSemaphore.cpp
+	Source/OpenEXR/IlmThread/IlmThread.cpp
 	)
 endif()
 

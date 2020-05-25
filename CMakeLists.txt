@@ -27,9 +27,15 @@ endif()
 
 add_library( FreeImage_betsy ALIAS FreeImage )
 
-add_executable( ${PROJECT_NAME} WIN32 MACOSX_BUNDLE ${SOURCES} ${HEADERS} ${RESOURCES} )
+add_executable( ${PROJECT_NAME} ${SOURCES} ${HEADERS} ${RESOURCES} )
 
-target_link_libraries( ${PROJECT_NAME} ${SDL2_LIBRARY} dl FreeImage_betsy )
+target_link_libraries( ${PROJECT_NAME} ${SDL2_LIBRARY} FreeImage_betsy )
+
+if( WIN32 )
+	target_link_libraries( ${PROJECT_NAME} opengl32.lib )
+elseif( UNIX )
+	target_link_libraries( ${PROJECT_NAME} dl )
+endif()
 
 if( APPLE )
 	set_target_properties( ${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_ENABLE_BITCODE "NO" )
