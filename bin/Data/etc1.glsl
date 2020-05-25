@@ -30,6 +30,7 @@ layout( location = 0 ) uniform float4 params;
 #define p_quality params.x
 #define p_scanDeltaAbsMin params.y
 #define p_scanDeltaAbsMax params.z
+#define p_maxRefinementTrials uint( params.w )
 
 // srcTex MUST be in rgba8_unorm otherwise severe dataloss could happen (i.e. do NOT use sRGB)
 // This is due to packing in g_srcPixelsBlock
@@ -154,8 +155,6 @@ bool evaluate_solution( const uint subblockStart, const float3 blockRgbInt, cons
 			tempSelectors[c >> 2u][c & 0x03u] = best_selector_index;
 
 			total_error += best_error;
-			if( total_error >= trialSolution.error )
-				break;
 		}
 
 		if( total_error < trialSolution.error )
@@ -205,53 +204,42 @@ float getScanDelta( const float iDeltai, const float scanDeltaAbsMin, const floa
 	True if we found a solution
 	False if we failed to find any
 */
-bool etc1_optimizer_compute( const float scanDeltaAbsMin, const float scanDeltaAbsMax,
+void etc1_optimizer_compute( const float scanDeltaAbsMin, const float scanDeltaAbsMax,
 							 const uint subblockStart, const float3 avgColour, const float3 avgColourLS,
 							 const bool bUseColor4, const float3 baseColor5,
 							 const bool constrainAgainstBaseColor5,
 							 inout PotentialSolution bestSolution )
 {
 	// const float numSrcPixels = 8;  // Subblock of 2x4 or 4x2
-
 	const float limit = bUseColor4 ? 15 : 31;
 
 	const float scanDeltaSize =
 		( scanDeltaAbsMax - scanDeltaAbsMin ) * 2.0f + ( scanDeltaAbsMin == 0.0f ? 1.0f : 2.0f );
 
-	for( float zdi = 0; zdi < scanDeltaSize; ++zdi )
+	for( float di = 0; di < scanDeltaSize * scanDeltaSize * scanDeltaSize; ++di )
 	{
-		float3 blockRgbInt;
-		const float zd = getScanDelta( zdi, scanDeltaAbsMin, scanDeltaAbsMax );
-		blockRgbInt.b = avgColourLS.b + zd;
-		if( blockRgbInt.b < 0 )
-			continue;
-		else if( blockRgbInt.b > limit )
-			break;
+		float3 xyzdi = float3( mod( di, scanDeltaSize ),                           //
+							   mod( floor( di / scanDeltaSize ), scanDeltaSize ),  //
+							   floor( di / ( scanDeltaSize * scanDeltaSize ) ) );
+		float3 blockRgbInt = avgColourLS;
+		blockRgbInt.x = getScanDelta( xyzdi.x, scanDeltaAbsMin, scanDeltaAbsMax );
+		blockRgbInt.y = getScanDelta( xyzdi.y, scanDeltaAbsMin, scanDeltaAbsMax );
+		blockRgbInt.z = getScanDelta( xyzdi.z, scanDeltaAbsMin, scanDeltaAbsMax );
+		const uint maxRefinementTrials =
+			( blockRgbInt.x == 0.0f && blockRgbInt.y == 0.0f && blockRgbInt.z == 0.0f )
+				? p_maxRefinementTrials
+				: 2u;
+		blockRgbInt += avgColourLS;
 
-		for( float ydi = 0; ydi < scanDeltaSize; ++ydi )
+		if( blockRgbInt.x >= 0.0f && blockRgbInt.x <= limit &&  //
+			blockRgbInt.y >= 0.0f && blockRgbInt.y <= limit &&  //
+			blockRgbInt.z >= 0.0f && blockRgbInt.z <= limit )
 		{
-			const float yd = getScanDelta( ydi, scanDeltaAbsMin, scanDeltaAbsMax );
-			blockRgbInt.g = avgColourLS.g + yd;
-			if( blockRgbInt.g < 0 )
-				continue;
-			else if( blockRgbInt.g > limit )
-				break;
+			bool bSuccess = evaluate_solution( subblockStart, blockRgbInt, bUseColor4, baseColor5,
+											   constrainAgainstBaseColor5, bestSolution );
 
-			for( float xdi = 0; xdi < scanDeltaSize; xdi++ )
+			if( bSuccess && false )
 			{
-				const float xd = getScanDelta( xdi, scanDeltaAbsMin, scanDeltaAbsMax );
-				blockRgbInt.r = avgColourLS.r + xd;
-				if( blockRgbInt.r < 0 )
-					continue;
-				else if( blockRgbInt.r > limit )
-					break;
-
-				if( !evaluate_solution( subblockStart, blockRgbInt, bUseColor4, baseColor5,
-										constrainAgainstBaseColor5, bestSolution ) )
-				{
-					continue;
-				}
-
 				// Now we have the input block, the avg. color of the input pixels, a set of trial
 				// selector indices, and the block color+intensity index. Now, for each component,
 				// attempt to refine the current solution by solving a simple linear equation.
@@ -266,9 +254,8 @@ bool etc1_optimizer_compute( const float scanDeltaAbsMin, const float scanDeltaA
 				pSelectors[0] = unpackUnorm4x8( bestSolution.selectors[0] ) * 255.0f;
 				pSelectors[1] = unpackUnorm4x8( bestSolution.selectors[1] ) * 255.0f;
 
-				const int maxRefinementTrials =
-					p_quality == cLowQuality ? 2 : ( ( xd == 0 && yd == 0 && zd == 0 ) ? 4 : 2 );
-				for( int refinementTrial = 0; refinementTrial < maxRefinementTrials; ++refinementTrial )
+				for( uint refinementTrial = 0u; refinementTrial < maxRefinementTrials && bSuccess;
+					 ++refinementTrial )
 				{
 					const float4 pIntenTable = g_etc1_inten_tables[bestSolution.intenTable];
 
@@ -284,14 +271,12 @@ bool etc1_optimizer_compute( const float scanDeltaAbsMin, const float scanDeltaA
 						deltaSum += clamp( base_color + yd, 0.0, 255.0 ) - base_color;
 					}
 
-					if( deltaSum.r == 0.0f && deltaSum.g == 0.0f && deltaSum.b == 0.0f )
-						break;
-
 					const float3 avgDelta = deltaSum * 0.125f;
 					const float3 blockRgbInt1 =
 						clamp( round( ( avgColour - avgDelta ) * limit * ( 1.0f / 255.0f ) ), 0, limit );
 
-					if( ( blockRgbInt.r == blockRgbInt1.r &&  //
+					if( ( deltaSum.r == 0.0f && deltaSum.g == 0.0f && deltaSum.b == 0.0f ) ||
+						( blockRgbInt.r == blockRgbInt1.r &&  //
 						  blockRgbInt.g == blockRgbInt1.g &&  //
 						  blockRgbInt.b == blockRgbInt1.b ) ||
 						( bestSolution.rgbIntLS.r == blockRgbInt1.r &&  //
@@ -302,21 +287,18 @@ bool etc1_optimizer_compute( const float scanDeltaAbsMin, const float scanDeltaA
 						  avgColourLS.b == blockRgbInt1.b ) )
 					{
 						// Skip refinement
-						break;
+						bSuccess = false;
 					}
-
-					if( !evaluate_solution( subblockStart, blockRgbInt1, bUseColor4, baseColor5,
-											constrainAgainstBaseColor5, bestSolution ) )
+					else
 					{
-						break;
+						bSuccess =
+							evaluate_solution( subblockStart, blockRgbInt1, bUseColor4, baseColor5,
+											   constrainAgainstBaseColor5, bestSolution );
 					}
-
 				}  // refinementTrial
 			}
 		}
 	}
-
-	return bestSolution.error != FLT_MAX;
 }
 
 /// Replaces g_selector_index_to_etc1[cETC1SelectorValues] from original code
@@ -365,7 +347,7 @@ void main()
 	const float3 srcPixels3 = OGRE_Load2D( srcTex, int2( pixelsToLoad + uint2( 3u, 0u ) ), 0 ).xyz;
 
 	const uint blockStart = ( gl_LocalInvocationID.y + gl_LocalInvocationID.z * 4u ) * 32u;
-	//const uint blockStart = ( gl_LocalInvocationIndex & 0x60u ) << 3u;
+	// const uint blockStart = ( gl_LocalInvocationIndex & 0x60u ) << 3u;
 	// Linear (horizontal, aka flip = on)
 	const uint subblockStartH = blockStart + 16u + ( blockThreadId << 2u );
 	g_srcPixelsBlock[subblockStartH + 0u] = packUnorm4x8( float4( srcPixels0, 1.0f ) );
@@ -422,17 +404,12 @@ void main()
 		const float3 avgColourLS = clamp( round( avgColour * limit ), 0, limit );
 		avgColour = avgColour * 255.0f;
 
-		const bool bResult = etc1_optimizer_compute( p_scanDeltaAbsMin, p_scanDeltaAbsMax, subblockStart,
-													 avgColour, avgColourLS, bUseColor4, baseColor5,
-													 constrainAgainstBaseColor5, results[subblockIdx] );
-
-		if( !allInvocationsARB( bResult ) )
-			break;
+		etc1_optimizer_compute( p_scanDeltaAbsMin, p_scanDeltaAbsMax, subblockStart, avgColour,
+								avgColourLS, bUseColor4, baseColor5, constrainAgainstBaseColor5,
+								results[subblockIdx] );
 
 		if( p_quality >= cMediumQuality )
 		{
-			bool refinerResult = true;
-
 			const float refinement_error_thresh0 = 3000;
 			const float refinement_error_thresh1 = 6000;
 			if( results[subblockIdx].error > refinement_error_thresh0 )
@@ -452,16 +429,10 @@ void main()
 						scanDeltaAbsMax = 5;
 				}
 
-				refinerResult = etc1_optimizer_compute(
-					scanDeltaAbsMin, scanDeltaAbsMax, subblockStart, avgColour, avgColourLS, bUseColor4,
-					baseColor5, constrainAgainstBaseColor5, results[subblockIdx] );
+				etc1_optimizer_compute( scanDeltaAbsMin, scanDeltaAbsMax, subblockStart, avgColour,
+										avgColourLS, bUseColor4, baseColor5, constrainAgainstBaseColor5,
+										results[subblockIdx] );
 			}
-
-			if( !allInvocationsARB( refinerResult ) )
-				break;
-
-			/*if( results[2].m_error < results[subblockIdx].m_error )
-				results[subblockIdx] = results[2];*/
 		}
 	}
 
@@ -481,6 +452,7 @@ void main()
 	if( blockThreadId == 0u )
 	{
 		float bestError = results[0].error + results[1].error;
+		uint bestErrorThread = 0u;
 
 		// Find the best result
 		for( uint i = 1u; i < 4u; ++i )
@@ -489,10 +461,12 @@ void main()
 			if( otherError < bestError )
 			{
 				bestError = otherError;
-				// Write down which thread has the best error in our private LDS region
-				storeBestBlockThreadIdxToLds( i, gl_LocalInvocationIndex );
+				bestErrorThread = i;
 			}
 		}
+
+		// Write down which thread has the best error in our private LDS region
+		storeBestBlockThreadIdxToLds( 0u, gl_LocalInvocationIndex );
 	}
 
 	__sharedOnlyBarrier;
@@ -612,7 +586,7 @@ void main()
 		outputBytes.y = packUnorm4x8( bytes * ( 1.0f / 255.0f ) );
 #else
 		outputBytes.y = packUnorm2x16( float2( selector1, selector0 ) * ( 1.0f / 65535.0f ) );
-		outputBytes.y = packUnorm4x8( unpackUnorm4x8( outputBytes.y ).yxwz ); // Byteswap
+		outputBytes.y = packUnorm4x8( unpackUnorm4x8( outputBytes.y ).yxwz );  // Byteswap
 #endif
 
 		uint2 dstUV = gl_GlobalInvocationID.yz;

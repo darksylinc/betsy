@@ -202,12 +202,12 @@ namespace betsy
 	{
 		const size_t bytesPerPixel = CpuImage::getBytesPerPixel( stagingTex.pixelFormat );
 
-		const GLint bytesPerRow =
+		const GLint rowLength =
 			bytesPerPixel > 0 ? GLint( stagingTex.bytesPerRow / bytesPerPixel ) : 0;
 		const GLint imageHeight = ( stagingTex.bytesPerRow > 0 ) ? GLint( stagingTex.height ) : 0;
 
 		glPixelStorei( GL_PACK_ALIGNMENT, 4 );
-		glPixelStorei( GL_PACK_ROW_LENGTH, bytesPerRow );
+		glPixelStorei( GL_PACK_ROW_LENGTH, rowLength );
 		glPixelStorei( GL_PACK_IMAGE_HEIGHT, imageHeight );
 
 		const GLint mipLevel = 0;

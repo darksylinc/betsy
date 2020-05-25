@@ -61,7 +61,7 @@ namespace betsy
 			float quality;
 			float scanDeltaAbsMin;
 			float scanDeltaAbsMax;
-			float unused;
+			float maxRefinementTrials;
 		};
 
 		Params params;
@@ -81,7 +81,9 @@ namespace betsy
 			params.scanDeltaAbsMin = 0;
 			params.scanDeltaAbsMax = 0;
 		}
-		params.unused = 0;
+		// params.scanDeltaAbsMin = 0;
+		// params.scanDeltaAbsMax = 0;
+		params.maxRefinementTrials = quality == cLowQuality ? 2.0f : 4.0f;
 
 		glUniform4fv( 0, 1u, &params.quality );
 
@@ -94,20 +96,26 @@ namespace betsy
 	{
 		// It's unclear which of these 2 barrier bits GL wants in order for glCopyImageSubData to work
 		glMemoryBarrier( GL_TEXTURE_UPDATE_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
+		glFinish();
 
 		// Copy "8x8" PFG_RG32_UINT -> 32x32 PFG_ETC1_RGB8_UNORM
 		glCopyImageSubData( m_compressTargetRes, GL_TEXTURE_2D, 0, 0, 0, 0,  //
 							m_dstTexture, GL_TEXTURE_2D, 0, 0, 0, 0,         //
 							( GLsizei )( m_width >> 2u ), ( GLsizei )( m_height >> 2u ), 1 );
 
-		StagingTexture stagingTex = createStagingTexture( m_width, m_height, PFG_RG32_UINT, false );
+		StagingTexture stagingTex =
+			createStagingTexture( m_width >> 2u, m_height >> 2u, PFG_RG32_UINT, false );
 		downloadStagingTexture( m_compressTargetRes, stagingTex );
 		glFinish();
 
 		const uint8_t *result = (const uint8_t *)stagingTex.data;
-		for( size_t i = 0u; i < 8u; ++i )
-			printf( "%02X ", result[i] );
-		printf( "\n" );
+		printf( "DUMP START\n" );
+		for( size_t b = 0u; b < 1u; ++b )
+		{
+			for( size_t i = 0u; i < 8u; ++i )
+				printf( "%02X ", result[b * 8u + i] );
+			printf( "\n" );
+		}
 		destroyStagingTexture( stagingTex );
 	}
 }  // namespace betsy

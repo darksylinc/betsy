@@ -1,6 +1,7 @@
 
 #include "betsy/IncludeParser.h"
 
+#include <algorithm>
 #include <fstream>
 
 namespace betsy

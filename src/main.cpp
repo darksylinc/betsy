@@ -18,13 +18,14 @@ int main()
 	betsy::initBetsyPlatform();
 
 	betsy::CpuImage cpuImage( "/home/matias/untitled.png" );
+	//betsy::CpuImage cpuImage( "/home/matias/Projects/BC6H_BC7/rg-etc1/test0.png" );
 	betsy::EncoderETC1 encoderBC6H;
 
 	encoderBC6H.initResources( cpuImage );
 
 	int repeat = 0;
 
-	while( repeat < 3 )
+	while( repeat < 2 )
 	{
 		encoderBC6H.execute01();
 		encoderBC6H.execute02();
