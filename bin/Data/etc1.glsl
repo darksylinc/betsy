@@ -107,11 +107,9 @@ bool evaluate_solution( const uint subblockStart, const float3 blockRgbInt, cons
 
 	const float3 baseColor = getScaledColor( blockRgbInt, bUseColor4 );
 
-	const uint n = 8u;
-
 	trialSolution.error = FLT_MAX;
 
-	for( uint inten_table = 0; inten_table < cETC1IntenModifierValues; ++inten_table )
+	for( uint inten_table = 0u; inten_table < cETC1IntenModifierValues; ++inten_table )
 	{
 		const float4 pIntenTable = g_etc1_inten_tables[inten_table];
 
@@ -119,13 +117,13 @@ bool evaluate_solution( const uint subblockStart, const float3 blockRgbInt, cons
 		for( uint s = 0u; s < 4u; s++ )
 		{
 			const float yd = pIntenTable[s];
-			blockColorsInt[s] = baseColor + yd;
+			blockColorsInt[s] = clamp( baseColor + yd, 0.0f, 255.0f );
 		}
 
 		float total_error = 0;
 		float4 tempSelectors[2];
 
-		for( uint c = 0u; c < n; ++c )
+		for( uint c = 0u; c < 8u; ++c )
 		{
 			const float3 srcPixel = unpackUnorm4x8( g_srcPixelsBlock[c + subblockStart] ).xyz * 255.0f;
 
@@ -328,7 +326,7 @@ bool etc1_optimizer_compute( const float scanDeltaAbsMin, const float scanDeltaA
 /// Return value is in range [0; 4)
 float selector_index_to_etc1( float idx )
 {
-	return idx < 2.0f ? ( 3.0f - idx ) : idx;
+	return idx < 2.0f ? ( 3.0f - idx ) : ( idx - 2.0f );
 }
 
 void main()
