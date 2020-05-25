@@ -366,21 +366,21 @@ void main()
 
 	const uint blockStart = ( gl_LocalInvocationID.y + gl_LocalInvocationID.z * 4u ) * 32u;
 	//const uint blockStart = ( gl_LocalInvocationIndex & 0x60u ) << 3u;
-	// Linear (horizontal, aka flip = off)
-	const uint subblockStartH = blockStart + ( blockThreadId << 2u );
+	// Linear (horizontal, aka flip = on)
+	const uint subblockStartH = blockStart + 16u + ( blockThreadId << 2u );
 	g_srcPixelsBlock[subblockStartH + 0u] = packUnorm4x8( float4( srcPixels0, 1.0f ) );
 	g_srcPixelsBlock[subblockStartH + 1u] = packUnorm4x8( float4( srcPixels1, 1.0f ) );
 	g_srcPixelsBlock[subblockStartH + 2u] = packUnorm4x8( float4( srcPixels2, 1.0f ) );
 	g_srcPixelsBlock[subblockStartH + 3u] = packUnorm4x8( float4( srcPixels3, 1.0f ) );
 
-	// Non-linear (vertical, aka flip = on)
+	// Non-linear (vertical, aka flip = off)
 	const uint subblockOffset0 = 0u;  // subblockIdx = 0
-	const uint subblockStart0 = blockStart + 16u + subblockOffset0 + blockThreadId;
+	const uint subblockStart0 = blockStart + subblockOffset0 + blockThreadId;
 	g_srcPixelsBlock[subblockStart0 + 0u] = packUnorm4x8( float4( srcPixels0, 1.0f ) );
 	g_srcPixelsBlock[subblockStart0 + 4u] = packUnorm4x8( float4( srcPixels1, 1.0f ) );
 
 	const uint subblockOffset1 = 8u;  // subblockIdx = 1
-	const uint subblockStart1 = blockStart + 16u + subblockOffset1 + blockThreadId;
+	const uint subblockStart1 = blockStart + subblockOffset1 + blockThreadId;
 	g_srcPixelsBlock[subblockStart1 + 0u] = packUnorm4x8( float4( srcPixels2, 1.0f ) );
 	g_srcPixelsBlock[subblockStart1 + 4u] = packUnorm4x8( float4( srcPixels3, 1.0f ) );
 
@@ -420,7 +420,7 @@ void main()
 
 		const float limit = bUseColor4 ? 15 : 31;
 		const float3 avgColourLS = clamp( round( avgColour * limit ), 0, limit );
-		avgColour = round( avgColour * 255.0f );
+		avgColour = avgColour * 255.0f;
 
 		const bool bResult = etc1_optimizer_compute( p_scanDeltaAbsMin, p_scanDeltaAbsMax, subblockStart,
 													 avgColour, avgColourLS, bUseColor4, baseColor5,
@@ -616,6 +616,6 @@ void main()
 #endif
 
 		uint2 dstUV = gl_GlobalInvocationID.yz;
-		imageStore( dstTexture, int2( dstUV ), uint4( outputBytes, 0u, 0u ) );
+		imageStore( dstTexture, int2( dstUV ), uint4( outputBytes.xy, 0u, 0u ) );
 	}
 }
