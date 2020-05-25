@@ -17,7 +17,7 @@ int main()
 	printf( "Initializing API\n" );
 	betsy::initBetsyPlatform();
 
-	betsy::CpuImage cpuImage( "/home/matias/untitled.png" );
+	betsy::CpuImage cpuImage( "../Data/test_pic.png" );
 	//betsy::CpuImage cpuImage( "/home/matias/Projects/BC6H_BC7/rg-etc1/test0.png" );
 	betsy::EncoderETC1 encoderBC6H;
 

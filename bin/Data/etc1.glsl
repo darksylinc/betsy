@@ -238,7 +238,7 @@ void etc1_optimizer_compute( const float scanDeltaAbsMin, const float scanDeltaA
 			bool bSuccess = evaluate_solution( subblockStart, blockRgbInt, bUseColor4, baseColor5,
 											   constrainAgainstBaseColor5, bestSolution );
 
-			if( bSuccess && false )
+			if( bSuccess )
 			{
 				// Now we have the input block, the avg. color of the input pixels, a set of trial
 				// selector indices, and the block color+intensity index. Now, for each component,
