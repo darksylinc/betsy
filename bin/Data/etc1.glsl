@@ -576,7 +576,7 @@ void main()
 			// { 3, 0 }, { 3, 1 }, { 3, 2 }, { 3, 3 }
 			for( uint subblockIdx = 2u; subblockIdx-- > 0u; )
 			{
-				for( uint i = 2u; i-- > 0u; )
+				for( uint i = 0u; i < 2u; ++i )
 				{
 					float4 pSelectors = unpackUnorm4x8( results[subblockIdx].selectors[i] ) * 255.0f;
 
@@ -605,13 +605,14 @@ void main()
 		}
 
 #ifdef CHECKING_ORDER
-		bytes.x = selector1 / 256.0f;
+		bytes.x = floor( selector1 / 256.0f );
 		bytes.y = selector1 - floor( selector1 / 256.0f ) * 256.0f;
-		bytes.z = selector0 / 256.0f;
+		bytes.z = floor( selector0 / 256.0f );
 		bytes.w = selector0 - floor( selector0 / 256.0f ) * 256.0f;
 		outputBytes.y = packUnorm4x8( bytes * ( 1.0f / 255.0f ) );
 #else
 		outputBytes.y = packUnorm2x16( float2( selector1, selector0 ) * ( 1.0f / 65535.0f ) );
+		outputBytes.y = packUnorm4x8( unpackUnorm4x8( outputBytes.y ).yxwz ); // Byteswap
 #endif
 
 		uint2 dstUV = gl_GlobalInvocationID.yz;
