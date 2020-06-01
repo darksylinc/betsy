@@ -47,6 +47,6 @@ You'll need to setup the paths to SDL2 by hand.
 
 | Format  | State          |Status|
 |---------|----------------|------|
-| ETC1    | WIP - 95% done | It's already usable. It's missing a couple quality improvements to match the original rg_etc1 codec Based on [rg-etc1](https://github.com/richgel999/rg-etc1). AMD Mesa Linux: Requires a very recent Mesa version due to a shader miscompilation issue. See [ticket](https://gitlab.freedesktop.org/mesa/mesa/-/issues/3044#note_515611)|
-| EAC     | Done           | Used for R11, RG11 and ETC2_RGBA (for encoding the alpha component). Quality: Maximum, we use brute force to check all possible combinations.|
+| ETC1    | WIP - 95% done | It's already usable. It's missing a couple quality improvements to match the original rg_etc1 codec.<br/>Based on [rg-etc1](https://github.com/richgel999/rg-etc1).<br/>AMD Mesa Linux: Requires a very recent Mesa version due to a shader miscompilation issue. See [ticket](https://gitlab.freedesktop.org/mesa/mesa/-/issues/3044#note_515611).|
+| EAC     | Done           | Used for R11, RG11 and ETC2_RGBA (for encoding the alpha component).<br/>Quality: Maximum, we use brute force to check all possible combinations.|
 | BC6H UF | Done           | Unsigned variation of B6CH. GLSL port of [GPURealTimeBC6H](https://github.com/knarkowicz/GPURealTimeBC6H)|
