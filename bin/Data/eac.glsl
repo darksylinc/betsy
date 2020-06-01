@@ -83,11 +83,16 @@ float calcError( float3 a, float3 b )
 	return dot( diff, diff );
 }
 
-float eac_find_best_error( const float baseCodeword, float multiplier, const int tableIdx )
+float eac_find_best_error( float baseCodeword, float multiplier, const int tableIdx )
 {
 	float accumError = 0.0f;
 
+	baseCodeword *= 8.0f;
+#ifdef R11_EAC
 	multiplier = multiplier > 0.0f ? multiplier * 8.0f : 1.0f;
+#else
+	multiplier = multiplier * 8.0f;
+#endif
 
 	for( int i = 0; i < 16; ++i )
 	{
@@ -110,12 +115,16 @@ float eac_find_best_error( const float baseCodeword, float multiplier, const int
 	return accumError;
 }
 
-void eac_pack( const float baseCodeword, float multiplier, const uint tableIdx )
+void eac_pack( float baseCodeword, float multiplier, const uint tableIdx )
 {
+	const uint iBaseCodeword = uint( baseCodeword );
 	const uint iMultiplier = uint( multiplier );
 
+	baseCodeword *= 8.0f;
 #ifdef R11_EAC
 	multiplier = multiplier > 0.0f ? multiplier * 8.0f : 1.0f;
+#else
+	multiplier = multiplier * 8.0f;
 #endif
 
 	uint bestIdx[16];
@@ -128,7 +137,8 @@ void eac_pack( const float baseCodeword, float multiplier, const uint tableIdx )
 		// Find modifier index through brute force
 		for( uint j = 0u; j < 8u && bestError > 0; ++j )
 		{
-			const float tryValue = baseCodeword + kEacModifiers[tableIdx][j] * multiplier;
+			const float tryValue =
+				clamp( baseCodeword + kEacModifiers[tableIdx][j] * multiplier, 0.0f, EAC_RANGE );
 			const float error = abs( realV - tryValue );
 			if( error < bestError )
 			{
@@ -140,14 +150,24 @@ void eac_pack( const float baseCodeword, float multiplier, const uint tableIdx )
 
 	uint2 outputBytes;
 
-	outputBytes.x = uint( baseCodeword ) | ( tableIdx << 4u ) | ( iMultiplier << 8u ) |  //
-					( bestIdx[0] << 12u ) | ( bestIdx[1] << 15u ) | ( bestIdx[2] << 18u ) |
-					( bestIdx[3] << 21u ) | ( bestIdx[4] << 24u ) | ( bestIdx[5] << 27u ) |
-					( bestIdx[6] << 30u );
-	outputBytes.y = ( bestIdx[6] >> 1u ) | ( bestIdx[7] << 4u ) | ( bestIdx[8] << 7u ) |
-					( bestIdx[9] << 10u ) | ( bestIdx[10] << 13u ) | ( bestIdx[11] << 16u ) |
-					( bestIdx[12] << 19u ) | ( bestIdx[13] << 22u ) | ( bestIdx[14] << 25u ) |
-					( bestIdx[15] << 28u );
+	// Bits [0; 16)
+	outputBytes.x = iBaseCodeword | ( tableIdx << 8u ) | ( iMultiplier << 12u );
+	// Bits [16; 24)
+	outputBytes.x |= ( bestIdx[0] << 21u ) | ( bestIdx[1] << 18u ) | ( ( bestIdx[2] & 0x06u ) << 15u );
+	// Bits [24; 32)
+	outputBytes.x |= ( ( bestIdx[2] & 0x01u ) << 31u ) | ( bestIdx[3] << 28u ) | ( bestIdx[4] << 25u ) |
+					 ( ( bestIdx[5] & 0x04u ) << 22u );
+
+	// Bits [0; 8)
+	outputBytes.y = ( ( bestIdx[5] & 0x03u ) << 6u ) | ( bestIdx[6] << 3u ) | bestIdx[7];
+	// Bits [8; 16)
+	outputBytes.y |= ( bestIdx[8] << 13u ) | ( bestIdx[9] << 10u ) | ( ( bestIdx[10] & 0x06u ) << 7u );
+	// Bits [16; 24)
+	outputBytes.y |= ( ( bestIdx[10] & 0x01u ) << 23u ) | ( bestIdx[11] << 20u ) |
+					 ( bestIdx[12] << 17u ) | ( ( bestIdx[13] & 0x04u ) << 14u );
+	// Bits [24; 32)
+	outputBytes.y |=
+		( ( bestIdx[13] & 0x03u ) << 30u ) | ( bestIdx[14] << 27u ) | ( bestIdx[15] << 24u );
 
 	const uint2 dstUV = gl_WorkGroupID.xy;
 	imageStore( dstTexture, int2( dstUV ), uint4( outputBytes.xy, 0u, 0u ) );
@@ -235,12 +255,13 @@ void main()
 			}
 		}
 
+		g_bestError[baseCodeword] = bestError;
 		g_bestSolution[baseCodeword] = bestSolution;
 
 		__sharedOnlyBarrier;
 
 		// Parallel reduction to find the best solution
-		uint iterations = 8u;  // 256 threads = 256 reductions = 2⁸ -> 8 iterations
+		const uint iterations = 8u;  // 256 threads = 256 reductions = 2⁸ -> 8 iterations
 		for( uint i = 0u; i < iterations; ++i )
 		{
 			const uint mask = ( 1u << ( i + 1u ) ) - 1u;
@@ -249,10 +270,12 @@ void main()
 			{
 				if( g_bestError[baseCodeword + idx] < bestError )
 				{
-					g_bestError[baseCodeword] = g_bestError[baseCodeword + idx];
+					bestError = g_bestError[baseCodeword + idx];
+					g_bestError[baseCodeword] = bestError;
 					g_bestSolution[baseCodeword] = g_bestSolution[baseCodeword + idx];
 				}
 			}
+			__sharedOnlyBarrier;
 		}
 
 		if( baseCodeword == 0u )
