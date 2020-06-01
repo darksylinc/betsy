@@ -9,11 +9,17 @@
 
 namespace betsy
 {
-	EncoderETC1::EncoderETC1() : m_srcTexture( 0 ), m_compressTargetRes( 0 ), m_dstTexture( 0 ) {}
+	EncoderETC1::EncoderETC1() :
+		m_srcTexture( 0 ),
+		m_compressTargetRes( 0 ),
+		m_eacTargetRes( 0 ),
+		m_dstTexture( 0 )
+	{
+	}
 	//-------------------------------------------------------------------------
 	EncoderETC1::~EncoderETC1() { assert( !m_srcTexture && "deinitResources not called!" ); }
 	//-------------------------------------------------------------------------
-	void EncoderETC1::initResources( const CpuImage &srcImage )
+	void EncoderETC1::initResources( const CpuImage &srcImage, bool bCompressAlpha )
 	{
 		m_width = srcImage.width;
 		m_height = srcImage.height;
@@ -25,9 +31,15 @@ namespace betsy
 
 		m_compressTargetRes = createTexture( TextureParams( m_width >> 2u, m_height >> 2u, PFG_RG32_UINT,
 															"m_compressTargetRes", TextureFlags::Uav ) );
+		if( bCompressAlpha )
+		{
+			m_eacTargetRes = createTexture( TextureParams( m_width >> 2u, m_height >> 2u, PFG_RG32_UINT,
+														   "m_eacTargetRes", TextureFlags::Uav ) );
+			m_eacPso = createComputePsoFromFile( "eac.glsl", "../Data/" );
+		}
 
 		m_dstTexture =
-			createTexture( TextureParams( m_width, m_height, PFG_ETC1_RGB8_UNORM, "m_dstTexture" ) );
+			createTexture( TextureParams( m_width, m_height, PFG_EAC_R11_UNORM, "m_dstTexture" ) );
 
 		m_compressPso = createComputePsoFromFile( "etc1.glsl", "../Data/" );
 
@@ -42,11 +54,18 @@ namespace betsy
 		m_dstTexture = 0;
 		destroyTexture( m_compressTargetRes );
 		m_compressTargetRes = 0;
+		if( m_eacTargetRes )
+		{
+			destroyTexture( m_eacTargetRes );
+			m_eacTargetRes = 0;
+		}
 		destroyTexture( m_srcTexture );
 		m_srcTexture = 0;
 
 		destroyStagingTexture( m_stagingTex );
 
+		if( m_eacPso.computePso )
+			destroyPso( m_eacPso );
 		destroyPso( m_compressPso );
 	}
 	//-------------------------------------------------------------------------
@@ -90,6 +109,14 @@ namespace betsy
 		glDispatchCompute( 1u,  //
 						   alignToNextMultiple( m_width, 16u ) / 16u,
 						   alignToNextMultiple( m_height, 16u ) / 16u );
+
+		if( m_eacTargetRes )
+		{
+			bindUav( 0u, m_eacTargetRes, PFG_RG32_UINT, ResourceAccess::Write );
+			bindComputePso( m_eacPso );
+			glDispatchCompute( alignToNextMultiple( m_width, 4u ) / 4u,
+							   alignToNextMultiple( m_height, 4u ) / 4u, 1u );
+		}
 	}
 	//-------------------------------------------------------------------------
 	void EncoderETC1::execute02()

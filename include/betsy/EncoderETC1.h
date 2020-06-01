@@ -25,17 +25,24 @@ namespace betsy
 
 		GLuint m_srcTexture;
 		GLuint m_compressTargetRes;
+		GLuint m_eacTargetRes;
 		GLuint m_dstTexture;
 
 		StagingTexture m_stagingTex;
 
 		ComputePso m_compressPso;
+		ComputePso m_eacPso;
 
 	public:
 		EncoderETC1();
 		~EncoderETC1();
 
-		void initResources( const CpuImage &srcImage );
+		/** Initialize resources. Must be called before execute*()
+		@param srcImage
+		@param bCompressAlpha
+			When true, compresses to ETC2_RGBA
+		*/
+		void initResources( const CpuImage &srcImage, bool bCompressAlpha );
 		void deinitResources();
 
 		void execute01( EncoderETC1::Etc1Quality quality = cHighQuality );

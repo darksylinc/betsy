@@ -21,13 +21,13 @@ int main()
 	//betsy::CpuImage cpuImage( "/home/matias/Projects/BC6H_BC7/rg-etc1/test0.png" );
 	betsy::EncoderETC1 encoderBC6H;
 
-	encoderBC6H.initResources( cpuImage );
+	encoderBC6H.initResources( cpuImage, true );
 
 	int repeat = 0;
 
-	while( repeat < 2 )
+	while( repeat < 1 )
 	{
-		encoderBC6H.execute01();
+		encoderBC6H.execute01(betsy::EncoderETC1::cHighQuality);
 		encoderBC6H.execute02();
 		betsy::pollPlatformWindow();
 		++repeat;

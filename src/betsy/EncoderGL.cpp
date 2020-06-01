@@ -54,6 +54,8 @@ namespace betsy
 			return GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT_ARB;
 		case PFG_ETC1_RGB8_UNORM:
 			return GL_COMPRESSED_RGB8_ETC2;
+		case PFG_EAC_R11_UNORM:
+			return GL_COMPRESSED_R11_EAC;
 		}
 		return GL_NONE;
 	}
@@ -76,6 +78,7 @@ namespace betsy
 			break;
 		case PFG_BC6H_UF16:
 		case PFG_ETC1_RGB8_UNORM:
+		case PFG_EAC_R11_UNORM:
 			format = GL_NONE;
 			assert( false &&
 					"This should never happen. Compressed formats must use "
@@ -101,6 +104,7 @@ namespace betsy
 			break;
 		case PFG_BC6H_UF16:
 		case PFG_ETC1_RGB8_UNORM:
+		case PFG_EAC_R11_UNORM:
 			format = GL_NONE;
 			assert( false &&
 					"This should never happen. Compressed formats must use "
@@ -202,8 +206,7 @@ namespace betsy
 	{
 		const size_t bytesPerPixel = CpuImage::getBytesPerPixel( stagingTex.pixelFormat );
 
-		const GLint rowLength =
-			bytesPerPixel > 0 ? GLint( stagingTex.bytesPerRow / bytesPerPixel ) : 0;
+		const GLint rowLength = bytesPerPixel > 0 ? GLint( stagingTex.bytesPerRow / bytesPerPixel ) : 0;
 		const GLint imageHeight = ( stagingTex.bytesPerRow > 0 ) ? GLint( stagingTex.height ) : 0;
 
 		glPixelStorei( GL_PACK_ALIGNMENT, 4 );

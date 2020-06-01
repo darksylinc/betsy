@@ -18,7 +18,8 @@ namespace betsy
 		/// BC6H format (unsigned 16 bit float)
 		PFG_BC6H_UF16,
 		/// ETC1 (Ericsson Texture Compression)
-		PFG_ETC1_RGB8_UNORM
+		PFG_ETC1_RGB8_UNORM,
+		PFG_EAC_R11_UNORM
 	};
 
 	namespace ResourceAccess
