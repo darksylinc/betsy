@@ -1,13 +1,23 @@
 #version 430 core
 
+// Define this to use the compressor to generate data for R11 (or RG11)
+// Without defining this, the compressor generates data for ETC2_Alpha
+// It's almost the same but there are subtle differences
+// (they differ on how multiplier = 0 is handled. ETC2_Alpha just forbids it; also
+// due to their 8-bit and 11-bit differences, in Alpha mode we can take a shorcut
+// if all pixels in the block are of the same value)
+// #define R11_EAC
+
+#ifndef R11_EAC
 // Ballot & group vote are both used as optimization (both must be present or none)
 // We have a fallback path if it's not supported
-#extension GL_ARB_shader_ballot : enable
-#extension GL_ARB_shader_group_vote : enable
+#	extension GL_ARB_shader_ballot : enable
+#	extension GL_ARB_shader_group_vote : enable
 
-#ifdef GL_ARB_shader_ballot
-#	ifdef GL_ARB_shader_group_vote
-#		define WARP_SYNC_AVAILABLE
+#	ifdef GL_ARB_shader_ballot
+#		ifdef GL_ARB_shader_group_vote
+#			define WARP_SYNC_AVAILABLE
+#		endif
 #	endif
 #endif
 
@@ -19,12 +29,6 @@
 #define FLT_MAX 340282346638528859811704183484516925440.0f
 
 #define PotentialSolution uint
-
-// Define this to use the compressor to generate data for R11 (or RG11)
-// Without defining this, the compressor generates data for ETC2_Alpha
-// It's almost the same but the differences are subtle
-// (they differ on how multiplier = 0 is handled. ETC2_Alpha just forbids it)
-//#define R11_EAC
 
 #ifdef R11_EAC
 #	define EAC_FETCH_SWIZZLE r
@@ -53,21 +57,33 @@ void loadPotentialSolution( PotentialSolution potentialSolution, out float baseC
 }
 
 // For alpha support
-const float kEacModifiers[16][8] = { { -3, -6, -9, -15, 2, 5, 8, 14 }, { -3, -7, -10, -13, 2, 6, 9, 12 },
-									 { -2, -5, -8, -13, 1, 4, 7, 12 }, { -2, -4, -6, -13, 1, 3, 5, 12 },
-									 { -3, -6, -8, -12, 2, 5, 7, 11 }, { -3, -7, -9, -11, 2, 6, 8, 10 },
-									 { -4, -7, -8, -11, 3, 6, 7, 10 }, { -3, -5, -8, -11, 2, 4, 7, 10 },
-									 { -2, -6, -8, -10, 1, 5, 7, 9 },  { -2, -5, -8, -10, 1, 4, 7, 9 },
-									 { -2, -4, -8, -10, 1, 3, 7, 9 },  { -2, -5, -7, -10, 1, 4, 6, 9 },
-									 { -3, -4, -7, -10, 2, 3, 6, 9 },  { -1, -2, -3, -10, 0, 1, 2, 9 },
-									 { -4, -6, -8, -9, 3, 5, 7, 8 },   { -3, -5, -7, -9, 2, 4, 6, 8 } };
+const float kEacModifiers[16][8] = {    //
+	{ -3, -6, -9, -15, 2, 5, 8, 14 },   //
+	{ -3, -7, -10, -13, 2, 6, 9, 12 },  //
+	{ -2, -5, -8, -13, 1, 4, 7, 12 },   //
+	{ -2, -4, -6, -13, 1, 3, 5, 12 },   //
+	{ -3, -6, -8, -12, 2, 5, 7, 11 },   //
+	{ -3, -7, -9, -11, 2, 6, 8, 10 },   //
+	{ -4, -7, -8, -11, 3, 6, 7, 10 },   //
+	{ -3, -5, -8, -11, 2, 4, 7, 10 },   //
+	{ -2, -6, -8, -10, 1, 5, 7, 9 },    //
+	{ -2, -5, -8, -10, 1, 4, 7, 9 },    //
+	{ -2, -4, -8, -10, 1, 3, 7, 9 },    //
+	{ -2, -5, -7, -10, 1, 4, 6, 9 },    //
+	{ -3, -4, -7, -10, 2, 3, 6, 9 },    //
+	{ -1, -2, -3, -10, 0, 1, 2, 9 },    //
+	{ -4, -6, -8, -9, 3, 5, 7, 8 },     //
+	{ -3, -5, -7, -9, 2, 4, 6, 8 }
+};
 
 // 2 sets of 16 float3 (rgba8_unorm) for each ETC block
 // We use rgba8_unorm encoding because it's 6kb vs 1.5kb of LDS. The former kills occupancy
 shared float g_srcPixelsBlock[16];
 shared PotentialSolution g_bestSolution[256];
 shared float g_bestError[256];
+#ifndef R11_EAC
 shared bool g_allPixelsEqual;
+#endif
 
 uniform sampler2D srcTex;
 
@@ -87,11 +103,9 @@ float eac_find_best_error( float baseCodeword, float multiplier, const int table
 {
 	float accumError = 0.0f;
 
-	baseCodeword *= 8.0f;
 #ifdef R11_EAC
+	baseCodeword = baseCodeword * 8.0f + 4.0f;
 	multiplier = multiplier > 0.0f ? multiplier * 8.0f : 1.0f;
-#else
-	multiplier = multiplier * 8.0f;
 #endif
 
 	for( int i = 0; i < 16; ++i )
@@ -120,11 +134,9 @@ void eac_pack( float baseCodeword, float multiplier, const uint tableIdx )
 	const uint iBaseCodeword = uint( baseCodeword );
 	const uint iMultiplier = uint( multiplier );
 
-	baseCodeword *= 8.0f;
 #ifdef R11_EAC
+	baseCodeword = baseCodeword * 8.0f + 4.0f;
 	multiplier = multiplier > 0.0f ? multiplier * 8.0f : 1.0f;
-#else
-	multiplier = multiplier * 8.0f;
 #endif
 
 	uint bestIdx[16];
@@ -209,9 +221,10 @@ void main()
 		g_srcPixelsBlock[baseCodeword] = srcPixel * EAC_RANGE;
 	}
 
-#ifdef WARP_SYNC_AVAILABLE
+#ifndef R11_EAC
+#	ifdef WARP_SYNC_AVAILABLE
 	if( gl_SubGroupSizeARB < 16u )
-#endif
+#	endif
 	{
 		// Fallback path when shader ballot cannot be used (wavefront size too small)
 		// Check if all pixels are equal
@@ -225,18 +238,27 @@ void main()
 		}
 		g_allPixelsEqual = allPixelsEqual;
 	}
+#endif
 
 	__sharedOnlyBarrier;
 
+#ifndef R11_EAC
+	// In alpha mode, the baseCodeword can represent all 255 values exactly.
+	// In R11 mode, the 8-bit baseCodeword gets converted to 11 bits, and
+	// added to the modifier from the table thus we can't take the shortcut
 	if( g_allPixelsEqual )
 	{
-		uint2 outputBytes;
-		outputBytes.x = baseCodeword;
-		outputBytes.y = 0u;
-		const uint2 dstUV = gl_WorkGroupID.xy;
-		imageStore( dstTexture, int2( dstUV ), uint4( outputBytes.xy, 0u, 0u ) );
+		if( baseCodeword == 0u )
+		{
+			uint2 outputBytes;
+			outputBytes.x = uint( ( g_srcPixelsBlock[0] / EAC_RANGE ) * 255.0f );
+			outputBytes.y = 0u;
+			const uint2 dstUV = gl_WorkGroupID.xy;
+			imageStore( dstTexture, int2( dstUV ), uint4( outputBytes.xy, 0u, 0u ) );
+		}
 	}
 	else
+#endif
 	{
 		float bestError = FLT_MAX;
 		PotentialSolution bestSolution = 0u;
