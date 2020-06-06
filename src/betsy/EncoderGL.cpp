@@ -69,6 +69,8 @@ namespace betsy
 			return GL_COMPRESSED_RGBA8_ETC2_EAC;
 		case PFG_EAC_R11_UNORM:
 			return GL_COMPRESSED_R11_EAC;
+		case PFG_EAC_RG11_UNORM:
+			return GL_COMPRESSED_RG11_EAC;
 		}
 		return GL_NONE;
 	}
@@ -85,6 +87,7 @@ namespace betsy
 		case PFG_ETC2_RGBA8_UNORM:
 			return GL_RGBA;
 		case PFG_RG32_UINT:
+		case PFG_EAC_RG11_UNORM:
 			return GL_RG;
 		case PFG_BC6H_UF16:
 		case PFG_ETC1_RGB8_UNORM:
@@ -115,6 +118,7 @@ namespace betsy
 		case PFG_ETC1_RGB8_UNORM:
 		case PFG_ETC2_RGBA8_UNORM:
 		case PFG_EAC_R11_UNORM:
+		case PFG_EAC_RG11_UNORM:
 			format = GL_NONE;
 			assert( false &&
 					"This should never happen. Compressed formats must use "
@@ -142,6 +146,7 @@ namespace betsy
 		case PFG_ETC1_RGB8_UNORM:
 		case PFG_ETC2_RGBA8_UNORM:
 		case PFG_EAC_R11_UNORM:
+		case PFG_EAC_RG11_UNORM:
 			format = GL_NONE;
 			assert( false &&
 					"This should never happen. Compressed formats must use "

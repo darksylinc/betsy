@@ -1,6 +1,7 @@
 
 #include "betsy/CpuImage.h"
 #include "betsy/EncoderBC6H.h"
+#include "betsy/EncoderEAC.h"
 #include "betsy/EncoderETC1.h"
 #include "betsy/File/FormatKTX.h"
 
@@ -36,6 +37,7 @@ void printHelp()
 		"	etc2_rgb	0.5 bpp - ETC2 RGB\n"
 		"	etc2_rgba	1.0 bpp - ETC2+EAC RGBA\n"
 		"	eac_r11		0.5 bpp - EAC Red unorm (source 11-bits per pixel)\n"
+		"	eac_rg11	1.0 bpp - EAC RG unorm (11-bits each, useful for normal maps)\n"
 		"	bc6h		1.0 bpp - BC6 Unsigned half-floating point format, RGB\n" );
 
 	printf( "Other options:\n" );
@@ -163,8 +165,17 @@ int main( int nargs, char *const argv[] )
 	}
 	break;
 	case Codec::eac_r11:
-		printf( "Comming soon!\n" );
-		break;
+	case Codec::eac_rg11:
+	{
+		betsy::EncoderEAC encoder;
+		encoder.initResources( cpuImage, params.codec == Codec::eac_rg11 );
+		encoder.execute01();
+		encoder.execute02();
+		betsy::pollPlatformWindow();
+		saveToDisk( encoder, params );
+		encoder.deinitResources();
+	}
+	break;
 	case Codec::bc6h:
 	{
 		betsy::EncoderBC6H encoder;

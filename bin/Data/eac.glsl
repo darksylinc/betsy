@@ -83,6 +83,8 @@ shared PotentialSolution g_bestSolution[256];
 shared float g_bestError[256];
 #ifndef R11_EAC
 shared bool g_allPixelsEqual;
+
+layout( location = 0 ) uniform float p_greenChannel;
 #endif
 
 uniform sampler2D srcTex;
@@ -204,7 +206,12 @@ void main()
 		// Note EAC wants the src pixels transposed!
 		pixelToLoad.x += baseCodeword >> 2u;    //+= baseCodeword / 4
 		pixelToLoad.y += baseCodeword & 0x03u;  //+= baseCodeword % 4
-		const float srcPixel = OGRE_Load2D( srcTex, int2( pixelToLoad ), 0 ).EAC_FETCH_SWIZZLE;
+#ifdef R11_EAC
+		float2 value = OGRE_Load2D( srcTex, int2( pixelToLoad ), 0 ).rg;
+		const float srcPixel = p_greenChannel != 0 ? value.g : value.r;
+#else
+		const float srcPixel = OGRE_Load2D( srcTex, int2( pixelToLoad ), 0 ).a;
+#endif
 
 #ifdef WARP_SYNC_AVAILABLE
 		if( gl_SubGroupSizeARB >= 16u )

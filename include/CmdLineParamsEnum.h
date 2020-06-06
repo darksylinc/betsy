@@ -18,15 +18,15 @@ public:
 	};
 
 private:
-	static EnumData mSortedByEnum[5+1];
-	static EnumData mSortedByString[5+1];
+	static EnumData mSortedByEnum[6+1];
+	static EnumData mSortedByString[6+1];
 
 	struct OrderByEnum;
 	struct OrderByStr;
 
 public:
 	static const EnumData* begin()		{ return &mSortedByEnum[0]; }
-	static const EnumData* end()		{ return &mSortedByEnum[5]; }
+	static const EnumData* end()		{ return &mSortedByEnum[6]; }
 
 	/// Returns the min value reached by this enumerator
 	static int minValue();

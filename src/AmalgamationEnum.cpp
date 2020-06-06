@@ -11,18 +11,20 @@ const std::string BLANKSTRING = "";
 
 namespace Codec
 {
-	CodecEnum::EnumData CodecEnum::mSortedByEnum[5 + 1] = {
+	CodecEnum::EnumData CodecEnum::mSortedByEnum[6 + 1] = {
 		CodecEnum::EnumData( bc6h, "bc6h" ),            //
 		CodecEnum::EnumData( eac_r11, "eac_r11" ),      //
+		CodecEnum::EnumData( eac_rg11, "eac_rg11" ),    //
 		CodecEnum::EnumData( etc1, "etc1" ),            //
 		CodecEnum::EnumData( etc2_rgb, "etc2_rgb" ),    //
 		CodecEnum::EnumData( etc2_rgba, "etc2_rgba" ),  //
 		CodecEnum::EnumData( etc2_rgba, "__INVALID" )
 	};
 
-	CodecEnum::EnumData CodecEnum::mSortedByString[5 + 1] = {
+	CodecEnum::EnumData CodecEnum::mSortedByString[6 + 1] = {
 		CodecEnum::EnumData( bc6h, "bc6h" ),            //
 		CodecEnum::EnumData( eac_r11, "eac_r11" ),      //
+		CodecEnum::EnumData( eac_rg11, "eac_rg11" ),    //
 		CodecEnum::EnumData( etc1, "etc1" ),            //
 		CodecEnum::EnumData( etc2_rgb, "etc2_rgb" ),    //
 		CodecEnum::EnumData( etc2_rgba, "etc2_rgba" ),  //
@@ -63,16 +65,16 @@ namespace Codec
 	//---------------------------------------------------------------------------------------
 	int CodecEnum::minValue() { return mSortedByEnum[0].enumValue; }
 	//---------------------------------------------------------------------------------------
-	int CodecEnum::maxValue() { return mSortedByEnum[5 - 1].enumValue; }
+	int CodecEnum::maxValue() { return mSortedByEnum[6 - 1].enumValue; }
 	//---------------------------------------------------------------------------------------
-	size_t CodecEnum::count() { return 5; }
+	size_t CodecEnum::count() { return 6; }
 	//---------------------------------------------------------------------------------------
 	bool CodecEnum::find( const std::string &strValue, Codec &outValue )
 	{
 		const EnumData *itor =
-			std::lower_bound( &mSortedByString[0], &mSortedByString[5], strValue, OrderByStr() );
+			std::lower_bound( &mSortedByString[0], &mSortedByString[6], strValue, OrderByStr() );
 
-		if( itor != &mSortedByString[5] && itor->enumString == strValue )
+		if( itor != &mSortedByString[6] && itor->enumString == strValue )
 		{
 			outValue = itor->enumValue;
 			return true;

@@ -20,7 +20,8 @@ namespace betsy
 		/// ETC1 (Ericsson Texture Compression)
 		PFG_ETC1_RGB8_UNORM,
 		PFG_ETC2_RGBA8_UNORM,
-		PFG_EAC_R11_UNORM
+		PFG_EAC_R11_UNORM,
+		PFG_EAC_RG11_UNORM
 	};
 
 	namespace ResourceAccess
