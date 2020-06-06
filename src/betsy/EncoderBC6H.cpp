@@ -28,9 +28,9 @@ namespace betsy
 
 		m_compressPso = createComputePsoFromFile( "bc6h.glsl", "../Data/" );
 
-		m_stagingTex = createStagingTexture( m_width, m_height, srcImage.format, true );
-		memcpy( m_stagingTex.data, srcImage.data, m_stagingTex.sizeBytes );
-		uploadStagingTexture( m_stagingTex, m_srcTexture );
+		StagingTexture stagingTex = createStagingTexture( m_width, m_height, srcImage.format, true );
+		memcpy( stagingTex.data, srcImage.data, stagingTex.sizeBytes );
+		uploadStagingTexture( stagingTex, m_srcTexture );
 	}
 	//-------------------------------------------------------------------------
 	void EncoderBC6H::deinitResources()
@@ -42,7 +42,8 @@ namespace betsy
 		destroyTexture( m_srcTexture );
 		m_srcTexture = 0;
 
-		destroyStagingTexture( m_stagingTex );
+		if( m_downloadStaging.bufferName )
+			destroyStagingTexture( m_downloadStaging );
 
 		destroyPso( m_compressPso );
 	}
@@ -68,5 +69,24 @@ namespace betsy
 		glCopyImageSubData( m_compressTargetRes, GL_TEXTURE_2D, 0, 0, 0, 0,  //
 							m_dstTexture, GL_TEXTURE_2D, 0, 0, 0, 0,         //
 							( GLsizei )( m_width >> 2u ), ( GLsizei )( m_height >> 2u ), 1 );
+	}
+	//-------------------------------------------------------------------------
+	void EncoderBC6H::startDownload()
+	{
+		glMemoryBarrier( GL_PIXEL_BUFFER_BARRIER_BIT );
+
+		if( m_downloadStaging.bufferName )
+			destroyStagingTexture( m_downloadStaging );
+		m_downloadStaging = createStagingTexture( m_width >> 2u, m_height >> 2u, PFG_RG32_UINT, false );
+		downloadStagingTexture( m_compressTargetRes, m_downloadStaging );
+	}
+	//-------------------------------------------------------------------------
+	void EncoderBC6H::downloadTo( CpuImage &outImage )
+	{
+		glFinish();
+		outImage.width = m_width;
+		outImage.height = m_height;
+		outImage.format = PFG_BC6H_UF16;
+		outImage.data = reinterpret_cast<uint8_t *>( m_downloadStaging.data );
 	}
 }  // namespace betsy

@@ -18,7 +18,7 @@ namespace betsy
 		GLuint m_compressTargetRes;
 		GLuint m_dstTexture;
 
-		StagingTexture m_stagingTex;
+		StagingTexture m_downloadStaging;
 
 		ComputePso m_compressPso;
 
@@ -31,5 +31,8 @@ namespace betsy
 
 		void execute01();
 		void execute02();
+
+		void startDownload();
+		void downloadTo( CpuImage &outImage );
 	};
 }  // namespace betsy
