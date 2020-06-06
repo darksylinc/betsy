@@ -35,7 +35,7 @@ namespace betsy
 	{
 		sds::fstream file( fullpath, sds::fstream::OutputDiscard );
 
-		if( file.is_open() )
+		if( !file.is_open() )
 		{
 			fprintf( stderr, "Could not save to '%s' Check write access and whether the disk is full\n",
 					 fullpath );

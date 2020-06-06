@@ -25,13 +25,15 @@ namespace betsy
 
 		GLuint m_srcTexture;
 		GLuint m_compressTargetRes;
-		GLuint m_eacTargetRes;
+		GLuint m_eacTargetRes;    // Only used for ETC2_RGBA
+		GLuint m_stitchedTarget;  // Only used for ETC2_RGBA
 		GLuint m_dstTexture;
 
-		StagingTexture m_stagingTex;
+		StagingTexture m_downloadStaging;
 
 		ComputePso m_compressPso;
-		ComputePso m_eacPso;
+		ComputePso m_eacPso;     // Only used for ETC2_RGBA
+		ComputePso m_stitchPso;  // Only used for ETC2_RGBA, Combines ETC1 RGB with EAC alpha
 
 	public:
 		EncoderETC1();
@@ -47,5 +49,9 @@ namespace betsy
 
 		void execute01( EncoderETC1::Etc1Quality quality = cHighQuality );
 		void execute02();
+		void execute03();
+
+		void startDownload();
+		void downloadTo( CpuImage &outImage );
 	};
 }  // namespace betsy

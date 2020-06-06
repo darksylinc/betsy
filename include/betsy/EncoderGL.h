@@ -19,6 +19,7 @@ namespace betsy
 		PFG_BC6H_UF16,
 		/// ETC1 (Ericsson Texture Compression)
 		PFG_ETC1_RGB8_UNORM,
+		PFG_ETC2_RGBA8_UNORM,
 		PFG_EAC_R11_UNORM
 	};
 
@@ -71,6 +72,7 @@ namespace betsy
 		PixelFormat pixelFormat;
 		void *      data;
 		size_t      sizeBytes;
+		StagingTexture();
 	};
 
 	struct ComputePso

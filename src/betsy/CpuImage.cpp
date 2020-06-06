@@ -175,6 +175,7 @@ namespace betsy
 		case PFG_RGBA8_UNORM_SRGB:
 			return 1u * 4u;
 		case PFG_ETC1_RGB8_UNORM:
+		case PFG_ETC2_RGBA8_UNORM:
 		case PFG_EAC_R11_UNORM:
 		case PFG_BC6H_UF16:
 			return 0u;
@@ -187,6 +188,7 @@ namespace betsy
 		{
 		case PFG_BC6H_UF16:
 		case PFG_ETC1_RGB8_UNORM:
+		case PFG_ETC2_RGBA8_UNORM:
 		case PFG_EAC_R11_UNORM:
 			return true;
 		default:
@@ -207,6 +209,7 @@ namespace betsy
 			case PFG_EAC_R11_UNORM:
 				retVal = ( ( width + 3u ) / 4u ) * ( ( height + 3u ) / 4u ) * 8u * depth * slices;
 				break;
+			case PFG_ETC2_RGBA8_UNORM:
 			case PFG_BC6H_UF16:
 				retVal = ( ( width + 3u ) / 4u ) * ( ( height + 3u ) / 4u ) * 16u * depth * slices;
 				break;

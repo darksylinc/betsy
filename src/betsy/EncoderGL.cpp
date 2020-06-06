@@ -30,6 +30,17 @@ namespace betsy
 	{
 	}
 	//-------------------------------------------------------------------------
+	StagingTexture::StagingTexture() :
+		bufferName( 0 ),
+		bytesPerRow( 0 ),
+		width( 0 ),
+		height( 0 ),
+		pixelFormat( PFG_RGBA16_FLOAT ),
+		data( 0 ),
+		sizeBytes( 0 )
+	{
+	}
+	//-------------------------------------------------------------------------
 	ComputePso::ComputePso() : computeShader( 0 ), computePso( 0 ) {}
 	//-------------------------------------------------------------------------
 	//-------------------------------------------------------------------------
@@ -54,6 +65,8 @@ namespace betsy
 			return GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT_ARB;
 		case PFG_ETC1_RGB8_UNORM:
 			return GL_COMPRESSED_RGB8_ETC2;
+		case PFG_ETC2_RGBA8_UNORM:
+			return GL_COMPRESSED_RGBA8_ETC2_EAC;
 		case PFG_EAC_R11_UNORM:
 			return GL_COMPRESSED_R11_EAC;
 		}
@@ -69,6 +82,7 @@ namespace betsy
 		case PFG_RGBA16_FLOAT:
 		case PFG_RGBA8_UNORM:
 		case PFG_RGBA8_UNORM_SRGB:
+		case PFG_ETC2_RGBA8_UNORM:
 			return GL_RGBA;
 		case PFG_RG32_UINT:
 			return GL_RG;
@@ -99,6 +113,7 @@ namespace betsy
 			break;
 		case PFG_BC6H_UF16:
 		case PFG_ETC1_RGB8_UNORM:
+		case PFG_ETC2_RGBA8_UNORM:
 		case PFG_EAC_R11_UNORM:
 			format = GL_NONE;
 			assert( false &&
@@ -125,6 +140,7 @@ namespace betsy
 			break;
 		case PFG_BC6H_UF16:
 		case PFG_ETC1_RGB8_UNORM:
+		case PFG_ETC2_RGBA8_UNORM:
 		case PFG_EAC_R11_UNORM:
 			format = GL_NONE;
 			assert( false &&
