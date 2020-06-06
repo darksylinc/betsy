@@ -82,10 +82,12 @@ namespace betsy
 
 	class EncoderGL : public Encoder
 	{
-	protected:
+	public:
 		static GLenum get( PixelFormat format );
+		static GLenum getBaseFormat( PixelFormat format );
 		static void   getFormatAndType( PixelFormat pixelFormat, GLenum &format, GLenum &type );
 
+	protected:
 		GLuint createTexture( const TextureParams &params );
 		void   destroyTexture( GLuint texName );
 

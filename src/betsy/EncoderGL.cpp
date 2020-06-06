@@ -60,6 +60,27 @@ namespace betsy
 		return GL_NONE;
 	}
 	//-----------------------------------------------------------------------------------
+	GLenum EncoderGL::getBaseFormat( PixelFormat format )
+	{
+		switch( format )
+		{
+		case PFG_RGBA32_UINT:
+		case PFG_RGBA32_FLOAT:
+		case PFG_RGBA16_FLOAT:
+		case PFG_RGBA8_UNORM:
+		case PFG_RGBA8_UNORM_SRGB:
+			return GL_RGBA;
+		case PFG_RG32_UINT:
+			return GL_RG;
+		case PFG_BC6H_UF16:
+		case PFG_ETC1_RGB8_UNORM:
+			return GL_RGB;
+		case PFG_EAC_R11_UNORM:
+			return GL_RED;
+		}
+		return GL_NONE;
+	}
+	//-----------------------------------------------------------------------------------
 	void EncoderGL::getFormatAndType( PixelFormat pixelFormat, GLenum &format, GLenum &type )
 	{
 		switch( pixelFormat )
