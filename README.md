@@ -7,11 +7,16 @@ Compute Shader support is **required**.
 
 The goal is to achieve both high performance (via efficient GPU usage) and high quality compression.
 
-At the moment it is very WIP.
+At the moment it is WIP.
 
 ## How do I use it?
 
-At the moment there is no CLI interface. All it can do is load an image from a hardcoded path in C++, compress it via Compute Shaders, and discard the contents (doesn't save it to disk yet)
+Run:
+```
+betsy input.hdr --codec=etc2 --quality=2 output.ktx
+```
+
+Run `betsy --help` for full description
 
 ## Build Instructions
 
@@ -42,6 +47,17 @@ cd ../../bin/Release
 TBD.
 Build works on VS2019. CMake generation, but it will complain about SDL2 due to poorly setup sdl2-config.cmake.
 You'll need to setup the paths to SDL2 by hand.
+
+### Python scripts
+
+We use [EnumIterator.py](https://github.com/darksylinc/EnumIterator) to generate strings out of enums like in C#.
+
+We keep the generated cpp files in the repo up to date but if you want to generate them yourself, run:
+
+```
+cd scripts/EnumIterator
+python2 Run.py
+```
 
 ## Supported formats:
 

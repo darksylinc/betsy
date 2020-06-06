@@ -91,6 +91,15 @@ bool parseCmdLine( int nargs, char *const argv[], CmdLineParams &outParams )
 			outParams.quality = static_cast<uint8_t>( atoi( argv[i] + startIdx ) );
 			outParams.quality = std::min<uint8_t>( outParams.quality, 2u );
 		}
+		else if( startsWith( argv[i], "--help", startIdx ) )
+		{
+			return false;
+		}
+		else if( startsWith( argv[i], "--", startIdx ) )
+		{
+			printf( "Unknown parameter '%s'\n", argv[i] );
+			return false;
+		}
 		else
 		{
 			if( currFilename >= 2u )
