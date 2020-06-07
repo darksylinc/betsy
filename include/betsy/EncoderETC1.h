@@ -29,11 +29,16 @@ namespace betsy
 		GLuint m_stitchedTarget;  // Only used for ETC2_RGBA
 		GLuint m_dstTexture;
 
+		GLuint m_etc1TablesSsbo;
+
 		StagingTexture m_downloadStaging;
 
 		ComputePso m_compressPso;
 		ComputePso m_eacPso;     // Only used for ETC2_RGBA
 		ComputePso m_stitchPso;  // Only used for ETC2_RGBA, Combines ETC1 RGB with EAC alpha
+
+		size_t   getEtc1TablesSize() const;
+		uint8_t *createFilledEtc1Tables();
 
 	public:
 		EncoderETC1();

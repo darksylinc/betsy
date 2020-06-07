@@ -1,8 +1,8 @@
 
 #include "GL/gl3w.h"
 
-#include "SDL.h"
 #include "FreeImage.h"
+#include "SDL.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -59,6 +59,7 @@ namespace betsy
 
 		SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 4 );
 		SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 3 );
+		SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE );
 #ifdef DEBUG
 		SDL_GL_SetAttribute( SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG );
 #endif

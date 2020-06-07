@@ -3,22 +3,93 @@
 
 #include "betsy/CpuImage.h"
 
+#include "ETC1_tables.inl"
+
 #include <assert.h>
 #include <memory.h>
 #include <stdio.h>
+#include <algorithm>
+#include <limits>
 
 namespace betsy
 {
+	static size_t etc1_decode_value( size_t diff, size_t inten, size_t selector, size_t packed_c )
+	{
+		int c;
+		if( diff )
+			c = int( ( packed_c >> 2u ) | ( packed_c << 3u ) );
+		else
+			c = int( packed_c | ( packed_c << 4u ) );
+		c += c_etc1_inten_tables[inten][selector];
+		size_t retVal;
+		retVal = static_cast<size_t>( std::max<int>( c, 0 ) );
+		retVal = std::min<size_t>( retVal, 255u );
+		return retVal;
+	}
+
 	EncoderETC1::EncoderETC1() :
 		m_srcTexture( 0 ),
 		m_compressTargetRes( 0 ),
 		m_eacTargetRes( 0 ),
 		m_stitchedTarget( 0 ),
-		m_dstTexture( 0 )
+		m_dstTexture( 0 ),
+		m_etc1TablesSsbo( 0 )
 	{
 	}
 	//-------------------------------------------------------------------------
 	EncoderETC1::~EncoderETC1() { assert( !m_srcTexture && "deinitResources not called!" ); }
+	//-------------------------------------------------------------------------
+	size_t EncoderETC1::getEtc1TablesSize() const
+	{
+		return sizeof( float ) * 2u * 8u * 4u * 256u + sizeof( uint32_t ) * ( 2u * 33u + 254 * 11u );
+	}
+	//-------------------------------------------------------------------------
+	uint8_t *EncoderETC1::createFilledEtc1Tables()
+	{
+		uint8_t *data = new uint8_t[getEtc1TablesSize()];
+
+		float *asFloat = reinterpret_cast<float *>( data );
+
+		for( size_t diff = 0u; diff < 2u; ++diff )
+		{
+			const size_t limit = diff ? 32u : 16u;
+
+			for( size_t inten = 0; inten < 8; ++inten )
+			{
+				for( size_t selector = 0u; selector < 4u; ++selector )
+				{
+					const size_t inverse_table_index = diff + ( inten << 1u ) + ( selector << 4u );
+					for( size_t color = 0u; color < 256u; ++color )
+					{
+						uint32_t best_error = std::numeric_limits<uint32_t>::max();
+						size_t best_packed_c = 0u;
+						for( size_t packed_c = 0; packed_c < limit; ++packed_c )
+						{
+							const size_t v = etc1_decode_value( diff, inten, selector, packed_c );
+							uint32_t err = static_cast<uint32_t>( abs( static_cast<int>( v - color ) ) );
+							if( err < best_error )
+							{
+								best_error = err;
+								best_packed_c = packed_c;
+								if( !best_error )
+									break;
+							}
+						}
+						asFloat[inverse_table_index * 256u + color] =
+							static_cast<float>( best_packed_c | ( best_error << 8u ) );
+					}
+				}
+			}
+		}
+
+		const size_t startIdx = sizeof( float ) * 2u * 8u * 4u * 256u;
+		memcpy( data + startIdx, c_color8_to_etc_block_config_0_255,
+				sizeof( c_color8_to_etc_block_config_0_255 ) );
+		memcpy( data + startIdx + sizeof( c_color8_to_etc_block_config_0_255 ),
+				c_color8_to_etc_block_config_1_to_254, sizeof( c_color8_to_etc_block_config_1_to_254 ) );
+
+		return data;
+	}
 	//-------------------------------------------------------------------------
 	void EncoderETC1::initResources( const CpuImage &srcImage, bool bCompressAlpha )
 	{
@@ -35,6 +106,12 @@ namespace betsy
 
 		m_dstTexture =
 			createTexture( TextureParams( m_width, m_height, PFG_EAC_R11_UNORM, "m_dstTexture" ) );
+
+		{
+			uint8_t *filledTables = createFilledEtc1Tables();
+			m_etc1TablesSsbo = createUavBuffer( getEtc1TablesSize(), filledTables );
+			delete[] filledTables;
+		}
 
 		m_compressPso = createComputePsoFromFile( "etc1.glsl", "../Data/" );
 
@@ -57,6 +134,9 @@ namespace betsy
 	//-------------------------------------------------------------------------
 	void EncoderETC1::deinitResources()
 	{
+		destroyUavBuffer( m_etc1TablesSsbo );
+		m_etc1TablesSsbo = 0;
+
 		destroyTexture( m_dstTexture );
 		m_dstTexture = 0;
 		destroyTexture( m_compressTargetRes );
@@ -87,6 +167,7 @@ namespace betsy
 	{
 		bindTexture( 0u, m_srcTexture );
 		bindUav( 0u, m_compressTargetRes, PFG_RG32_UINT, ResourceAccess::Write );
+		bindUavBuffer( 1u, m_etc1TablesSsbo, 0u, getEtc1TablesSize() );
 		bindComputePso( m_compressPso );
 
 		struct Params

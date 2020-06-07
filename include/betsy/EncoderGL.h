@@ -76,6 +76,13 @@ namespace betsy
 		StagingTexture();
 	};
 
+	struct StagingBuffer
+	{
+		GLuint bufferName;
+		void * data;
+		size_t sizeBytes;
+	};
+
 	struct ComputePso
 	{
 		GLuint computeShader;
@@ -100,6 +107,9 @@ namespace betsy
 		void           downloadStagingTexture( GLuint srcTexture, const StagingTexture &stagingTex );
 		void           destroyStagingTexture( const StagingTexture &stagingTex );
 
+		GLuint createUavBuffer( size_t sizeBytes, void *initialData );
+		void   destroyUavBuffer( GLuint bufferName );
+
 		ComputePso createComputePsoFromFile( const char *shaderFilename, const char *relativePath );
 		ComputePso createComputePso( const char *csShader );
 		void       destroyPso( ComputePso &pso );
@@ -108,5 +118,6 @@ namespace betsy
 		void bindTexture( uint32_t slot, GLuint textureSrv );
 		void bindUav( uint32_t slot, GLuint textureSrv, PixelFormat pixelFormat,
 					  ResourceAccess::ResourceAccess access );
+		void bindUavBuffer( uint32_t slot, GLuint buffer, size_t offset, size_t bufferSize );
 	};
 }  // namespace betsy

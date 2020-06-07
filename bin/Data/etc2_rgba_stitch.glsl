@@ -1,5 +1,6 @@
 // RGB and Alpha components of ETC2 RGBA are computed separately.
 // This compute shader merely stitches them together to form the final result
+// It's also used by RG11 driver to stitch two R11 into one RG11
 
 #version 430 core
 

@@ -146,6 +146,8 @@ int main( int nargs, char *const argv[] )
 	printf( "Initializing API\n" );
 	betsy::initBetsyPlatform();
 
+	size_t repeat = 1u; // Change this to 2 to get RenderDoc to work
+
 	betsy::CpuImage cpuImage( params.filename[0].c_str() );
 
 	switch( params.codec )
@@ -156,10 +158,13 @@ int main( int nargs, char *const argv[] )
 	{
 		betsy::EncoderETC1 encoder;
 		encoder.initResources( cpuImage, params.codec == Codec::etc2_rgba );
-		encoder.execute01();
-		encoder.execute02();
-		// encoder.execute03(); Not needed in offline mode
-		betsy::pollPlatformWindow();
+		while( repeat-- )
+		{
+			encoder.execute01();
+			encoder.execute02();
+			// encoder.execute03(); // Not needed in offline mode
+			betsy::pollPlatformWindow();
+		}
 		saveToDisk( encoder, params );
 		encoder.deinitResources();
 	}
@@ -188,6 +193,8 @@ int main( int nargs, char *const argv[] )
 	}
 	break;
 	}
+
+	betsy::pollPlatformWindow();
 
 	printf( "Shutting down\n" );
 	betsy::shutdownBetsyPlatform();

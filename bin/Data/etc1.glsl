@@ -24,6 +24,7 @@
 // 2 sets of 16 float3 (rgba8_unorm) for each ETC block
 // We use rgba8_unorm encoding because it's 6kb vs 1.5kb of LDS. The former kills occupancy
 shared uint g_srcPixelsBlock[16 * 2 * 4 * 4];
+shared bool g_allPixelsEqual[4 * 4 * 4];
 
 layout( location = 0 ) uniform float4 params;
 
@@ -37,6 +38,14 @@ layout( location = 0 ) uniform float4 params;
 uniform sampler2D srcTex;
 
 layout( rg32ui ) uniform restrict writeonly uimage2D dstTexture;
+
+layout( std430, binding = 1 ) readonly buffer globalBuffer
+{
+	// Given an ETC1 diff/inten_table/selector, and an 8-bit desired color, this table encodes the best
+	// packed_color in the low byte, and the abs error in the high byte.
+	float pBuff_etc1_inverse_lookup[2 * 8 * 4][256];  // [diff/inten_table/selector][desired_color]
+	uint pBuff_color8_to_etc_block_config[];
+};
 
 layout( local_size_x = 4,  //
 		local_size_y = 4,  //
@@ -246,9 +255,10 @@ void etc1_optimizer_compute( const float scanDeltaAbsMin, const float scanDeltaA
 				// So what this means: optimal_block_color = avg_input - avg_inten_delta
 				// So the optimal block color can be computed by taking the average block color and
 				// subtracting the current average of the intensity delta.
-				// Unfortunately, optimal_block_color must then be quantized to 555 or 444 so it's not
-				// always possible to improve matters using this formula. Also, the formula is for
-				// unclamped intensity deltas. The actual implementation takes into account clamping.
+				// Unfortunately, optimal_block_color must then be quantized to 555 or 444 so it's
+				// not always possible to improve matters using this formula. Also, the formula is
+				// for unclamped intensity deltas. The actual implementation takes into account
+				// clamping.
 
 				float4 pSelectors[2];
 				pSelectors[0] = unpackUnorm4x8( bestSolution.selectors[0] ) * 255.0f;
@@ -311,6 +321,85 @@ float selector_index_to_etc1( float idx )
 	return idx < 2.0f ? ( 3.0f - idx ) : ( idx - 2.0f );
 }
 
+// Packs solid color blocks efficiently using a set of small precomputed tables.
+// For random 888 inputs, MSE results are better than Erricson's ETC1 packer in "slow" mode ~9.5% of
+// the time, is slightly worse only ~.01% of the time, and is equal the rest of the time.
+void pack_etc1_block_solid_color( float3 srcPixel )
+{
+	float bestError = FLT_MAX, best_packed_c1 = 0, best_packed_c2 = 0;
+	uint best_x = 0u, best_i = 0u;
+
+	// For each possible 8-bit value, there is a precomputed list of diff/inten/selector
+	// configurations that allow that 8-bit value to be encoded with no error.
+	for( uint i = 0u; i < 3u && bestError > 0; ++i )
+	{
+		const float c0 = srcPixel[i];
+		const uint c1 = uint( i == 0u ? srcPixel.y : ( i == 1u ? srcPixel.z : srcPixel.x ) );
+		const uint c2 = uint( i == 0u ? srcPixel.z : ( i == 1u ? srcPixel.x : srcPixel.y ) );
+
+		const float delta_range = 1.0f;
+		for( float delta = -delta_range; delta <= delta_range && bestError > 0; ++delta )
+		{
+			const float c_plus_delta = clamp( c0 + delta, 0.0f, 255.0f );
+
+			uint tableOffset;
+			if( c_plus_delta == 0.0f )
+				tableOffset = 0u;
+			else if( c_plus_delta == 255.0f )
+				tableOffset = 33u;
+			else
+				tableOffset = uint( 66.0f + ( c_plus_delta - 1.0f ) * 11.0f );
+
+			const uint numTableEntries = pBuff_color8_to_etc_block_config[tableOffset];
+			for( uint j = 0u; j < numTableEntries && bestError > 0; ++j )
+			{
+				const uint x = pBuff_color8_to_etc_block_config[tableOffset + j + 1u];
+
+				float p1 = pBuff_etc1_inverse_lookup[x & 0xFFu][c1];
+				float p2 = pBuff_etc1_inverse_lookup[x & 0xFFu][c2];
+
+				const float3 diffVal = float3( c_plus_delta - c0,                //
+											   floor( p1 * ( 1.0f / 256.0f ) ),  //
+											   floor( p2 * ( 1.0f / 256.0f ) ) );
+				const float trialError = dot( diffVal, diffVal );
+				if( trialError < bestError )
+				{
+					bestError = trialError;
+					best_x = x;
+					best_packed_c1 = mod( p1, 256.0f );
+					best_packed_c2 = mod( p2, 256.0f );
+					best_i = i;
+				}
+			}
+		}
+	}
+
+	const float diff = float( best_x & 1u );
+	const float inten = float( ( best_x >> 1u ) & 7u );
+
+	float4 bytes;
+	uint2 outputBytes;
+
+	bytes.w = ( inten + ( inten * 8.0f ) ) * 4.0f + diff * 2.0f;
+
+	const float best_packed_c0 = float( ( best_x >> 8 ) & 255u );
+	float3 bestPacked = float3( best_packed_c0, best_packed_c1, best_packed_c2 );
+	if( diff != 0.0f )
+		bestPacked = bestPacked * 8.0f;
+	else
+		bestPacked = bestPacked + bestPacked * 16.0f;
+
+	bytes.xyz = best_i == 0u ? bestPacked.xyz : ( best_i == 1u ? bestPacked.zxy : bestPacked.yzx );
+
+	const float etc1Selector = selector_index_to_etc1( float( ( best_x >> 4u ) & 3u ) );
+	outputBytes.x = packUnorm4x8( bytes * ( 1.0f / 255.0f ) );
+	outputBytes.y = ( etc1Selector >= 2u ? 0xFFFFu : 0u ) |
+					( ( etc1Selector == 1.0f || etc1Selector == 3.0f ) ? 0xFFFF0000u : 0u );
+
+	uint2 dstUV = gl_GlobalInvocationID.yz;
+	imageStore( dstTexture, int2( dstUV ), uint4( outputBytes.xy, 0u, 0u ) );
+}
+
 void main()
 {
 	// 4 threads per ETC block. Each pair of threads tries a different mode
@@ -366,6 +455,24 @@ void main()
 	g_srcPixelsBlock[subblockStart1 + 0u] = packUnorm4x8( float4( srcPixels2, 1.0f ) );
 	g_srcPixelsBlock[subblockStart1 + 4u] = packUnorm4x8( float4( srcPixels3, 1.0f ) );
 
+	const uint pixelsEqualBlockStart = ( gl_LocalInvocationID.y + gl_LocalInvocationID.z * 4u ) * 4u;
+	bool bAllPixelsInThreadEqual =
+		srcPixels0 == srcPixels1 && srcPixels0 == srcPixels2 && srcPixels0 == srcPixels3;
+	g_allPixelsEqual[blockThreadId + pixelsEqualBlockStart] = bAllPixelsInThreadEqual;
+
+	__sharedOnlyBarrier;
+
+	if( blockThreadId == 0u )
+	{
+		// Thread 0 finishes checking if all pixels are equal
+		for( uint i = 1u; i < 4u; ++i )
+		{
+			bAllPixelsInThreadEqual =
+				bAllPixelsInThreadEqual && g_allPixelsEqual[i + pixelsEqualBlockStart];
+		}
+		g_allPixelsEqual[pixelsEqualBlockStart] = bAllPixelsInThreadEqual;
+	}
+
 	__sharedOnlyBarrier;
 
 	PotentialSolution results[2];
@@ -378,10 +485,44 @@ void main()
 		results[i].selectors[1] = 0u;
 	}
 
-	TODO_pack_etc1_block_solid_color_constrained;
+	// Check if all colours are equal. If so we can improve quality
+	const bool bAllColoursEqual = g_allPixelsEqual[pixelsEqualBlockStart];
+	if( bAllColoursEqual )
+	{
+		if( blockThreadId == 0u )
+			pack_etc1_block_solid_color( srcPixels0 * 255.0f );
+	}
+
+	barrier();  // Ensure all threads are done reading from g_allPixelsEqual
+#if 0
+	if( !bAllColoursEqual )
+	{
+		// Now check if the subblock has all pixels equal.
+		// There are 4 subblocks to check (2 flipped and 2 non-flipped)
+		// so we put all 4 threads to work on each.
+		const uint subblockIdx = ( blockThreadId & 0x1u );
+		const bool bTmpFlip = blockThreadId > 1u;
+
+		const uint subblockStart =
+			blockStart + ( bTmpFlip ? 16u : 0u ) + ( subblockIdx == 0u ? 0u : 8u );
+
+		bool allPixelsInSubblockEqual = true;
+
+		const float3 srcPixel0 = unpackUnorm4x8( g_srcPixelsBlock[subblockStart] ).xyz;
+		for( uint i = 1u; i < 8u; ++i )
+		{
+			const float3 srcPixel = unpackUnorm4x8( g_srcPixelsBlock[i + subblockStart] ).xyz;
+			allPixelsInSubblockEqual = allPixelsInSubblockEqual && srcPixel0 == srcPixel;
+		}
+
+		g_allPixelsEqual[pixelsEqualBlockStart + blockThreadId] = allPixelsInSubblockEqual;
+	}
+
+	__sharedOnlyBarrier;
+#endif
 
 	// Unfortunately subblockIdx = 1 depends on subblockIdx = 0 when bUseColor4 = false
-	for( uint subblockIdx = 0u; subblockIdx < 2u; ++subblockIdx )
+	for( uint subblockIdx = 0u; subblockIdx < 2u && !bAllColoursEqual; ++subblockIdx )
 	{
 		const bool constrainAgainstBaseColor5 = !bUseColor4 && subblockIdx != 0u;
 		const float3 baseColor5 = results[0].rgbIntLS;
@@ -399,6 +540,8 @@ void main()
 			avgColour += srcPixel;
 		}
 		avgColour *= 1.0f / 8.0f;
+
+		TODO_pack_etc1_block_solid_color_constrained;
 
 		const float limit = bUseColor4 ? 15 : 31;
 		const float3 avgColourLS = clamp( round( avgColour * limit ), 0, limit );
@@ -475,7 +618,7 @@ void main()
 	const uint blockThreadWithBestError =
 		loadBestBlockThreadIdxFromLds( gl_LocalInvocationIndex & ~0x03u );
 
-	if( blockThreadWithBestError == blockThreadId )
+	if( blockThreadWithBestError == blockThreadId && !bAllColoursEqual )
 	{
 		// This thread was selected as the one with the best result.
 		// Thus this one (the winner) will write to output

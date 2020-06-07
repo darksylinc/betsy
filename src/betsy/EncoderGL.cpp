@@ -7,6 +7,10 @@
 #include <assert.h>
 #include <string.h>
 
+#ifdef DUMP_SHADER
+#	include <stdio.h>
+#endif
+
 namespace betsy
 {
 	extern bool g_hasDebugObjectLabel;
@@ -281,12 +285,26 @@ namespace betsy
 		glDeleteBuffers( 1u, &stagingTex.bufferName );
 	}
 	//-------------------------------------------------------------------------
+	GLuint EncoderGL::createUavBuffer( size_t sizeBytes, void *initialData )
+	{
+		GLuint bufferName;
+		glGenBuffers( 1u, &bufferName );
+		glBindBuffer( GL_SHADER_STORAGE_BUFFER, bufferName );
+		glBufferStorage( GL_SHADER_STORAGE_BUFFER, (GLsizeiptr)sizeBytes, initialData, 0u );
+		return bufferName;
+	}
+	//-------------------------------------------------------------------------
+	void EncoderGL::destroyUavBuffer( GLuint bufferName ) { glDeleteBuffers( 1u, &bufferName ); }
+	//-------------------------------------------------------------------------
 	ComputePso EncoderGL::createComputePsoFromFile( const char *shaderFilename,
 													const char *relativePath )
 	{
 		IncludeParser parser;
 		parser.loadFromFile( shaderFilename, relativePath );
 
+#ifdef DUMP_SHADER
+		printf( "%s", parser.getFinalSource() );
+#endif
 		ComputePso retVal = createComputePso( parser.getFinalSource() );
 		return retVal;
 	}
@@ -346,5 +364,11 @@ namespace betsy
 		}
 
 		glBindImageTexture( slot, textureSrv, 0, GL_TRUE, 0, accessGl, format );
+	}
+	//-------------------------------------------------------------------------
+	void EncoderGL::bindUavBuffer( uint32_t slot, GLuint buffer, size_t offset, size_t bufferSize )
+	{
+		glBindBufferRange( GL_SHADER_STORAGE_BUFFER, slot, buffer, (GLintptr)offset,
+						   (GLintptr)bufferSize );
 	}
 }  // namespace betsy
