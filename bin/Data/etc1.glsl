@@ -543,7 +543,7 @@ void main()
 	const uint pixelsEqualBlockStart = ( gl_LocalInvocationID.y + gl_LocalInvocationID.z * 4u ) * 4u;
 	bool bAllPixelsInThreadEqual =
 		srcPixels0 == srcPixels1 && srcPixels0 == srcPixels2 && srcPixels0 == srcPixels3;
-	g_allPixelsEqual[blockThreadId + pixelsEqualBlockStart] = bAllPixelsInThreadEqual;
+	g_allPixelsEqual[pixelsEqualBlockStart + blockThreadId] = bAllPixelsInThreadEqual;
 
 	__sharedOnlyBarrier;
 
@@ -553,7 +553,11 @@ void main()
 		for( uint i = 1u; i < 4u; ++i )
 		{
 			bAllPixelsInThreadEqual =
-				bAllPixelsInThreadEqual && g_allPixelsEqual[i + pixelsEqualBlockStart];
+				bAllPixelsInThreadEqual && g_allPixelsEqual[pixelsEqualBlockStart + i];
+
+			// All 4 pixels in thread 'i' could be equal. But they may be different from *our* pixels
+			const float3 otherPixels = unpackUnorm4x8( g_srcPixelsBlock[blockStart + i] ).xyz;
+			bAllPixelsInThreadEqual = bAllPixelsInThreadEqual && srcPixels0 == otherPixels;
 		}
 		g_allPixelsEqual[pixelsEqualBlockStart] = bAllPixelsInThreadEqual;
 	}
