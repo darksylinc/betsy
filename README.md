@@ -63,6 +63,27 @@ python2 Run.py
 
 | Format  | State          |Status|
 |---------|----------------|------|
-| ETC1    | WIP - 95% done | It's already usable. It's missing a couple quality improvements to match the original rg_etc1 codec.<br/>Based on [rg-etc1](https://github.com/richgel999/rg-etc1).<br/>AMD Mesa Linux: Requires a very recent Mesa version due to a shader miscompilation issue. See [ticket](https://gitlab.freedesktop.org/mesa/mesa/-/issues/3044#note_515611).|
+| ETC1    | Done 			| <br/>Based on [rg-etc1](https://github.com/richgel999/rg-etc1).<br/>AMD Mesa Linux: Requires a very recent Mesa version due to a shader miscompilation issue. See [ticket](https://gitlab.freedesktop.org/mesa/mesa/-/issues/3044#note_515611).|
 | EAC     | Done           | Used for R11, RG11 and ETC2_RGBA (for encoding the alpha component).<br/>Quality: Maximum, we use brute force to check all possible combinations.|
 | BC6H UF | Done           | Unsigned variation of B6CH. GLSL port of [GPURealTimeBC6H](https://github.com/knarkowicz/GPURealTimeBC6H)|
+
+**Does betsy produce the same quality as the original implementations they were based on? (or bit-exact output)?**
+
+In theory yes. In practice there could have been bugs during the port/adaptation,
+and in some cases there could be precision issues.
+
+For example rg-etc1 used uint64 for storing error comparison, while we use a 32-bit float.
+While I don't think this should make a difference, I could be wrong.
+
+There could also be compiler/driver/hardware bugs causing the code to misbehave, as is more common with compute shaders.
+
+**Did you write these codecs yourself?**
+
+So far I only wrote the EAC codec from scratch, but I used [etc2_encoder](https://github.com/titilambert/packaging-efl/blob/master/src/static_libs/rg_etc/etc2_encoder.c) for reference, particularly figuring out the bit pattern of the bit output and the idea of just using brute force. Unfortunately this version had several bugs which is why I just wrote it from scratch.
+
+The rest of the codecs were originally written for different shading languages or architectures. See the supported formats' table for references to the original implementations.
+
+
+## Legal
+
+See [LICENSE.md](LICENSE.md)
