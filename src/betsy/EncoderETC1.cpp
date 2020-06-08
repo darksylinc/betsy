@@ -105,7 +105,7 @@ namespace betsy
 															"m_compressTargetRes", TextureFlags::Uav ) );
 
 		m_dstTexture =
-			createTexture( TextureParams( m_width, m_height, PFG_EAC_R11_UNORM, "m_dstTexture" ) );
+			createTexture( TextureParams( m_width, m_height, PFG_ETC1_RGB8_UNORM, "m_dstTexture" ) );
 
 		{
 			uint8_t *filledTables = createFilledEtc1Tables();

@@ -19,8 +19,6 @@
 #define cMediumQuality 1
 #define cHighQuality 2
 
-#define TODO_pack_etc1_block_solid_color_constrained
-
 // 2 sets of 16 float3 (rgba8_unorm) for each ETC block
 // We use rgba8_unorm encoding because it's 6kb vs 1.5kb of LDS. The former kills occupancy
 shared uint g_srcPixelsBlock[16 * 2 * 4 * 4];
@@ -324,9 +322,9 @@ float selector_index_to_etc1( float idx )
 // Packs solid color blocks efficiently using a set of small precomputed tables.
 // For random 888 inputs, MSE results are better than Erricson's ETC1 packer in "slow" mode ~9.5% of
 // the time, is slightly worse only ~.01% of the time, and is equal the rest of the time.
-void pack_etc1_block_solid_color( float3 srcPixel )
+void pack_etc1_block_solid_color( const float3 srcPixel )
 {
-	float bestError = FLT_MAX, best_packed_c1 = 0, best_packed_c2 = 0;
+	float bestError = FLT_MAX, bestPacked_c1 = 0, bestPacked_c2 = 0;
 	uint best_x = 0u, best_i = 0u;
 
 	// For each possible 8-bit value, there is a precomputed list of diff/inten/selector
@@ -337,8 +335,8 @@ void pack_etc1_block_solid_color( float3 srcPixel )
 		const uint c1 = uint( i == 0u ? srcPixel.y : ( i == 1u ? srcPixel.z : srcPixel.x ) );
 		const uint c2 = uint( i == 0u ? srcPixel.z : ( i == 1u ? srcPixel.x : srcPixel.y ) );
 
-		const float delta_range = 1.0f;
-		for( float delta = -delta_range; delta <= delta_range && bestError > 0; ++delta )
+		const float deltaRange = 1.0f;
+		for( float delta = -deltaRange; delta <= deltaRange && bestError > 0; ++delta )
 		{
 			const float c_plus_delta = clamp( c0 + delta, 0.0f, 255.0f );
 
@@ -366,8 +364,8 @@ void pack_etc1_block_solid_color( float3 srcPixel )
 				{
 					bestError = trialError;
 					best_x = x;
-					best_packed_c1 = mod( p1, 256.0f );
-					best_packed_c2 = mod( p2, 256.0f );
+					bestPacked_c1 = mod( p1, 256.0f );
+					bestPacked_c2 = mod( p2, 256.0f );
 					best_i = i;
 				}
 			}
@@ -382,8 +380,8 @@ void pack_etc1_block_solid_color( float3 srcPixel )
 
 	bytes.w = ( inten + ( inten * 8.0f ) ) * 4.0f + diff * 2.0f;
 
-	const float best_packed_c0 = float( ( best_x >> 8 ) & 255u );
-	float3 bestPacked = float3( best_packed_c0, best_packed_c1, best_packed_c2 );
+	const float bestPacked_c0 = float( ( best_x >> 8 ) & 255u );
+	float3 bestPacked = float3( bestPacked_c0, bestPacked_c1, bestPacked_c2 );
 	if( diff != 0.0f )
 		bestPacked = bestPacked * 8.0f;
 	else
@@ -398,6 +396,93 @@ void pack_etc1_block_solid_color( float3 srcPixel )
 
 	uint2 dstUV = gl_GlobalInvocationID.yz;
 	imageStore( dstTexture, int2( dstUV ), uint4( outputBytes.xy, 0u, 0u ) );
+}
+
+void pack_etc1_block_solid_color_constrained( const float3 srcPixel, const bool bUseDiff,
+											  const float3 baseColor5,
+											  inout PotentialSolution bestSolution )
+{
+	float bestError = FLT_MAX, bestPacked_c1 = 0, bestPacked_c2 = 0;
+	uint best_x = 0u, best_i = 0u;
+
+	// For each possible 8-bit value, there is a precomputed list of diff/inten/selector
+	// configurations that allow that 8-bit value to be encoded with no error.
+	for( uint i = 0u; i < 3u && bestError > 0; ++i )
+	{
+		const float c0 = srcPixel[i];
+		const uint c1 = uint( i == 0u ? srcPixel.y : ( i == 1u ? srcPixel.z : srcPixel.x ) );
+		const uint c2 = uint( i == 0u ? srcPixel.z : ( i == 1u ? srcPixel.x : srcPixel.y ) );
+
+		const float deltaRange = 1.0f;
+		for( float delta = -deltaRange; delta <= deltaRange && bestError > 0; ++delta )
+		{
+			const float c_plus_delta = clamp( c0 + delta, 0.0f, 255.0f );
+
+			uint tableOffset;
+			if( c_plus_delta == 0.0f )
+				tableOffset = 0u;
+			else if( c_plus_delta == 255.0f )
+				tableOffset = 33u;
+			else
+				tableOffset = uint( 66.0f + ( c_plus_delta - 1.0f ) * 11.0f );
+
+			const uint numTableEntries = pBuff_color8_to_etc_block_config[tableOffset];
+			for( uint j = 0u; j < numTableEntries && bestError > 0; ++j )
+			{
+				const uint x = pBuff_color8_to_etc_block_config[tableOffset + j + 1u];
+				const bool bCandidateUsesDiff = ( x & 1u ) != 0u;
+
+				if( bUseDiff == bCandidateUsesDiff )
+				{
+					const float p1 = pBuff_etc1_inverse_lookup[x & 0xFFu][c1];
+					const float p2 = pBuff_etc1_inverse_lookup[x & 0xFFu][c2];
+
+					bool bIsValid = true;
+
+					if( bUseDiff )
+					{
+						const float p0 = float( ( x >> 8u ) & 255u );
+						const float3 blockRgbInt = float3( p0, mod( p1, 256.0f ), mod( p2, 256.0f ) );
+						const float3 d = blockRgbInt - baseColor5;
+
+						if( ( min3( d.r, d.g, d.b ) < cETC1ColorDeltaMin ) ||  //
+							( max3( d.r, d.g, d.b ) > cETC1ColorDeltaMax ) )
+						{
+							bIsValid = false;
+						}
+					}
+
+					const float3 diffVal = float3( c_plus_delta - c0,                //
+												   floor( p1 * ( 1.0f / 256.0f ) ),  //
+												   floor( p2 * ( 1.0f / 256.0f ) ) );
+					const float trialError = dot( diffVal, diffVal );
+					if( trialError < bestError && bIsValid )
+					{
+						bestError = trialError;
+						best_x = x;
+						bestPacked_c1 = mod( p1, 256.0f );
+						bestPacked_c2 = mod( p2, 256.0f );
+						best_i = i;
+					}
+				}
+			}
+		}
+	}
+
+	bestError *= 8.0f;
+
+	if( bestError < bestSolution.error )
+	{
+		const float bestPacked_c0 = float( ( best_x >> 8 ) & 255u );
+		float3 bestPacked = float3( bestPacked_c0, bestPacked_c1, bestPacked_c2 );
+		bestSolution.rgbIntLS =
+			best_i == 0u ? bestPacked.xyz : ( best_i == 1u ? bestPacked.zxy : bestPacked.yzx );
+
+		bestSolution.selectors[0] =
+			packUnorm4x8( float4( ( ( best_x >> 4u ) & 3u ) * ( 1.0f / 255.0f ) ) );
+		bestSolution.selectors[1] = bestSolution.selectors[0];
+		bestSolution.intenTable = ( best_x >> 1u ) & 7u;
+	}
 }
 
 void main()
@@ -494,14 +579,14 @@ void main()
 	}
 
 	barrier();  // Ensure all threads are done reading from g_allPixelsEqual
-#if 0
+
 	if( !bAllColoursEqual )
 	{
 		// Now check if the subblock has all pixels equal.
 		// There are 4 subblocks to check (2 flipped and 2 non-flipped)
 		// so we put all 4 threads to work on each.
 		const uint subblockIdx = ( blockThreadId & 0x1u );
-		const bool bTmpFlip = blockThreadId > 1u;
+		const bool bTmpFlip = blockThreadId >= 2u;
 
 		const uint subblockStart =
 			blockStart + ( bTmpFlip ? 16u : 0u ) + ( subblockIdx == 0u ? 0u : 8u );
@@ -515,11 +600,14 @@ void main()
 			allPixelsInSubblockEqual = allPixelsInSubblockEqual && srcPixel0 == srcPixel;
 		}
 
+		// g_allPixelsEqual[start + 0] => subblockIdx = 0 + bFlip = false
+		// g_allPixelsEqual[start + 1] => subblockIdx = 1 + bFlip = false
+		// g_allPixelsEqual[start + 2] => subblockIdx = 0 + bFlip = true
+		// g_allPixelsEqual[start + 3] => subblockIdx = 1 + bFlip = true
 		g_allPixelsEqual[pixelsEqualBlockStart + blockThreadId] = allPixelsInSubblockEqual;
 	}
 
 	__sharedOnlyBarrier;
-#endif
 
 	// Unfortunately subblockIdx = 1 depends on subblockIdx = 0 when bUseColor4 = false
 	for( uint subblockIdx = 0u; subblockIdx < 2u && !bAllColoursEqual; ++subblockIdx )
@@ -541,7 +629,13 @@ void main()
 		}
 		avgColour *= 1.0f / 8.0f;
 
-		TODO_pack_etc1_block_solid_color_constrained;
+		if( p_quality >= cMediumQuality && ( subblockIdx > 0u || bUseColor4 ) &&
+			g_allPixelsEqual[pixelsEqualBlockStart + subblockIdx + ( bFlip ? 2u : 0u )] )
+		{
+			pack_etc1_block_solid_color_constrained(
+				unpackUnorm4x8( g_srcPixelsBlock[subblockStart] ).xyz * 255.0f, bUseColor4, baseColor5,
+				results[subblockIdx] );
+		}
 
 		const float limit = bUseColor4 ? 15 : 31;
 		const float3 avgColourLS = clamp( round( avgColour * limit ), 0, limit );
