@@ -280,8 +280,8 @@ void etc1_optimizer_compute( const float scanDeltaAbsMin, const float scanDeltaA
 					}
 
 					const float3 avgDelta = deltaSum * 0.125f;
-					const float3 blockRgbInt1 =
-						clamp( round( ( avgColour - avgDelta ) * limit * ( 1.0f / 255.0f ) ), 0, limit );
+					const float3 blockRgbInt1 = clamp(
+						floor( ( avgColour - avgDelta ) * limit * ( 1.0f / 255.0f ) + 0.5f ), 0, limit );
 
 					if( ( deltaSum.r == 0.0f && deltaSum.g == 0.0f && deltaSum.b == 0.0f ) ||
 						( blockRgbInt.r == blockRgbInt1.r &&  //
@@ -642,7 +642,7 @@ void main()
 		}
 
 		const float limit = bUseColor4 ? 15 : 31;
-		const float3 avgColourLS = clamp( round( avgColour * limit ), 0, limit );
+		const float3 avgColourLS = clamp( floor( avgColour * limit + 0.5f ), 0, limit );
 		avgColour = avgColour * 255.0f;
 
 		etc1_optimizer_compute( p_scanDeltaAbsMin, p_scanDeltaAbsMax, subblockStart, avgColour,
