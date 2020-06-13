@@ -707,7 +707,7 @@ void main()
 		}
 
 		// Write down which thread has the best error in our private LDS region
-		storeBestBlockThreadIdxToLds( 0u, gl_LocalInvocationIndex );
+		storeBestBlockThreadIdxToLds( bestErrorThread, gl_LocalInvocationIndex );
 	}
 
 	__sharedOnlyBarrier;
