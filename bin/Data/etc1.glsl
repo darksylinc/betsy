@@ -791,7 +791,7 @@ void main()
 			// { 3, 0 }, { 3, 1 }, { 3, 2 }, { 3, 3 }
 			for( uint subblockIdx = 2u; subblockIdx-- > 0u; )
 			{
-				for( uint i = 0u; i < 2u; ++i )
+				for( uint i = 2u; i-- > 0u; )
 				{
 					float4 pSelectors = unpackUnorm4x8( results[subblockIdx].selectors[i] ) * 255.0f;
 
