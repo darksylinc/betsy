@@ -7,8 +7,6 @@
 
 #define FLT_MAX 340282346638528859811704183484516925440.0f
 
-#define TODO_check_if_colour_equal
-
 uniform uint p_numRefinements;
 
 uniform sampler2D srcTex;
@@ -356,6 +354,8 @@ void main()
 {
 	uint srcPixelsBlock[16];
 
+	bool bAllColoursEqual = true;
+
 	// Load the whole 4x4 block
 	const uint2 pixelsToLoadBase = gl_GlobalInvocationID.xy << 2u;
 	for( uint i = 0u; i < 16u; ++i )
@@ -363,44 +363,55 @@ void main()
 		const uint2 pixelsToLoad = pixelsToLoadBase + uint2( i & 0x03u, i >> 2u );
 		const float3 srcPixels0 = OGRE_Load2D( srcTex, int2( pixelsToLoad ), 0 ).xyz;
 		srcPixelsBlock[i] = packUnorm4x8( float4( srcPixels0, 1.0f ) );
+		bAllColoursEqual = bAllColoursEqual && srcPixelsBlock[0] != srcPixelsBlock[i];
 	}
-
-	TODO_check_if_colour_equal;
 
 	float maxEndp16, minEndp16;
 	uint mask = 0u;
 
-	// second step: pca+map along principal axis
-	OptimizeColorsBlock( srcPixelsBlock, minEndp16, maxEndp16 );
-	if( minEndp16 != maxEndp16 )
+	if( bAllColoursEqual )
 	{
-		float3 colours[4];
-		EvalColors( colours, maxEndp16, minEndp16 );  // Note min/max are inverted
-		mask = MatchColorsBlock( srcPixelsBlock, colours );
+		const uint3 rgbVal = uint3( unpackUnorm4x8( srcPixelsBlock[0] ).xyz * 255.0f );
+		mask = 0xAAAAAAAAu;
+		maxEndp16 =
+			c_oMatch5[rgbVal.r][0] * 2048.0f + c_oMatch6[rgbVal.g][0] * 32.0f + c_oMatch5[rgbVal.b][0];
+		minEndp16 =
+			c_oMatch5[rgbVal.r][1] * 2048.0f + c_oMatch6[rgbVal.g][1] * 32.0f + c_oMatch5[rgbVal.b][1];
 	}
-
-	// third step: refine (multiple times if requested)
-	bool bStopRefinement = false;
-	for( uint i = 0u; i < p_numRefinements && !bStopRefinement; ++i )
+	else
 	{
-		const uint lastMask = mask;
-
-		if( RefineBlock( srcPixelsBlock, mask, minEndp16, maxEndp16 ) )
+		// second step: pca+map along principal axis
+		OptimizeColorsBlock( srcPixelsBlock, minEndp16, maxEndp16 );
+		if( minEndp16 != maxEndp16 )
 		{
-			if( minEndp16 != maxEndp16 )
-			{
-				float3 colours[4];
-				EvalColors( colours, maxEndp16, minEndp16 );  // Note min/max are inverted
-				mask = MatchColorsBlock( srcPixelsBlock, colours );
-			}
-			else
-			{
-				mask = 0u;
-				bStopRefinement = true;
-			}
+			float3 colours[4];
+			EvalColors( colours, maxEndp16, minEndp16 );  // Note min/max are inverted
+			mask = MatchColorsBlock( srcPixelsBlock, colours );
 		}
 
-		bStopRefinement = mask == lastMask || bStopRefinement;
+		// third step: refine (multiple times if requested)
+		bool bStopRefinement = false;
+		for( uint i = 0u; i < p_numRefinements && !bStopRefinement; ++i )
+		{
+			const uint lastMask = mask;
+
+			if( RefineBlock( srcPixelsBlock, mask, minEndp16, maxEndp16 ) )
+			{
+				if( minEndp16 != maxEndp16 )
+				{
+					float3 colours[4];
+					EvalColors( colours, maxEndp16, minEndp16 );  // Note min/max are inverted
+					mask = MatchColorsBlock( srcPixelsBlock, colours );
+				}
+				else
+				{
+					mask = 0u;
+					bStopRefinement = true;
+				}
+			}
+
+			bStopRefinement = mask == lastMask || bStopRefinement;
+		}
 	}
 
 	// write the color block
