@@ -13,6 +13,7 @@ namespace Codec
 		etc2_rgba,
 		eac_r11,
 		eac_rg11,
+		bc1,
 		bc6h
 	};
 }

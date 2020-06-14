@@ -7,7 +7,10 @@
 #include <assert.h>
 #include <string.h>
 
-#ifdef DUMP_SHADER
+// #define DUMP_SHADER
+// #define DEBUG_LINK_ERRORS
+
+#if defined( DUMP_SHADER ) || defined( DEBUG_LINK_ERRORS )
 #	include <stdio.h>
 #endif
 
@@ -65,6 +68,8 @@ namespace betsy
 			return GL_RGBA8;
 		case PFG_RGBA8_UNORM_SRGB:
 			return GL_SRGB8_ALPHA8;
+		case PFG_BC1_UNORM:
+			return GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
 		case PFG_BC6H_UF16:
 			return GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT_ARB;
 		case PFG_ETC1_RGB8_UNORM:
@@ -93,6 +98,7 @@ namespace betsy
 		case PFG_RG32_UINT:
 		case PFG_EAC_RG11_UNORM:
 			return GL_RG;
+		case PFG_BC1_UNORM:
 		case PFG_BC6H_UF16:
 		case PFG_ETC1_RGB8_UNORM:
 			return GL_RGB;
@@ -118,6 +124,7 @@ namespace betsy
 		case PFG_RGBA8_UNORM_SRGB:
 			format = GL_RGBA;
 			break;
+		case PFG_BC1_UNORM:
 		case PFG_BC6H_UF16:
 		case PFG_ETC1_RGB8_UNORM:
 		case PFG_ETC2_RGBA8_UNORM:
@@ -146,6 +153,7 @@ namespace betsy
 		case PFG_RGBA8_UNORM_SRGB:
 			type = GL_UNSIGNED_INT_8_8_8_8_REV;
 			break;
+		case PFG_BC1_UNORM:
 		case PFG_BC6H_UF16:
 		case PFG_ETC1_RGB8_UNORM:
 		case PFG_ETC2_RGBA8_UNORM:
@@ -320,6 +328,15 @@ namespace betsy
 		retVal.computePso = glCreateProgram();
 		glAttachShader( retVal.computePso, retVal.computeShader );
 		glLinkProgram( retVal.computePso );
+
+#ifdef DEBUG_LINK_ERRORS
+		{
+			GLsizei logLength = 0;
+			char infoLog[1024];
+			glGetProgramInfoLog( retVal.computePso, sizeof( infoLog ), &logLength, infoLog );
+			printf( "%s", infoLog );
+		}
+#endif
 
 		return retVal;
 	}

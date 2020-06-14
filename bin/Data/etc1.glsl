@@ -37,7 +37,7 @@ uniform sampler2D srcTex;
 
 layout( rg32ui ) uniform restrict writeonly uimage2D dstTexture;
 
-layout( std430, binding = 1 ) readonly buffer globalBuffer
+layout( std430, binding = 1 ) readonly restrict buffer globalBuffer
 {
 	// Given an ETC1 diff/inten_table/selector, and an 8-bit desired color, this table encodes the best
 	// packed_color in the low byte, and the abs error in the high byte.

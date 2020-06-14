@@ -29,6 +29,9 @@ namespace betsy
 		GLuint m_stitchedTarget;  // Only used for ETC2_RGBA
 		GLuint m_dstTexture;
 
+		/// ETC1 tables (see ETC1_tables.inl) needed when either all pixels
+		/// in a block or when all pixels in subblock are exactly the same.
+		/// This is a quality improvement rather than a performance one.
 		GLuint m_etc1TablesSsbo;
 
 		StagingTexture m_downloadStaging;
@@ -46,6 +49,7 @@ namespace betsy
 
 		/** Initialize resources. Must be called before execute*()
 		@param srcImage
+			Source Image should be RGBA8888, and should NOT be sRGB
 		@param bCompressAlpha
 			When true, compresses to ETC2_RGBA
 		*/

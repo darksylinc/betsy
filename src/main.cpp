@@ -1,5 +1,6 @@
 
 #include "betsy/CpuImage.h"
+#include "betsy/EncoderBC1.h"
 #include "betsy/EncoderBC6H.h"
 #include "betsy/EncoderEAC.h"
 #include "betsy/EncoderETC1.h"
@@ -38,7 +39,8 @@ void printHelp()
 		"	etc2_rgba	1.0 bpp - ETC2+EAC RGBA\n"
 		"	eac_r11		0.5 bpp - EAC Red unorm (source 11-bits per pixel)\n"
 		"	eac_rg11	1.0 bpp - EAC RG unorm (11-bits each, useful for normal maps)\n"
-		"	bc6h		1.0 bpp - BC6 Unsigned half-floating point format, RGB\n" );
+		"	bc6h		1.0 bpp - BC6 Unsigned half-floating point format, RGB\n"
+		"	bc1			0.5 bpp - BC1 RGB aka DXT1\n" );
 
 	printf( "Other options:\n" );
 	printf(
@@ -162,7 +164,7 @@ int main( int nargs, char *const argv[] )
 		{
 			encoder.execute01();
 			encoder.execute02();
-			// encoder.execute03(); // Not needed in offline mode
+			encoder.execute03();  // Not needed in offline mode
 			betsy::pollPlatformWindow();
 		}
 		saveToDisk( encoder, params );
@@ -177,6 +179,21 @@ int main( int nargs, char *const argv[] )
 		encoder.execute01();
 		encoder.execute02();
 		betsy::pollPlatformWindow();
+		saveToDisk( encoder, params );
+		encoder.deinitResources();
+	}
+	break;
+	case Codec::bc1:
+	{
+		betsy::EncoderBC1 encoder;
+		encoder.initResources( cpuImage, params.codec == Codec::eac_rg11 );
+		while( repeat-- )
+		{
+			encoder.execute01();
+			encoder.execute02();
+			encoder.execute03();
+			betsy::pollPlatformWindow();
+		}
 		saveToDisk( encoder, params );
 		encoder.deinitResources();
 	}
