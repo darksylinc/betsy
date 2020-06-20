@@ -9,6 +9,10 @@ namespace betsy
 {
 	struct CpuImage;
 
+	/**
+	@brief The EncoderBC1 class
+		Supports BC1 (565) and BC3 (BC1 565 RGB + Alpha encoded using BC4)
+	*/
 	class EncoderBC1 : public EncoderGL
 	{
 	protected:
@@ -17,7 +21,8 @@ namespace betsy
 
 		GLuint m_srcTexture;
 		GLuint m_bc1TargetRes;
-		GLuint m_stitchedTarget;  // Only used for RG11
+		GLuint m_bc4TargetRes;    // Only used for BC3
+		GLuint m_stitchedTarget;  // Only used for BC3
 		GLuint m_dstTexture;
 
 		// Tables that contain the lowest error when all pixels have the same index
@@ -26,6 +31,7 @@ namespace betsy
 		StagingTexture m_downloadStaging;
 
 		ComputePso m_bc1Pso;
+		ComputePso m_bc4Pso;
 		ComputePso m_stitchPso;  // Only used for RG11, Combines EAC R11 with G11 to form RG11
 
 	public:

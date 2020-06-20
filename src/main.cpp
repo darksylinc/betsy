@@ -36,16 +36,17 @@ void printHelp()
 
 	printf( "Supported codecs:\n" );
 	printf(
-		"	etc1		0.5 bpp - ETC1 RGB, backwards compatible with etc2 hardware 0.5bpp\n"
+		"	etc1		0.5 bpp - ETC1 RGB, backwards compatible with etc2 hardware\n"
 		"	etc2_rgb	0.5 bpp - ETC2 RGB\n"
 		"	etc2_rgba	1.0 bpp - ETC2+EAC RGBA\n"
 		"	eac_r11		0.5 bpp - EAC Red unorm (source 11-bits per pixel)\n"
 		"	eac_rg11	1.0 bpp - EAC RG unorm (11-bits each, useful for normal maps)\n"
 		"	bc6h		1.0 bpp - BC6 Unsigned half-floating point format, RGB\n"
-		"	bc1			0.5 bpp - BC1 RGB aka DXT1\n"
-		"	bc4			0.5 bpp - BC4 Red unorm\n"
+		"	bc1		0.5 bpp - BC1 RGB aka DXT1\n"
+		"	bc3		1.0 bpp - BC3 RGBA aka DXT5\n"
+		"	bc4		0.5 bpp - BC4 Red unorm\n"
 		"	bc4_snorm	0.5 bpp - BC4 Red snorm\n"
-		"	bc5			1.0 bpp - BC5 RG unorm\n"
+		"	bc5		1.0 bpp - BC5 RG unorm\n"
 		"	bc5_snorm	1.0 bpp - BC5 RG snorm. Ideal for normal maps\n" );
 
 	printf( "Other options:\n" );
@@ -198,9 +199,10 @@ int main( int nargs, char *const argv[] )
 	}
 	break;
 	case Codec::bc1:
+	case Codec::bc3:
 	{
 		betsy::EncoderBC1 encoder;
-		encoder.initResources( cpuImage, params.codec == Codec::eac_rg11 );
+		encoder.initResources( cpuImage, params.codec == Codec::bc3 );
 		while( repeat-- )
 		{
 			encoder.execute01();

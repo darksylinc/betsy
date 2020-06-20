@@ -179,6 +179,7 @@ namespace betsy
 		case PFG_EAC_R11_UNORM:
 		case PFG_EAC_RG11_UNORM:
 		case PFG_BC1_UNORM:
+		case PFG_BC3_UNORM:
 		case PFG_BC4_UNORM:
 		case PFG_BC4_SNORM:
 		case PFG_BC5_UNORM:
@@ -193,6 +194,7 @@ namespace betsy
 		switch( pixelFormat )
 		{
 		case PFG_BC1_UNORM:
+		case PFG_BC3_UNORM:
 		case PFG_BC4_UNORM:
 		case PFG_BC4_SNORM:
 		case PFG_BC5_UNORM:
@@ -224,6 +226,7 @@ namespace betsy
 			case PFG_EAC_R11_UNORM:
 				retVal = ( ( width + 3u ) / 4u ) * ( ( height + 3u ) / 4u ) * 8u * depth * slices;
 				break;
+			case PFG_BC3_UNORM:
 			case PFG_BC5_UNORM:
 			case PFG_BC5_SNORM:
 			case PFG_ETC2_RGBA8_UNORM:

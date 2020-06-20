@@ -38,6 +38,7 @@ namespace betsy
 		m_height( 0 ),
 		m_srcTexture( 0 ),
 		m_bc1TargetRes( 0 ),
+		m_bc4TargetRes( 0 ),
 		m_stitchedTarget( 0 ),
 		m_dstTexture( 0 ),
 		m_bc1TablesSsbo( 0 )
@@ -58,8 +59,8 @@ namespace betsy
 
 		m_bc1TargetRes = createTexture( TextureParams( m_width >> 2u, m_height >> 2u, PFG_RG32_UINT,
 													   "m_bc1TargetRes", TextureFlags::Uav ) );
-		m_dstTexture =
-			createTexture( TextureParams( m_width, m_height, PFG_BC1_UNORM, "m_dstTexture" ) );
+		m_dstTexture = createTexture(
+			TextureParams( m_width, m_height, useBC3 ? PFG_BC3_UNORM : PFG_BC1_UNORM, "m_dstTexture" ) );
 
 		{
 			Bc1Tables bc1Tables = getBc1Tables();
@@ -70,9 +71,12 @@ namespace betsy
 
 		if( useBC3 )
 		{
+			m_bc4TargetRes = createTexture( TextureParams( m_width >> 2u, m_height >> 2u, PFG_RG32_UINT,
+														   "m_bc4TargetRes", TextureFlags::Uav ) );
 			m_stitchedTarget =
 				createTexture( TextureParams( m_width >> 2u, m_height >> 2u, PFG_RGBA32_UINT,
 											  "m_stitchedTarget", TextureFlags::Uav ) );
+			m_bc4Pso = createComputePsoFromFile( "bc4.glsl", "../Data/" );
 			m_stitchPso = createComputePsoFromFile( "etc2_rgba_stitch.glsl", "../Data/" );
 		}
 
@@ -118,18 +122,46 @@ namespace betsy
 
 		glDispatchCompute( alignToNextMultiple( m_width, ( 8u * 4u ) ) / ( 8u * 4u ),
 						   alignToNextMultiple( m_height, ( 8u * 4u ) ) / ( 8u * 4u ), 1u );
+
+		if( m_bc4TargetRes )
+		{
+			// Compress Alpha too (using BC4)
+			bindComputePso( m_bc4Pso );
+			bindUav( 0u, m_bc4TargetRes, PFG_RG32_UINT, ResourceAccess::Write );
+
+			// p_channelIdx, p_useSNorm
+			glUniform2f( 0, 3.0f, 0.0f );
+
+			glDispatchCompute( 1u,  //
+							   alignToNextMultiple( m_width, 16u ) / 16u,
+							   alignToNextMultiple( m_height, 16u ) / 16u );
+		}
 	}
 	//-------------------------------------------------------------------------
-	void EncoderBC1::execute02() {}
+	void EncoderBC1::execute02()
+	{
+		if( !m_bc4TargetRes )
+			return;  // This step is only relevant when doing BC3
+
+		glMemoryBarrier( GL_TEXTURE_FETCH_BARRIER_BIT );
+		bindTexture( 0u, m_bc1TargetRes );
+		bindTexture( 1u, m_bc4TargetRes );
+		bindUav( 0u, m_stitchedTarget, PFG_RGBA32_UINT, ResourceAccess::Write );
+		bindComputePso( m_stitchPso );
+		glDispatchCompute( alignToNextMultiple( m_width, 4u ) / 4u,
+						   alignToNextMultiple( m_height, 4u ) / 4u, 1u );
+	}
 	//-------------------------------------------------------------------------
 	void EncoderBC1::execute03()
 	{
 		// It's unclear which of these 2 barrier bits GL wants in order for glCopyImageSubData to work
 		glMemoryBarrier( GL_TEXTURE_UPDATE_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 
-		// Copy "8x8" PFG_RG32_UINT -> 32x32 PFG_BC1_RGB8_UNORM
-		glCopyImageSubData( m_bc1TargetRes, GL_TEXTURE_2D, 0, 0, 0, 0,  //
-							m_dstTexture, GL_TEXTURE_2D, 0, 0, 0, 0,    //
+		// Copy "8x8" PFG_RG32_UINT   -> 32x32 PFG_BC1_RGB8_UNORM
+		// Copy "8x8" PFG_RGBA32_UINT -> 32x32 PFG_BC3_RGB8_UNORM
+		glCopyImageSubData( m_stitchedTarget ? m_stitchedTarget : m_bc1TargetRes,  //
+							GL_TEXTURE_2D, 0, 0, 0, 0,                             //
+							m_dstTexture, GL_TEXTURE_2D, 0, 0, 0, 0,               //
 							( GLsizei )( m_width >> 2u ), ( GLsizei )( m_height >> 2u ), 1 );
 	}
 	//-------------------------------------------------------------------------
@@ -139,8 +171,10 @@ namespace betsy
 
 		if( m_downloadStaging.bufferName )
 			destroyStagingTexture( m_downloadStaging );
-		m_downloadStaging = createStagingTexture( m_width >> 2u, m_height >> 2u, PFG_RG32_UINT, false );
-		downloadStagingTexture( m_bc1TargetRes, m_downloadStaging );
+		m_downloadStaging = createStagingTexture(
+			m_width >> 2u, m_height >> 2u, m_stitchedTarget ? PFG_RGBA32_UINT : PFG_RG32_UINT, false );
+		downloadStagingTexture( m_stitchedTarget ? m_stitchedTarget : m_bc1TargetRes,
+								m_downloadStaging );
 	}
 	//-------------------------------------------------------------------------
 	void EncoderBC1::downloadTo( CpuImage &outImage )
@@ -148,7 +182,7 @@ namespace betsy
 		glFinish();
 		outImage.width = m_width;
 		outImage.height = m_height;
-		outImage.format = PFG_BC1_UNORM;
+		outImage.format = m_stitchedTarget ? PFG_BC3_UNORM : PFG_BC1_UNORM;
 		outImage.data = reinterpret_cast<uint8_t *>( m_downloadStaging.data );
 	}
 }  // namespace betsy
