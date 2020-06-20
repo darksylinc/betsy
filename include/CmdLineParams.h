@@ -23,6 +23,7 @@ namespace Codec
 struct CmdLineParams
 {
 	uint8_t quality;
+	bool usingRenderDoc;
 	Codec::Codec codec;
 	std::string filename[2];
 };

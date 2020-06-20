@@ -10,6 +10,7 @@
 #include "CmdLineParams.h"
 #include "CmdLineParamsEnum.h"
 
+#include <memory.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
@@ -48,7 +49,8 @@ void printHelp()
 	printf( "Other options:\n" );
 	printf(
 		"	--quality		Value in range [0; 2] where 0 is lowest quality.\n"
-		"				Not all codecs support it.\n" );
+		"				Not all codecs support it.\n"
+		"	--renderdoc		Use this to ensure RenderDoc capture works (slower)\n" );
 }
 
 /** Returns true if 'str' starts with the text contained in 'what'
@@ -98,6 +100,10 @@ bool parseCmdLine( int nargs, char *const argv[], CmdLineParams &outParams )
 			outParams.quality = static_cast<uint8_t>( atoi( argv[i] + startIdx ) );
 			outParams.quality = std::min<uint8_t>( outParams.quality, 2u );
 		}
+		else if( startsWith( argv[i], "--renderdoc=", startIdx ) )
+		{
+			outParams.usingRenderDoc = true;
+		}
 		else if( startsWith( argv[i], "--help", startIdx ) )
 		{
 			return false;
@@ -141,6 +147,8 @@ void saveToDisk( T &encoder, const CmdLineParams params )
 int main( int nargs, char *const argv[] )
 {
 	CmdLineParams params;
+	memset( &params, 0, sizeof( params ) );
+	params.quality = 2;
 
 	if( !parseCmdLine( nargs, argv, params ) )
 	{
@@ -151,7 +159,7 @@ int main( int nargs, char *const argv[] )
 	printf( "Initializing API\n" );
 	betsy::initBetsyPlatform();
 
-	size_t repeat = 2u;  // Change this to 2 to get RenderDoc to work
+	size_t repeat = params.usingRenderDoc ? 2u : 1u;
 
 	betsy::CpuImage cpuImage( params.filename[0].c_str() );
 
@@ -165,7 +173,7 @@ int main( int nargs, char *const argv[] )
 		encoder.initResources( cpuImage, params.codec == Codec::etc2_rgba );
 		while( repeat-- )
 		{
-			encoder.execute01();
+			encoder.execute01( static_cast<betsy::EncoderETC1::Etc1Quality>( params.quality ) );
 			encoder.execute02();
 			encoder.execute03();  // Not needed in offline mode
 			betsy::pollPlatformWindow();
