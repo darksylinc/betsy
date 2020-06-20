@@ -16,6 +16,8 @@ namespace betsy
 		PFG_RGBA8_UNORM,
 		PFG_RGBA8_UNORM_SRGB,
 		PFG_BC1_UNORM,
+		PFG_BC4_UNORM,
+		PFG_BC5_UNORM,
 		/// BC6H format (unsigned 16 bit float)
 		PFG_BC6H_UF16,
 		/// ETC1 (Ericsson Texture Compression)

@@ -1,6 +1,7 @@
 
 #include "betsy/CpuImage.h"
 #include "betsy/EncoderBC1.h"
+#include "betsy/EncoderBC4.h"
 #include "betsy/EncoderBC6H.h"
 #include "betsy/EncoderEAC.h"
 #include "betsy/EncoderETC1.h"
@@ -40,7 +41,9 @@ void printHelp()
 		"	eac_r11		0.5 bpp - EAC Red unorm (source 11-bits per pixel)\n"
 		"	eac_rg11	1.0 bpp - EAC RG unorm (11-bits each, useful for normal maps)\n"
 		"	bc6h		1.0 bpp - BC6 Unsigned half-floating point format, RGB\n"
-		"	bc1			0.5 bpp - BC1 RGB aka DXT1\n" );
+		"	bc1			0.5 bpp - BC1 RGB aka DXT1\n"
+		"	bc4			0.5 bpp - BC4 Red unorm\n"
+		"	bc5			1.0 bpp - BC5 RG unorm\n" );
 
 	printf( "Other options:\n" );
 	printf(
@@ -148,7 +151,7 @@ int main( int nargs, char *const argv[] )
 	printf( "Initializing API\n" );
 	betsy::initBetsyPlatform();
 
-	size_t repeat = 1u; // Change this to 2 to get RenderDoc to work
+	size_t repeat = 2u;  // Change this to 2 to get RenderDoc to work
 
 	betsy::CpuImage cpuImage( params.filename[0].c_str() );
 
@@ -187,6 +190,22 @@ int main( int nargs, char *const argv[] )
 	{
 		betsy::EncoderBC1 encoder;
 		encoder.initResources( cpuImage, params.codec == Codec::eac_rg11 );
+		while( repeat-- )
+		{
+			encoder.execute01();
+			encoder.execute02();
+			encoder.execute03();
+			betsy::pollPlatformWindow();
+		}
+		saveToDisk( encoder, params );
+		encoder.deinitResources();
+	}
+	break;
+	case Codec::bc4:
+	case Codec::bc5:
+	{
+		betsy::EncoderBC4 encoder;
+		encoder.initResources( cpuImage, params.codec == Codec::bc5 );
 		while( repeat-- )
 		{
 			encoder.execute01();

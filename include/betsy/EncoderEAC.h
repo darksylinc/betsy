@@ -30,8 +30,8 @@ namespace betsy
 
 		/** Initialize resources. Must be called before execute*()
 		@param srcImage
-		@param bCompressAlpha
-			When true, compresses to ETC2_RGBA
+		@param rg11
+			When true, compresses to two-channel RG11 instead of one-channel R11
 		*/
 		void initResources( const CpuImage &srcImage, const bool rg11 );
 		void deinitResources();

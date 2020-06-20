@@ -14,6 +14,8 @@ namespace Codec
 		eac_r11,
 		eac_rg11,
 		bc1,
+		bc4,
+		bc5,
 		bc6h
 	};
 }

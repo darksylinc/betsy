@@ -84,6 +84,11 @@ namespace betsy
 	//-------------------------------------------------------------------------
 	void EncoderBC1::deinitResources()
 	{
+		if( m_dstTexture )
+		{
+			destroyTexture( m_dstTexture );
+			m_dstTexture = 0;
+		}
 		if( m_stitchedTarget )
 		{
 			destroyTexture( m_stitchedTarget );
@@ -111,8 +116,8 @@ namespace betsy
 
 		glUniform1ui( 0, 2u );
 
-		glDispatchCompute( alignToNextMultiple( m_width, (8u * 4u) ) / (8u * 4u),
-						   alignToNextMultiple( m_height, (8u * 4u) ) / (8u * 4u), 1u );
+		glDispatchCompute( alignToNextMultiple( m_width, ( 8u * 4u ) ) / ( 8u * 4u ),
+						   alignToNextMultiple( m_height, ( 8u * 4u ) ) / ( 8u * 4u ), 1u );
 	}
 	//-------------------------------------------------------------------------
 	void EncoderBC1::execute02() {}
