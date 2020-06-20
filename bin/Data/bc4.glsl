@@ -8,6 +8,8 @@
 shared float2 g_minMaxValues[4u * 4u * 4u];
 shared uint2 g_mask[4u * 4u];
 
+layout( location = 0 ) uniform float p_channelIdx;
+
 uniform sampler2D srcTex;
 
 layout( rg32ui ) uniform restrict writeonly uimage2D dstTexture;
@@ -40,7 +42,10 @@ void main()
 	for( uint i = 0u; i < 4u; ++i )
 	{
 		const uint2 pixelsToLoad = pixelsToLoadBase + uint2( i, blockThreadId );
-		srcPixel[i] = OGRE_Load2D( srcTex, int2( pixelsToLoad ), 0 ).x * 255.0f;
+
+		const float4 value = OGRE_Load2D( srcTex, int2( pixelsToLoad ), 0 ).xyzw;
+		srcPixel[i] = p_channelIdx == 0 ? value.x : ( p_channelIdx == 1 ? value.y : value.w );
+		srcPixel[i] *= 255.0f;
 	}
 
 	minVal = min3( srcPixel.x, srcPixel.y, srcPixel.z );

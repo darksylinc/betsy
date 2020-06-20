@@ -104,6 +104,9 @@ namespace betsy
 		{
 			bindUav( 0u, m_bc4TargetRes[i], PFG_RG32_UINT, ResourceAccess::Write );
 
+			// p_channelIdx
+			glUniform1f( 0, i == 0u ? 0.0f : 1.0f );
+
 			glDispatchCompute( 1u,  //
 							   alignToNextMultiple( m_width, 16u ) / 16u,
 							   alignToNextMultiple( m_height, 16u ) / 16u );
@@ -134,9 +137,9 @@ namespace betsy
 
 		// Copy "8x8" PFG_RG32_UINT   -> 32x32 PFG_BC4_RGB8_UNORM
 		// Copy "8x8" PFG_RGBA32_UINT -> 32x32 PFG_BC5_RGB8_UNORM
-		glCopyImageSubData( m_bc4TargetRes[1] ? m_bc4TargetRes[1] : m_bc4TargetRes[0],  //
-							GL_TEXTURE_2D, 0, 0, 0, 0,                                  //
-							m_dstTexture, GL_TEXTURE_2D, 0, 0, 0, 0,                    //
+		glCopyImageSubData( m_bc4TargetRes[1] ? m_stitchedTarget : m_bc4TargetRes[0],  //
+							GL_TEXTURE_2D, 0, 0, 0, 0,                                 //
+							m_dstTexture, GL_TEXTURE_2D, 0, 0, 0, 0,                   //
 							( GLsizei )( m_width >> 2u ), ( GLsizei )( m_height >> 2u ), 1 );
 	}
 	//-------------------------------------------------------------------------

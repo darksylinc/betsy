@@ -100,7 +100,7 @@ bool parseCmdLine( int nargs, char *const argv[], CmdLineParams &outParams )
 			outParams.quality = static_cast<uint8_t>( atoi( argv[i] + startIdx ) );
 			outParams.quality = std::min<uint8_t>( outParams.quality, 2u );
 		}
-		else if( startsWith( argv[i], "--renderdoc=", startIdx ) )
+		else if( startsWith( argv[i], "--renderdoc", startIdx ) )
 		{
 			outParams.usingRenderDoc = true;
 		}
@@ -175,7 +175,8 @@ int main( int nargs, char *const argv[] )
 		{
 			encoder.execute01( static_cast<betsy::EncoderETC1::Etc1Quality>( params.quality ) );
 			encoder.execute02();
-			encoder.execute03();  // Not needed in offline mode
+			if( params.usingRenderDoc )
+				encoder.execute03();  // Not needed in offline mode
 			betsy::pollPlatformWindow();
 		}
 		saveToDisk( encoder, params );
@@ -202,7 +203,8 @@ int main( int nargs, char *const argv[] )
 		{
 			encoder.execute01();
 			encoder.execute02();
-			encoder.execute03();
+			if( params.usingRenderDoc )
+				encoder.execute03();  // Not needed in offline mode
 			betsy::pollPlatformWindow();
 		}
 		saveToDisk( encoder, params );
@@ -218,7 +220,8 @@ int main( int nargs, char *const argv[] )
 		{
 			encoder.execute01();
 			encoder.execute02();
-			encoder.execute03();
+			if( params.usingRenderDoc )
+				encoder.execute03();  // Not needed in offline mode
 			betsy::pollPlatformWindow();
 		}
 		saveToDisk( encoder, params );
