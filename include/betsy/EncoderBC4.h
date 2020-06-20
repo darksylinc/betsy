@@ -25,6 +25,8 @@ namespace betsy
 		GLuint m_stitchedTarget;  // Only used for BC5
 		GLuint m_dstTexture;
 
+		bool m_encodeSNorm;
+
 		StagingTexture m_downloadStaging;
 
 		ComputePso m_bc4Pso;
@@ -39,8 +41,12 @@ namespace betsy
 		@param redGreen
 			When false, compresses to one-channel BC4
 			When true, compresses to two-channel BC5
+		@param encodeSNorm
+			When true, it encodes using BCn_SNORM variant instead of BCn_UNORM one.
+			Source is still assumed to be UNORM though i.e. in range [0; 1].
+			The main use case is normal maps.
 		*/
-		void initResources( const CpuImage &srcImage, const bool redGreen );
+		void initResources( const CpuImage &srcImage, const bool redGreen, const bool encodeSNorm );
 		void deinitResources();
 
 		void execute01();

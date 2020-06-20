@@ -44,7 +44,9 @@ void printHelp()
 		"	bc6h		1.0 bpp - BC6 Unsigned half-floating point format, RGB\n"
 		"	bc1			0.5 bpp - BC1 RGB aka DXT1\n"
 		"	bc4			0.5 bpp - BC4 Red unorm\n"
-		"	bc5			1.0 bpp - BC5 RG unorm\n" );
+		"	bc4_snorm	0.5 bpp - BC4 Red snorm\n"
+		"	bc5			1.0 bpp - BC5 RG unorm\n"
+		"	bc5_snorm	1.0 bpp - BC5 RG snorm. Ideal for normal maps\n" );
 
 	printf( "Other options:\n" );
 	printf(
@@ -212,10 +214,13 @@ int main( int nargs, char *const argv[] )
 	}
 	break;
 	case Codec::bc4:
+	case Codec::bc4_snorm:
 	case Codec::bc5:
+	case Codec::bc5_snorm:
 	{
 		betsy::EncoderBC4 encoder;
-		encoder.initResources( cpuImage, params.codec == Codec::bc5 );
+		encoder.initResources( cpuImage, params.codec == Codec::bc5 || params.codec == Codec::bc5_snorm,
+							   params.codec == Codec::bc4_snorm || params.codec == Codec::bc5_snorm );
 		while( repeat-- )
 		{
 			encoder.execute01();

@@ -14,17 +14,21 @@ namespace betsy
 		m_height( 0 ),
 		m_srcTexture( 0 ),
 		m_stitchedTarget( 0 ),
-		m_dstTexture( 0 )
+		m_dstTexture( 0 ),
+		m_encodeSNorm( false )
 	{
 		memset( m_bc4TargetRes, 0, sizeof( m_bc4TargetRes ) );
 	}
 	//-------------------------------------------------------------------------
 	EncoderBC4::~EncoderBC4() { assert( !m_srcTexture && "deinitResources not called!" ); }
 	//-------------------------------------------------------------------------
-	void EncoderBC4::initResources( const CpuImage &srcImage, const bool redGreen )
+	void EncoderBC4::initResources( const CpuImage &srcImage, const bool redGreen,
+									const bool encodeSNorm )
 	{
 		m_width = srcImage.width;
 		m_height = srcImage.height;
+
+		m_encodeSNorm = encodeSNorm;
 
 		const PixelFormat srcFormat =
 			srcImage.format == PFG_RGBA8_UNORM_SRGB ? PFG_RGBA8_UNORM : srcImage.format;
@@ -48,13 +52,13 @@ namespace betsy
 											  "m_stitchedTarget", TextureFlags::Uav ) );
 			m_stitchPso = createComputePsoFromFile( "etc2_rgba_stitch.glsl", "../Data/" );
 
-			m_dstTexture =
-				createTexture( TextureParams( m_width, m_height, PFG_BC5_UNORM, "m_dstTexture" ) );
+			m_dstTexture = createTexture( TextureParams(
+				m_width, m_height, m_encodeSNorm ? PFG_BC5_SNORM : PFG_BC5_UNORM, "m_dstTexture" ) );
 		}
 		else
 		{
-			m_dstTexture =
-				createTexture( TextureParams( m_width, m_height, PFG_BC4_UNORM, "m_dstTexture" ) );
+			m_dstTexture = createTexture( TextureParams(
+				m_width, m_height, m_encodeSNorm ? PFG_BC4_SNORM : PFG_BC4_UNORM, "m_dstTexture" ) );
 		}
 
 		StagingTexture stagingTex = createStagingTexture( m_width, m_height, srcImage.format, true );
@@ -105,7 +109,7 @@ namespace betsy
 			bindUav( 0u, m_bc4TargetRes[i], PFG_RG32_UINT, ResourceAccess::Write );
 
 			// p_channelIdx
-			glUniform1f( 0, i == 0u ? 0.0f : 1.0f );
+			glUniform2f( 0, i == 0u ? 0.0f : 1.0f, 1.0f );
 
 			glDispatchCompute( 1u,  //
 							   alignToNextMultiple( m_width, 16u ) / 16u,

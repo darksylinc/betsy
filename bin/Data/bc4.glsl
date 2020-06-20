@@ -8,7 +8,10 @@
 shared float2 g_minMaxValues[4u * 4u * 4u];
 shared uint2 g_mask[4u * 4u];
 
-layout( location = 0 ) uniform float p_channelIdx;
+layout( location = 0 ) uniform float2 params;
+
+#define p_channelIdx params.x
+#define p_useSNorm params.y
 
 uniform sampler2D srcTex;
 
@@ -133,8 +136,17 @@ void main()
 		// Save data
 		uint2 outputBytes;
 
-		outputBytes.x =
-			packUnorm4x8( float4( maxVal * ( 1.0f / 255.0f ), minVal * ( 1.0f / 255.0f ), 0.0f, 0.0f ) );
+		if( p_useSNorm != 0.0f )
+		{
+			outputBytes.x =
+				packSnorm4x8( float4( maxVal * ( 1.0f / 255.0f ) * 2.0f - 1.0f,
+									  minVal * ( 1.0f / 255.0f ) * 2.0f - 1.0f, 0.0f, 0.0f ) );
+		}
+		else
+		{
+			outputBytes.x = packUnorm4x8(
+				float4( maxVal * ( 1.0f / 255.0f ), minVal * ( 1.0f / 255.0f ), 0.0f, 0.0f ) );
+		}
 		outputBytes.x |= g_mask[maskIdxBase].x;
 		outputBytes.y = g_mask[maskIdxBase].y;
 

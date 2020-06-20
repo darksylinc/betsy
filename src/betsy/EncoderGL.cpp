@@ -72,8 +72,12 @@ namespace betsy
 			return GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
 		case PFG_BC4_UNORM:
 			return GL_COMPRESSED_RED_RGTC1;
+		case PFG_BC4_SNORM:
+			return GL_COMPRESSED_SIGNED_RED_RGTC1;
 		case PFG_BC5_UNORM:
 			return GL_COMPRESSED_RG_RGTC2;
+		case PFG_BC5_SNORM:
+			return GL_COMPRESSED_SIGNED_RG_RGTC2;
 		case PFG_BC6H_UF16:
 			return GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT_ARB;
 		case PFG_ETC1_RGB8_UNORM:
@@ -101,6 +105,7 @@ namespace betsy
 			return GL_RGBA;
 		case PFG_RG32_UINT:
 		case PFG_BC5_UNORM:
+		case PFG_BC5_SNORM:
 		case PFG_EAC_RG11_UNORM:
 			return GL_RG;
 		case PFG_BC1_UNORM:
@@ -108,6 +113,7 @@ namespace betsy
 		case PFG_ETC1_RGB8_UNORM:
 			return GL_RGB;
 		case PFG_BC4_UNORM:
+		case PFG_BC4_SNORM:
 		case PFG_EAC_R11_UNORM:
 			return GL_RED;
 		}
@@ -132,7 +138,9 @@ namespace betsy
 			break;
 		case PFG_BC1_UNORM:
 		case PFG_BC4_UNORM:
+		case PFG_BC4_SNORM:
 		case PFG_BC5_UNORM:
+		case PFG_BC5_SNORM:
 		case PFG_BC6H_UF16:
 		case PFG_ETC1_RGB8_UNORM:
 		case PFG_ETC2_RGBA8_UNORM:
@@ -163,7 +171,9 @@ namespace betsy
 			break;
 		case PFG_BC1_UNORM:
 		case PFG_BC4_UNORM:
+		case PFG_BC4_SNORM:
 		case PFG_BC5_UNORM:
+		case PFG_BC5_SNORM:
 		case PFG_BC6H_UF16:
 		case PFG_ETC1_RGB8_UNORM:
 		case PFG_ETC2_RGBA8_UNORM:

@@ -11,10 +11,12 @@ const std::string BLANKSTRING = "";
 
 namespace Codec
 {
-	CodecEnum::EnumData CodecEnum::mSortedByEnum[9 + 1] = {
+	CodecEnum::EnumData CodecEnum::mSortedByEnum[11 + 1] = {
 		CodecEnum::EnumData( bc1, "bc1" ),              //
 		CodecEnum::EnumData( bc4, "bc4" ),              //
+		CodecEnum::EnumData( bc4_snorm, "bc4_snorm" ),  //
 		CodecEnum::EnumData( bc5, "bc5" ),              //
+		CodecEnum::EnumData( bc5_snorm, "bc5_snorm" ),  //
 		CodecEnum::EnumData( bc6h, "bc6h" ),            //
 		CodecEnum::EnumData( eac_r11, "eac_r11" ),      //
 		CodecEnum::EnumData( eac_rg11, "eac_rg11" ),    //
@@ -24,10 +26,12 @@ namespace Codec
 		CodecEnum::EnumData( etc2_rgba, "__INVALID" )
 	};
 
-	CodecEnum::EnumData CodecEnum::mSortedByString[9 + 1] = {
+	CodecEnum::EnumData CodecEnum::mSortedByString[11 + 1] = {
 		CodecEnum::EnumData( bc1, "bc1" ),              //
 		CodecEnum::EnumData( bc4, "bc4" ),              //
+		CodecEnum::EnumData( bc4_snorm, "bc4_snorm" ),  //
 		CodecEnum::EnumData( bc5, "bc5" ),              //
+		CodecEnum::EnumData( bc5_snorm, "bc5_snorm" ),  //
 		CodecEnum::EnumData( bc6h, "bc6h" ),            //
 		CodecEnum::EnumData( eac_r11, "eac_r11" ),      //
 		CodecEnum::EnumData( eac_rg11, "eac_rg11" ),    //
@@ -71,16 +75,16 @@ namespace Codec
 	//---------------------------------------------------------------------------------------
 	int CodecEnum::minValue() { return mSortedByEnum[0].enumValue; }
 	//---------------------------------------------------------------------------------------
-	int CodecEnum::maxValue() { return mSortedByEnum[9 - 1].enumValue; }
+	int CodecEnum::maxValue() { return mSortedByEnum[11 - 1].enumValue; }
 	//---------------------------------------------------------------------------------------
-	size_t CodecEnum::count() { return 9; }
+	size_t CodecEnum::count() { return 11; }
 	//---------------------------------------------------------------------------------------
 	bool CodecEnum::find( const std::string &strValue, Codec &outValue )
 	{
 		const EnumData *itor =
-			std::lower_bound( &mSortedByString[0], &mSortedByString[9], strValue, OrderByStr() );
+			std::lower_bound( &mSortedByString[0], &mSortedByString[11], strValue, OrderByStr() );
 
-		if( itor != &mSortedByString[9] && itor->enumString == strValue )
+		if( itor != &mSortedByString[11] && itor->enumString == strValue )
 		{
 			outValue = itor->enumValue;
 			return true;
