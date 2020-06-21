@@ -30,7 +30,25 @@ float3 rgb565to888( float rgb565 )
 	retVal.y = floor( mod( rgb565, 2048.0f ) / 32.0f );
 	retVal.z = floor( mod( rgb565, 32.0f ) );
 
-	return floor( retVal * ( 255.0f / float3( 31.0f, 63.0f, 31.0f ) ) + 0.5f );
+	// This is the correct 565 to 888 conversion:
+	//		rgb = floor( rgb * ( 255.0f / float3( 31.0f, 63.0f, 31.0f ) ) + 0.5f )
+	//
+	// However stb_dxt follows a different one:
+	//		rb = floor( rb * ( 256 / 32 + 8 / 32 ) );
+	//		g  = floor( g  * ( 256 / 64 + 4 / 64 ) );
+	//
+	// I'm not sure exactly why but it's possible this is how the S3TC specifies it should be decoded
+	// It's quite possible this is the reason:
+	//		http://www.ludicon.com/castano/blog/2009/03/gpu-dxt-decompression/
+	//
+	// Or maybe it's just because it's cheap to do with integer shifts.
+	// Anyway, we follow stb_dxt's conversion just in case
+	// (gives almost the same result, with 1 or -1 of difference for a very few values)
+	//
+	// Perhaps when we make 888 -> 565 -> 888 it doesn't matter
+	// because they end up mapping to the original number
+
+	return floor( retVal * float3( 8.25f, 4.0625f, 8.25f ) );
 }
 
 float rgb888to565( float3 rgbValue )
@@ -350,6 +368,63 @@ bool RefineBlock( const uint srcPixelsBlock[16], uint mask, inout float inOutMin
 	return oldMin != newMin16 || oldMax != newMax16;
 }
 
+#ifdef BC1_DITHER
+/// Quantizes 'srcValue' which is originally in 888 (full range),
+/// converting it to 565 and then back to 888 (quantized)
+float3 quant( float3 srcValue )
+{
+	srcValue = clamp( srcValue, 0.0f, 255.0f );
+	// Convert 888 -> 565
+	srcValue = floor( srcValue * float3( 31.0f / 255.0f, 63.0f / 255.0f, 31.0f / 255.0f ) + 0.5f );
+	// Convert 565 -> 888 back
+	srcValue = floor( srcValue * float3( 8.25f, 4.0625f, 8.25f ) );
+
+	return srcValue;
+}
+
+void DitherBlock( const uint srcPixBlck[16], out uint dthPixBlck[16] )
+{
+	// process channels separately, RB first using quant5
+	float3 ep1[4] = { float3( 0, 0, 0 ), float3( 0, 0, 0 ), float3( 0, 0, 0 ), float3( 0, 0, 0 ) };
+	float3 ep2[4] = { float3( 0, 0, 0 ), float3( 0, 0, 0 ), float3( 0, 0, 0 ), float3( 0, 0, 0 ) };
+
+	for( uint y = 0u; y < 16u; y += 4u )
+	{
+		float3 srcPixel, dithPixel;
+
+		srcPixel = unpackUnorm4x8( srcPixBlck[y + 0u] ).xyz * 255.0f;
+		dithPixel = quant( srcPixel + trunc( ( 3 * ep2[1] + 5 * ep2[0] ) * ( 1.0f / 16.0f ) ) );
+		ep1[0] = srcPixel - dithPixel;
+		dthPixBlck[y + 0u] = packUnorm4x8( float4( dithPixel * ( 1.0f / 255.0f ), 1.0f ) );
+
+		srcPixel = unpackUnorm4x8( srcPixBlck[y + 1u] ).xyz * 255.0f;
+		dithPixel = quant(
+			srcPixel + trunc( ( 7 * ep1[0] + 3 * ep2[2] + 5 * ep2[1] + ep2[0] ) * ( 1.0f / 16.0f ) ) );
+		ep1[1] = srcPixel - dithPixel;
+		dthPixBlck[y + 1u] = packUnorm4x8( float4( dithPixel * ( 1.0f / 255.0f ), 1.0f ) );
+
+		srcPixel = unpackUnorm4x8( srcPixBlck[y + 2u] ).xyz * 255.0f;
+		dithPixel = quant(
+			srcPixel + trunc( ( 7 * ep1[1] + 3 * ep2[3] + 5 * ep2[2] + ep2[1] ) * ( 1.0f / 16.0f ) ) );
+		ep1[2] = srcPixel - dithPixel;
+		dthPixBlck[y + 2u] = packUnorm4x8( float4( dithPixel * ( 1.0f / 255.0f ), 1.0f ) );
+
+		srcPixel = unpackUnorm4x8( srcPixBlck[y + 3u] ).xyz * 255.0f;
+		dithPixel = quant( srcPixel + trunc( ( 7 * ep1[2] + 5 * ep2[3] + ep2[2] ) * ( 1.0f / 16.0f ) ) );
+		ep1[3] = srcPixel - dithPixel;
+		dthPixBlck[y + 3u] = packUnorm4x8( float4( dithPixel * ( 1.0f / 255.0f ), 1.0f ) );
+
+		// swap( ep1, ep2 )
+		for( uint i = 0u; i < 4u; ++i )
+		{
+			float3 tmp = ep1[i];
+			ep1[i] = ep2[i];
+			ep2[i] = tmp;
+		}
+	}
+}
+#endif
+
 void main()
 {
 	uint srcPixelsBlock[16];
@@ -363,7 +438,7 @@ void main()
 		const uint2 pixelsToLoad = pixelsToLoadBase + uint2( i & 0x03u, i >> 2u );
 		const float3 srcPixels0 = OGRE_Load2D( srcTex, int2( pixelsToLoad ), 0 ).xyz;
 		srcPixelsBlock[i] = packUnorm4x8( float4( srcPixels0, 1.0f ) );
-		bAllColoursEqual = bAllColoursEqual && srcPixelsBlock[0] != srcPixelsBlock[i];
+		bAllColoursEqual = bAllColoursEqual && srcPixelsBlock[0] == srcPixelsBlock[i];
 	}
 
 	float maxEndp16, minEndp16;
@@ -380,8 +455,16 @@ void main()
 	}
 	else
 	{
+#ifdef BC1_DITHER
+		uint ditherPixelsBlock[16];
+		// first step: compute dithered version for PCA if desired
+		DitherBlock( srcPixelsBlock, ditherPixelsBlock );
+#else
+#	define ditherPixelsBlock srcPixelsBlock
+#endif
+
 		// second step: pca+map along principal axis
-		OptimizeColorsBlock( srcPixelsBlock, minEndp16, maxEndp16 );
+		OptimizeColorsBlock( ditherPixelsBlock, minEndp16, maxEndp16 );
 		if( minEndp16 != maxEndp16 )
 		{
 			float3 colours[4];
@@ -395,7 +478,7 @@ void main()
 		{
 			const uint lastMask = mask;
 
-			if( RefineBlock( srcPixelsBlock, mask, minEndp16, maxEndp16 ) )
+			if( RefineBlock( ditherPixelsBlock, mask, minEndp16, maxEndp16 ) )
 			{
 				if( minEndp16 != maxEndp16 )
 				{

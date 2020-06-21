@@ -43,8 +43,10 @@ namespace betsy
 			Source Image should be RGBA8888, and should NOT be sRGB
 		@param bCompressAlpha
 			When true, compresses to BC3
+		@param bDither
+			Use Floyd-steinberg dithering. Anti-banding method.
 		*/
-		void initResources( const CpuImage &srcImage, const bool useBC3 );
+		void initResources( const CpuImage &srcImage, const bool useBC3, const bool bDither );
 		void deinitResources();
 
 		void execute01();

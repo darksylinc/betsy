@@ -47,7 +47,7 @@ namespace betsy
 	//-------------------------------------------------------------------------
 	EncoderBC1::~EncoderBC1() { assert( !m_srcTexture && "deinitResources not called!" ); }
 	//-------------------------------------------------------------------------
-	void EncoderBC1::initResources( const CpuImage &srcImage, const bool useBC3 )
+	void EncoderBC1::initResources( const CpuImage &srcImage, const bool useBC3, const bool bDither )
 	{
 		m_width = srcImage.width;
 		m_height = srcImage.height;
@@ -67,7 +67,7 @@ namespace betsy
 			m_bc1TablesSsbo = createUavBuffer( sizeof( Bc1Tables ), &bc1Tables );
 		}
 
-		m_bc1Pso = createComputePsoFromFile( "bc1.glsl", "../Data/" );
+		m_bc1Pso = createComputePsoFromFile( bDither ? "bc1_dither.glsl" : "bc1.glsl", "../Data/" );
 
 		if( useBC3 )
 		{

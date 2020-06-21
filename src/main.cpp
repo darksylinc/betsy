@@ -53,6 +53,9 @@ void printHelp()
 	printf(
 		"	--quality		Value in range [0; 2] where 0 is lowest quality.\n"
 		"				Not all codecs support it.\n"
+		"	--dither		Use Floyd-steinberg dithering. Anti-banding method.\n"
+		"					Not recommended on images with flat colours (e.g. charts, normal maps)\n"
+		"					Supported by BC1 & ETC1/2\n"
 		"	--renderdoc		Use this to ensure RenderDoc capture works (slower)\n" );
 }
 
@@ -102,6 +105,10 @@ bool parseCmdLine( int nargs, char *const argv[], CmdLineParams &outParams )
 		{
 			outParams.quality = static_cast<uint8_t>( atoi( argv[i] + startIdx ) );
 			outParams.quality = std::min<uint8_t>( outParams.quality, 2u );
+		}
+		else if( startsWith( argv[i], "--dither", startIdx ) )
+		{
+			outParams.dither = true;
 		}
 		else if( startsWith( argv[i], "--renderdoc", startIdx ) )
 		{
@@ -202,7 +209,7 @@ int main( int nargs, char *const argv[] )
 	case Codec::bc3:
 	{
 		betsy::EncoderBC1 encoder;
-		encoder.initResources( cpuImage, params.codec == Codec::bc3 );
+		encoder.initResources( cpuImage, params.codec == Codec::bc3, params.dither );
 		while( repeat-- )
 		{
 			encoder.execute01();
