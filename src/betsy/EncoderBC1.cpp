@@ -157,8 +157,8 @@ namespace betsy
 		// It's unclear which of these 2 barrier bits GL wants in order for glCopyImageSubData to work
 		glMemoryBarrier( GL_TEXTURE_UPDATE_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 
-		// Copy "8x8" PFG_RG32_UINT   -> 32x32 PFG_BC1_RGB8_UNORM
-		// Copy "8x8" PFG_RGBA32_UINT -> 32x32 PFG_BC3_RGB8_UNORM
+		// Copy "8x8" PFG_RG32_UINT   -> 32x32 PFG_BC1_UNORM
+		// Copy "8x8" PFG_RGBA32_UINT -> 32x32 PFG_BC3_UNORM
 		glCopyImageSubData( m_stitchedTarget ? m_stitchedTarget : m_bc1TargetRes,  //
 							GL_TEXTURE_2D, 0, 0, 0, 0,                             //
 							m_dstTexture, GL_TEXTURE_2D, 0, 0, 0, 0,               //
