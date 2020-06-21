@@ -65,7 +65,7 @@ python2 Run.py
 |---------|----------------|------|
 | ETC1    | Done 			| <br/>Based on [rg-etc1](https://github.com/richgel999/rg-etc1).<br/>AMD Mesa Linux: Requires a very recent Mesa version due to a shader miscompilation issue. See [ticket](https://gitlab.freedesktop.org/mesa/mesa/-/issues/3044#note_515611).|
 | EAC     | Done           | Used for R11, RG11 and ETC2_RGBA (for encoding the alpha component).<br/>Quality: Maximum, we use brute force to check all possible combinations.|
-| BC1     | 90%            | Based on [stb_dxt](https://github.com/nothings/stb/blob/master/stb_dxt.h).<br/>Dither is missing.|
+| BC1     | Done           | Based on [stb_dxt](https://github.com/nothings/stb/blob/master/stb_dxt.h).|
 | BC3     | Done           | This is just BC1 for RGB + BC4 for alpha |
 | BC4, BC5| Done           | Based on [stb_dxt](https://github.com/nothings/stb/blob/master/stb_dxt.h). Supports UNORM & SNORM variants|
 | BC6H UF | Done           | Unsigned variation of B6CH. GLSL port of [GPURealTimeBC6H](https://github.com/knarkowicz/GPURealTimeBC6H)|
