@@ -29,6 +29,7 @@ namespace betsy
 
 	EncoderETC1::EncoderETC1() :
 		m_srcTexture( 0 ),
+		m_ditheredTexture( 0 ),
 		m_compressTargetRes( 0 ),
 		m_eacTargetRes( 0 ),
 		m_stitchedTarget( 0 ),
@@ -91,7 +92,8 @@ namespace betsy
 		return data;
 	}
 	//-------------------------------------------------------------------------
-	void EncoderETC1::initResources( const CpuImage &srcImage, bool bCompressAlpha )
+	void EncoderETC1::initResources( const CpuImage &srcImage, const bool bCompressAlpha,
+									 const bool bDither )
 	{
 		m_width = srcImage.width;
 		m_height = srcImage.height;
@@ -100,6 +102,17 @@ namespace betsy
 			srcImage.format == PFG_RGBA8_UNORM_SRGB ? PFG_RGBA8_UNORM : srcImage.format;
 
 		m_srcTexture = createTexture( TextureParams( m_width, m_height, srcFormat, "m_srcTexture" ) );
+
+		if( bDither )
+		{
+			m_ditheredTexture = createTexture( TextureParams( m_width, m_height, PFG_RGBA8_UNORM,
+															  "m_ditheredTexture", TextureFlags::Uav ) );
+			m_ditherPso = createComputePsoFromFile( "dither555.glsl", "../Data/" );
+		}
+		else
+		{
+			m_ditheredTexture = m_srcTexture;
+		}
 
 		m_compressTargetRes = createTexture( TextureParams( m_width >> 2u, m_height >> 2u, PFG_RG32_UINT,
 															"m_compressTargetRes", TextureFlags::Uav ) );
@@ -149,6 +162,13 @@ namespace betsy
 			destroyTexture( m_eacTargetRes );
 			m_eacTargetRes = 0;
 		}
+		if( m_ditheredTexture != m_srcTexture )
+		{
+			destroyTexture( m_ditheredTexture );
+			m_ditheredTexture = 0;
+			destroyPso( m_ditherPso );
+		}
+
 		destroyTexture( m_srcTexture );
 		m_srcTexture = 0;
 
@@ -163,9 +183,26 @@ namespace betsy
 		destroyPso( m_compressPso );
 	}
 	//-------------------------------------------------------------------------
+	void EncoderETC1::execute00()
+	{
+		if( m_ditheredTexture == m_srcTexture )
+			return;
+
+		bindTexture( 0u, m_srcTexture );
+		bindUav( 0u, m_ditheredTexture, PFG_RGBA8_UNORM, ResourceAccess::Write );
+		bindComputePso( m_ditherPso );
+
+		const uint32_t pixelsPerThreadGroup = 4u * 8u;
+		glDispatchCompute( alignToNextMultiple( m_width, pixelsPerThreadGroup ) / pixelsPerThreadGroup,
+						   alignToNextMultiple( m_height, pixelsPerThreadGroup ) / pixelsPerThreadGroup,
+						   1u );
+
+		glMemoryBarrier( GL_TEXTURE_FETCH_BARRIER_BIT );
+	}
+	//-------------------------------------------------------------------------
 	void EncoderETC1::execute01( EncoderETC1::Etc1Quality quality )
 	{
-		bindTexture( 0u, m_srcTexture );
+		bindTexture( 0u, m_ditheredTexture );
 		bindUav( 0u, m_compressTargetRes, PFG_RG32_UINT, ResourceAccess::Write );
 		bindUavBuffer( 1u, m_etc1TablesSsbo, 0u, getEtc1TablesSize() );
 		bindComputePso( m_compressPso );
@@ -208,6 +245,7 @@ namespace betsy
 		if( m_eacTargetRes )
 		{
 			// Compress Alpha too (using EAC compressor)
+			bindTexture( 0u, m_srcTexture );
 			bindUav( 0u, m_eacTargetRes, PFG_RG32_UINT, ResourceAccess::Write );
 			bindComputePso( m_eacPso );
 			glDispatchCompute( alignToNextMultiple( m_width, 4u ) / 4u,

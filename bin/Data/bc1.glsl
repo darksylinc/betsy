@@ -384,7 +384,6 @@ float3 quant( float3 srcValue )
 
 void DitherBlock( const uint srcPixBlck[16], out uint dthPixBlck[16] )
 {
-	// process channels separately, RB first using quant5
 	float3 ep1[4] = { float3( 0, 0, 0 ), float3( 0, 0, 0 ), float3( 0, 0, 0 ), float3( 0, 0, 0 ) };
 	float3 ep2[4] = { float3( 0, 0, 0 ), float3( 0, 0, 0 ), float3( 0, 0, 0 ), float3( 0, 0, 0 ) };
 

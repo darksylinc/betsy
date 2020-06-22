@@ -180,9 +180,10 @@ int main( int nargs, char *const argv[] )
 	case Codec::etc2_rgba:
 	{
 		betsy::EncoderETC1 encoder;
-		encoder.initResources( cpuImage, params.codec == Codec::etc2_rgba );
+		encoder.initResources( cpuImage, params.codec == Codec::etc2_rgba, params.dither );
 		while( repeat-- )
 		{
+			encoder.execute00();
 			encoder.execute01( static_cast<betsy::EncoderETC1::Etc1Quality>( params.quality ) );
 			encoder.execute02();
 			if( params.usingRenderDoc )
