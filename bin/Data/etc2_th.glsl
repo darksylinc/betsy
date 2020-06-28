@@ -16,11 +16,6 @@ uniform sampler2D srcTex;
 
 layout( rg32ui ) uniform restrict writeonly uimage2D dstTexture;
 
-layout( std430, binding = 1 ) readonly restrict buffer globalBuffer
-{
-	uint2 pBuff_localInvocationToPixIdx[120];
-};
-
 layout( local_size_x = 8,    //
 		local_size_y = 120,  // 15 + 14 + 13 + ... + 1
 		local_size_z = 1 ) in;
@@ -34,6 +29,46 @@ const float kDistances[8] = {  //
 	32.0f / 255.0f,            //
 	41.0f / 255.0f,            //
 	64.0f / 255.0f
+};
+
+/*
+kLocalInvocationToPixIdx table generated with:
+	int main()
+	{
+		for( int pix1 = 0; pix1 < 15; pix1++ )
+		{
+			for( int pix2 = pix1 + 1; pix2 < 16; pix2++ )
+				printf( "uint2( %iu, %iu ), ", pix1, pix2 );
+		}
+		printf( "\n" );
+		return 0;
+	}
+*/
+const uint2 kLocalInvocationToPixIdx[120] = {
+	uint2( 0u, 1u ),   uint2( 0u, 2u ),   uint2( 0u, 3u ),   uint2( 0u, 4u ),   uint2( 0u, 5u ),
+	uint2( 0u, 6u ),   uint2( 0u, 7u ),   uint2( 0u, 8u ),   uint2( 0u, 9u ),   uint2( 0u, 10u ),
+	uint2( 0u, 11u ),  uint2( 0u, 12u ),  uint2( 0u, 13u ),  uint2( 0u, 14u ),  uint2( 0u, 15u ),
+	uint2( 1u, 2u ),   uint2( 1u, 3u ),   uint2( 1u, 4u ),   uint2( 1u, 5u ),   uint2( 1u, 6u ),
+	uint2( 1u, 7u ),   uint2( 1u, 8u ),   uint2( 1u, 9u ),   uint2( 1u, 10u ),  uint2( 1u, 11u ),
+	uint2( 1u, 12u ),  uint2( 1u, 13u ),  uint2( 1u, 14u ),  uint2( 1u, 15u ),  uint2( 2u, 3u ),
+	uint2( 2u, 4u ),   uint2( 2u, 5u ),   uint2( 2u, 6u ),   uint2( 2u, 7u ),   uint2( 2u, 8u ),
+	uint2( 2u, 9u ),   uint2( 2u, 10u ),  uint2( 2u, 11u ),  uint2( 2u, 12u ),  uint2( 2u, 13u ),
+	uint2( 2u, 14u ),  uint2( 2u, 15u ),  uint2( 3u, 4u ),   uint2( 3u, 5u ),   uint2( 3u, 6u ),
+	uint2( 3u, 7u ),   uint2( 3u, 8u ),   uint2( 3u, 9u ),   uint2( 3u, 10u ),  uint2( 3u, 11u ),
+	uint2( 3u, 12u ),  uint2( 3u, 13u ),  uint2( 3u, 14u ),  uint2( 3u, 15u ),  uint2( 4u, 5u ),
+	uint2( 4u, 6u ),   uint2( 4u, 7u ),   uint2( 4u, 8u ),   uint2( 4u, 9u ),   uint2( 4u, 10u ),
+	uint2( 4u, 11u ),  uint2( 4u, 12u ),  uint2( 4u, 13u ),  uint2( 4u, 14u ),  uint2( 4u, 15u ),
+	uint2( 5u, 6u ),   uint2( 5u, 7u ),   uint2( 5u, 8u ),   uint2( 5u, 9u ),   uint2( 5u, 10u ),
+	uint2( 5u, 11u ),  uint2( 5u, 12u ),  uint2( 5u, 13u ),  uint2( 5u, 14u ),  uint2( 5u, 15u ),
+	uint2( 6u, 7u ),   uint2( 6u, 8u ),   uint2( 6u, 9u ),   uint2( 6u, 10u ),  uint2( 6u, 11u ),
+	uint2( 6u, 12u ),  uint2( 6u, 13u ),  uint2( 6u, 14u ),  uint2( 6u, 15u ),  uint2( 7u, 8u ),
+	uint2( 7u, 9u ),   uint2( 7u, 10u ),  uint2( 7u, 11u ),  uint2( 7u, 12u ),  uint2( 7u, 13u ),
+	uint2( 7u, 14u ),  uint2( 7u, 15u ),  uint2( 8u, 9u ),   uint2( 8u, 10u ),  uint2( 8u, 11u ),
+	uint2( 8u, 12u ),  uint2( 8u, 13u ),  uint2( 8u, 14u ),  uint2( 8u, 15u ),  uint2( 9u, 10u ),
+	uint2( 9u, 11u ),  uint2( 9u, 12u ),  uint2( 9u, 13u ),  uint2( 9u, 14u ),  uint2( 9u, 15u ),
+	uint2( 10u, 11u ), uint2( 10u, 12u ), uint2( 10u, 13u ), uint2( 10u, 14u ), uint2( 10u, 15u ),
+	uint2( 11u, 12u ), uint2( 11u, 13u ), uint2( 11u, 14u ), uint2( 11u, 15u ), uint2( 12u, 13u ),
+	uint2( 12u, 14u ), uint2( 12u, 15u ), uint2( 13u, 14u ), uint2( 13u, 15u ), uint2( 14u, 15u )
 };
 
 /*
@@ -451,8 +486,8 @@ void main()
 	//
 	// So we assign 1 thread to each
 	const uint distIdx = gl_LocalInvocationID.x;
-	const uint pix0 = pBuff_localInvocationToPixIdx[gl_LocalInvocationID.y].x;
-	const uint pix1 = pBuff_localInvocationToPixIdx[gl_LocalInvocationID.y].y;
+	const uint pix0 = kLocalInvocationToPixIdx[gl_LocalInvocationID.y].x;
+	const uint pix1 = kLocalInvocationToPixIdx[gl_LocalInvocationID.y].y;
 
 	uint c0 = quant4( g_srcPixelsBlock[pix0] );
 	uint c1 = quant4( g_srcPixelsBlock[pix1] );
