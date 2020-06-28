@@ -481,6 +481,19 @@ void etc2_th_mode_write( const bool hMode, uint c0, uint c1, float distance, uin
 
 void main()
 {
+	if( gl_LocalInvocationIndex < 16u )
+	{
+		const uint2 pixelsToLoadBase = gl_WorkGroupID.xy << 2u;
+		uint2 pixelsToLoad = pixelsToLoadBase;
+		// Note ETC2 wants the src pixels transposed!
+		pixelsToLoad.x += gl_LocalInvocationIndex >> 2u;    //+= threadId / 4
+		pixelsToLoad.y += gl_LocalInvocationIndex & 0x03u;  //+= threadId % 4
+		const float3 srcPixels0 = OGRE_Load2D( srcTex, int2( pixelsToLoad ), 0 ).xyz;
+		g_srcPixelsBlock[gl_LocalInvocationIndex] = packUnorm4x8( float4( srcPixels0, 1.0f ) );
+	}
+
+	__sharedOnlyBarrier;
+
 	// We have 120 potential pairs of colour candidates (some of these candidates may repeat)
 	// ETC2 has 8 distance modes (3 bits) for each pair (should have high thread convergence)
 	//
