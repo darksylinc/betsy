@@ -40,7 +40,7 @@ namespace betsy
 	//-------------------------------------------------------------------------
 	EncoderETC1::~EncoderETC1() { assert( !m_srcTexture && "deinitResources not called!" ); }
 	//-------------------------------------------------------------------------
-	size_t EncoderETC1::getEtc1TablesSize() const
+	size_t EncoderETC1::getEtc1TablesSize()
 	{
 		return sizeof( float ) * 2u * 8u * 4u * 256u + sizeof( uint32_t ) * ( 2u * 33u + 254 * 11u );
 	}
@@ -93,7 +93,7 @@ namespace betsy
 	}
 	//-------------------------------------------------------------------------
 	void EncoderETC1::initResources( const CpuImage &srcImage, const bool bCompressAlpha,
-									 const bool bDither )
+									 const bool bDither, const bool bForEtc2 )
 	{
 		m_width = srcImage.width;
 		m_height = srcImage.height;
@@ -143,6 +143,12 @@ namespace betsy
 		memcpy( stagingTex.data, srcImage.data, stagingTex.sizeBytes );
 		uploadStagingTexture( stagingTex, m_srcTexture );
 		destroyStagingTexture( stagingTex );
+	}
+	//-------------------------------------------------------------------------
+	void EncoderETC1::initResources( const CpuImage &srcImage, const bool bCompressAlpha,
+									 const bool bDither )
+	{
+		initResources( srcImage, bCompressAlpha, bDither, false );
 	}
 	//-------------------------------------------------------------------------
 	void EncoderETC1::deinitResources()

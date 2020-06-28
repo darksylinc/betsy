@@ -62,6 +62,8 @@ namespace betsy
 			return GL_RGBA32F;
 		case PFG_RGBA16_FLOAT:
 			return GL_RGBA16F;
+		case PFG_R32_FLOAT:
+			return GL_R32F;
 		case PFG_RG32_UINT:
 			return GL_RG32UI;
 		case PFG_RGBA8_UNORM:
@@ -115,6 +117,7 @@ namespace betsy
 		case PFG_BC6H_UF16:
 		case PFG_ETC1_RGB8_UNORM:
 			return GL_RGB;
+		case PFG_R32_FLOAT:
 		case PFG_BC4_UNORM:
 		case PFG_BC4_SNORM:
 		case PFG_EAC_R11_UNORM:
@@ -129,6 +132,9 @@ namespace betsy
 		{
 		case PFG_RGBA32_UINT:
 			format = GL_RGBA_INTEGER;
+			break;
+		case PFG_R32_FLOAT:
+			format = GL_RED;
 			break;
 		case PFG_RG32_UINT:
 			format = GL_RG_INTEGER;
@@ -162,6 +168,7 @@ namespace betsy
 		case PFG_RGBA16_FLOAT:
 			type = GL_HALF_FLOAT;
 			break;
+		case PFG_R32_FLOAT:
 		case PFG_RGBA32_FLOAT:
 			type = GL_FLOAT;
 			break;

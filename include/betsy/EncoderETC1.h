@@ -42,8 +42,11 @@ namespace betsy
 		ComputePso m_eacPso;     // Only used for ETC2_RGBA
 		ComputePso m_stitchPso;  // Only used for ETC2_RGBA, Combines ETC1 RGB with EAC alpha
 
-		size_t   getEtc1TablesSize() const;
-		uint8_t *createFilledEtc1Tables();
+		static size_t   getEtc1TablesSize();
+		static uint8_t *createFilledEtc1Tables();
+
+		void initResources( const CpuImage &srcImage, const bool bCompressAlpha, const bool bDither,
+							const bool bForEtc2 );
 
 	public:
 		EncoderETC1();

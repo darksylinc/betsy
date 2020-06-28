@@ -5,6 +5,7 @@
 #include "betsy/EncoderBC6H.h"
 #include "betsy/EncoderEAC.h"
 #include "betsy/EncoderETC1.h"
+#include "betsy/EncoderETC2.h"
 #include "betsy/File/FormatKTX.h"
 
 #include "CmdLineParams.h"
@@ -176,7 +177,6 @@ int main( int nargs, char *const argv[] )
 	switch( params.codec )
 	{
 	case Codec::etc1:
-	case Codec::etc2_rgb:
 	case Codec::etc2_rgba:
 	{
 		betsy::EncoderETC1 encoder;
@@ -188,6 +188,24 @@ int main( int nargs, char *const argv[] )
 			encoder.execute02();
 			if( params.usingRenderDoc )
 				encoder.execute03();  // Not needed in offline mode
+			betsy::pollPlatformWindow();
+		}
+		saveToDisk( encoder, params );
+		encoder.deinitResources();
+	}
+	break;
+	case Codec::etc2_rgb:
+	{
+		betsy::EncoderETC2 encoder;
+		encoder.initResources( cpuImage, params.codec == Codec::etc2_rgba, params.dither );
+		while( repeat-- )
+		{
+			encoder.execute00();
+			encoder.execute01( static_cast<betsy::EncoderETC1::Etc1Quality>( params.quality ) );
+			encoder.execute02();
+			encoder.execute03();
+			if( params.usingRenderDoc )
+				encoder.execute04();  // Not needed in offline mode
 			betsy::pollPlatformWindow();
 		}
 		saveToDisk( encoder, params );

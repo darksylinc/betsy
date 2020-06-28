@@ -14,7 +14,8 @@ shared float2 g_bestCandidates[120];  //.x = error; .y = threadId
 
 uniform sampler2D srcTex;
 
-layout( rg32ui ) uniform restrict writeonly uimage2D dstTexture;
+layout( rg32ui, binding = 0 ) uniform restrict writeonly uimage2D dstTexture;
+layout( r32f, binding = 1 ) uniform restrict writeonly image2D dstError;
 
 layout( local_size_x = 8,    //
 		local_size_y = 120,  // 15 + 14 + 13 + ... + 1
@@ -242,7 +243,7 @@ uint addSat( const uint packedRgb, float value )
 
 /// Returns false if it failed to find a proper pair
 /// True on success
-bool block_main_colors_find( out uint &outC0, out uint &outC1, uint c0, uint c1 )
+bool block_main_colors_find( out uint outC0, out uint outC1, uint c0, uint c1 )
 {
 	const int kMaxIterations = 20;
 
@@ -276,7 +277,7 @@ bool block_main_colors_find( out uint &outC0, out uint &outC1, uint c0, uint c1 
 		}
 
 		// k-means failed
-		if( !cluster0_cnt || !cluster1_cnt )
+		if( cluster0_cnt == 0 || cluster1_cnt == 0 )
 			return false;
 
 		float3 rgb0, rgb1;
@@ -324,7 +325,6 @@ bool block_main_colors_find( out uint &outC0, out uint &outC1, uint c0, uint c1 
 float etc2_th_mode_calcError( const bool hMode, const uint c0, const uint c1, float distance )
 {
 	uint paintColors[4];
-	int errAcc = 0;
 
 	if( !hMode )
 	{
@@ -343,6 +343,7 @@ float etc2_th_mode_calcError( const bool hMode, const uint c0, const uint c1, fl
 		paintColors[3] = addSat( c1, -distance );
 	}
 
+	float errAcc = 0;
 	for( int k = 0; k < 16; ++k )
 	{
 		float bestDist = FLT_MAX;
@@ -381,7 +382,7 @@ uint etc2_gen_header_h_mode( const uint colour0, const uint colour1, const uint 
 {
 	uint c0, c1;
 	// Note: if c0 == c1, no big deal because H is not the best choice of mode
-	if( distIdx & 0x01u )
+	if( ( distIdx & 0x01u ) != 0u )
 	{
 		c0 = max( colour0, colour1 );
 		c1 = min( colour0, colour1 );
@@ -471,11 +472,11 @@ void etc2_th_mode_write( const bool hMode, uint c0, uint c1, float distance, uin
 		// When k >= 8 write bestIdx to region bits [0; 8) and [16; 24)
 		const uint bitStart0 = k < 8 ? 8u : 0u;
 		const uint bitStart1 = k < 8 ? 24u : 16u;
-		outputBytes.y |= ( ( ( bestIdx & 0x2u ) ? 1u : 0u ) << ( k & 0x7u ) ) << bitStart0;
+		outputBytes.y |= ( ( ( bestIdx & 0x2u ) != 0u ? 1u : 0u ) << ( k & 0x7u ) ) << bitStart0;
 		outputBytes.y |= ( ( bestIdx & 0x1u ) << ( k & 0x7u ) ) << bitStart1;
 	}
 
-	uint2 dstUV = gl_WorkGroupID.xy;
+	const uint2 dstUV = gl_WorkGroupID.xy;
 	imageStore( dstTexture, int2( dstUV ), uint4( outputBytes.xy, 0u, 0u ) );
 }
 
@@ -585,5 +586,8 @@ void main()
 	{
 		// This thread is the winner! Save the result
 		etc2_th_mode_write( bestModeIsH, bestC0, bestC1, kDistances[distIdx], distIdx );
+
+		const uint2 dstUV = gl_WorkGroupID.xy;
+		imageStore( dstError, int2( dstUV ), float4( g_bestCandidates[0].x, 0.0f, 0.0f, 0.0f ) );
 	}
 }
