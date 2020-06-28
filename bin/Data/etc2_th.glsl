@@ -10,7 +10,7 @@
 #define FLT_MAX 340282346638528859811704183484516925440.0f
 
 shared uint g_srcPixelsBlock[16];
-shared float2 g_bestCandidates[120];  //.x = error; .y = threadId
+shared float2 g_bestCandidates[120 * 8];  //.x = error; .y = threadId
 
 uniform sampler2D srcTex;
 
@@ -203,8 +203,8 @@ const float kHmodeEncoderGB[16] =  //
 }*/
 float3 rgb888to444( uint packedRgb )
 {
-	float3 rgbValue = unpackUnorm4x8( packedRgb ).xyz * 255.0f;
-	rgbValue = floor( rgbValue * 15.0f / 255.0f + 0.5f );
+	float3 rgbValue = unpackUnorm4x8( packedRgb ).xyz;
+	rgbValue = floor( rgbValue * 15.0f + 0.5f );
 	return rgbValue;
 }
 
@@ -212,9 +212,9 @@ float3 rgb888to444( uint packedRgb )
 /// converting it to 444 and then back to 888 (quantized)
 uint quant4( const uint packedRgb )
 {
-	float3 rgbValue = unpackUnorm4x8( packedRgb ).xyz * 255.0f;
-	rgbValue = floor( rgbValue * 15.0f / 255.0f + 0.5f );  // Convert to 444
-	rgbValue = floor( rgbValue * 19.05f );                 // Convert to 888
+	float3 rgbValue = unpackUnorm4x8( packedRgb ).xyz;  // Range [0; 1]
+	rgbValue = floor( rgbValue * 15.0f + 0.5f );        // Convert to 444, range [0; 15]
+	rgbValue = floor( rgbValue * 19.05f );              // Convert to 888, range [0; 255]
 	return packUnorm4x8( float4( rgbValue * ( 1.0f / 255.0f ), 1.0f ) );
 }
 
@@ -374,7 +374,7 @@ uint etc2_gen_header_t_mode( const uint c0, const uint c1, const uint distIdx )
 	bytes.w = rgb1.z * 16.0f + floor( fDistIdx * 0.5f ) * 4.0f + 2.0f + mod( fDistIdx, 2.0f );
 	// bytes.w = rgb1.z * 16.0f | ( ( distIdx >> 1u ) << 2u ) | ( 1u << 1u ) | ( distIdx & 0x1u );
 
-	return packUnorm4x8( bytes );
+	return packUnorm4x8( bytes * ( 1.0f / 255.0f ) );
 }
 
 uint etc2_gen_header_h_mode( const uint colour0, const uint colour1, const uint distIdx,
@@ -414,7 +414,7 @@ uint etc2_gen_header_h_mode( const uint colour0, const uint colour1, const uint 
 	bytes.w += floor( fDistIdx * 0.5f ) + floor( fDistIdx * ( 1.0f / 4.0f ) ) * 4.0f;
 	// bytes.w = ( rgb1.g & 0x1 ) << 7 | rgb1.z << 3 | 0x2 | ( distIdx >> 1u ) | ( distIdx & 0x04 );
 
-	return packUnorm4x8( bytes );
+	return packUnorm4x8( bytes * ( 1.0f / 255.0f ) );
 }
 
 void etc2_th_mode_write( const bool hMode, uint c0, uint c1, float distance, uint distIdx )
@@ -560,6 +560,7 @@ void main()
 
 	__sharedOnlyBarrier;
 
+#if 1
 	// Parallel reduction to find the thread with the best solution
 	// Because 960 != 1024, the last few operations on the last threads will repeat a bit.
 	// However we don't care because the minimum of 2 values will always be the same.
@@ -570,17 +571,33 @@ void main()
 		const uint idx = 1u << i;
 		if( ( gl_LocalInvocationIndex & mask ) == 0u )
 		{
+			// nextThreadId can overflow (off by 1) since we're not power of 2
 			const uint thisThreadId = gl_LocalInvocationIndex;
-			const uint nextThreadId = gl_LocalInvocationIndex + idx;
+			const uint nextThreadId = min( gl_LocalInvocationIndex + idx, 960u - 1u );
+			const float thisError = g_bestCandidates[thisThreadId].x;
 			const float nextError = g_bestCandidates[nextThreadId].x;
-			if( nextError < minErr )
-			{
-				minErr = nextError;
-				g_bestCandidates[thisThreadId] = float2( minErr, nextThreadId );
-			}
+			if( nextError < thisError )
+				g_bestCandidates[thisThreadId] = float2( nextError, g_bestCandidates[nextThreadId].y );
 		}
 		__sharedOnlyBarrier;
 	}
+#else
+	// Serial reduction, for ground-truth debugging
+	if( gl_LocalInvocationIndex == 0u )
+	{
+		for( uint i = 1u; i < 960u; ++i )
+		{
+			const uint thisThreadId = 0u;
+			const uint nextThreadId = i;
+			const float thisError = g_bestCandidates[thisThreadId].x;
+			const float nextError = g_bestCandidates[nextThreadId].x;
+			if( nextError < thisError )
+				g_bestCandidates[thisThreadId] = float2( nextError, nextThreadId );
+		}
+	}
+
+	__sharedOnlyBarrier;
+#endif
 
 	if( gl_LocalInvocationIndex == uint( g_bestCandidates[0].y ) )
 	{
