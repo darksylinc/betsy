@@ -3,15 +3,13 @@
 
 #include "betsy/CpuImage.h"
 
-#include "ETC1_tables.inl"
-
 #include <assert.h>
-#include <stdio.h>
-#include <limits>
+
+#define TODO_better_barrier
 
 namespace betsy
 {
-	EncoderETC2::EncoderETC2() : m_thModesTargetRes( 0 ), m_thModesError( 0 ) {}
+	EncoderETC2::EncoderETC2() : m_thModesTargetRes( 0 ), m_thModesError( 0 ), m_thModesC0C1( 0 ) {}
 	//-------------------------------------------------------------------------
 	EncoderETC2::~EncoderETC2() { assert( !m_thModesTargetRes && "deinitResources not called!" ); }
 	//-------------------------------------------------------------------------
@@ -24,8 +22,12 @@ namespace betsy
 														   "m_thModesTargetRes", TextureFlags::Uav ) );
 		m_thModesError = createTexture( TextureParams( m_width >> 2u, m_height >> 2u, PFG_R32_FLOAT,
 													   "m_thModesError", TextureFlags::Uav ) );
+		m_thModesC0C1 = createTexture( TextureParams( m_width >> 2u, m_height >> 2u, PFG_RG32_UINT,
+													  "m_thModesC0C1", TextureFlags::Uav, 120u ) );
 
 		m_thModesPso = createComputePsoFromFile( "etc2_th.glsl", "../Data/" );
+		m_thModesFindBestC0C1 =
+			createComputePsoFromFile( "etc2_th_find_best_c0c1_k_means.glsl", "../Data/" );
 	}
 	//-------------------------------------------------------------------------
 	void EncoderETC2::deinitResources()
@@ -34,9 +36,26 @@ namespace betsy
 		m_thModesError = 0;
 		destroyTexture( m_thModesTargetRes );
 		m_thModesTargetRes = 0;
+		destroyPso( m_thModesFindBestC0C1 );
 		destroyPso( m_thModesPso );
 
 		EncoderETC1::deinitResources();
+	}
+	//-------------------------------------------------------------------------
+	void EncoderETC2::execute00()
+	{
+		EncoderETC1::execute00();
+
+		bindTexture( 0u, m_ditheredTexture );
+		bindUav( 0u, m_thModesC0C1, PFG_RG32_UINT, ResourceAccess::Write );
+		bindComputePso( m_thModesFindBestC0C1 );
+
+		glDispatchCompute( 1u,  //
+						   alignToNextMultiple( m_width, 16u ) / 16u,
+						   alignToNextMultiple( m_height, 8u ) / 8u );
+
+		TODO_better_barrier;
+		glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 	}
 	//-------------------------------------------------------------------------
 	void EncoderETC2::execute01( EncoderETC2::Etc1Quality quality )
@@ -48,6 +67,7 @@ namespace betsy
 		bindTexture( 0u, m_ditheredTexture );
 		bindUav( 0u, m_thModesTargetRes, PFG_RG32_UINT, ResourceAccess::Write );
 		bindUav( 1u, m_thModesError, PFG_R32_FLOAT, ResourceAccess::Write );
+		bindUav( 2u, m_thModesC0C1, PFG_RG32_UINT, ResourceAccess::Write );
 		bindComputePso( m_thModesPso );
 		glDispatchCompute( alignToNextMultiple( m_width, 4u ) / 4u,
 						   alignToNextMultiple( m_height, 4u ) / 4u, 1u );

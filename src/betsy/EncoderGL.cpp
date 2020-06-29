@@ -70,6 +70,8 @@ namespace betsy
 			return GL_RGBA8;
 		case PFG_RGBA8_UNORM_SRGB:
 			return GL_SRGB8_ALPHA8;
+		case PFG_RG8_UINT:
+			return GL_RG8UI;
 		case PFG_BC1_UNORM:
 			return GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
 		case PFG_BC3_UNORM:
@@ -109,6 +111,7 @@ namespace betsy
 		case PFG_ETC2_RGBA8_UNORM:
 			return GL_RGBA;
 		case PFG_RG32_UINT:
+		case PFG_RG8_UINT:
 		case PFG_BC5_UNORM:
 		case PFG_BC5_SNORM:
 		case PFG_EAC_RG11_UNORM:
@@ -137,6 +140,7 @@ namespace betsy
 			format = GL_RED;
 			break;
 		case PFG_RG32_UINT:
+		case PFG_RG8_UINT:
 			format = GL_RG_INTEGER;
 			break;
 		case PFG_RGBA32_FLOAT:
@@ -180,6 +184,9 @@ namespace betsy
 		case PFG_RGBA8_UNORM_SRGB:
 			type = GL_UNSIGNED_INT_8_8_8_8_REV;
 			break;
+		case PFG_RG8_UINT:
+			type = GL_UNSIGNED_BYTE;
+			break;
 		case PFG_BC1_UNORM:
 		case PFG_BC3_UNORM:
 		case PFG_BC4_UNORM:
@@ -203,7 +210,7 @@ namespace betsy
 	{
 		const GLenum format = EncoderGL::get( params.format );
 
-		const GLenum textureTarget = GL_TEXTURE_2D;
+		const GLenum textureTarget = params.depthOrSlices > 1u ? GL_TEXTURE_2D_ARRAY : GL_TEXTURE_2D;
 
 		GLuint textureName = 0;
 		glGenTextures( 1u, &textureName );
@@ -218,8 +225,17 @@ namespace betsy
 		glTexParameteri( textureTarget, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE );
 		glTexParameteri( textureTarget, GL_TEXTURE_MAX_LEVEL, params.numMipmaps - 1u );
 
-		glTexStorage2D( GL_TEXTURE_2D, GLsizei( params.numMipmaps ), format,  //
-						GLsizei( params.width ), GLsizei( params.height ) );
+		if( params.depthOrSlices > 1u )
+		{
+			glTexStorage3D( GL_TEXTURE_2D_ARRAY, GLsizei( params.numMipmaps ), format,  //
+							GLsizei( params.width ), GLsizei( params.height ),
+							GLsizei( params.depthOrSlices ) );
+		}
+		else
+		{
+			glTexStorage2D( GL_TEXTURE_2D, GLsizei( params.numMipmaps ), format,  //
+							GLsizei( params.width ), GLsizei( params.height ) );
+		}
 
 		if( params.debugName )
 			ogreGlObjectLabel( GL_TEXTURE, textureName, params.debugName );

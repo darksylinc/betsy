@@ -176,6 +176,8 @@ namespace betsy
 		case PFG_RGBA8_UNORM:
 		case PFG_RGBA8_UNORM_SRGB:
 			return 1u * 4u;
+		case PFG_RG8_UINT:
+			return 1u * 2u;
 		case PFG_ETC1_RGB8_UNORM:
 		case PFG_ETC2_RGBA8_UNORM:
 		case PFG_EAC_R11_UNORM:

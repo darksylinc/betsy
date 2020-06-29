@@ -16,6 +16,7 @@ uniform sampler2D srcTex;
 
 layout( rg32ui, binding = 0 ) uniform restrict writeonly uimage2D dstTexture;
 layout( r32f, binding = 1 ) uniform restrict writeonly image2D dstError;
+layout( rg32ui, binding = 2 ) uniform restrict readonly uimage2DArray c0c1Texture;
 
 layout( local_size_x = 8,    //
 		local_size_y = 120,  // 15 + 14 + 13 + ... + 1
@@ -30,46 +31,6 @@ const float kDistances[8] = {  //
 	32.0f / 255.0f,            //
 	41.0f / 255.0f,            //
 	64.0f / 255.0f
-};
-
-/*
-kLocalInvocationToPixIdx table generated with:
-	int main()
-	{
-		for( int pix1 = 0; pix1 < 15; pix1++ )
-		{
-			for( int pix2 = pix1 + 1; pix2 < 16; pix2++ )
-				printf( "uint2( %iu, %iu ), ", pix1, pix2 );
-		}
-		printf( "\n" );
-		return 0;
-	}
-*/
-const uint2 kLocalInvocationToPixIdx[120] = {
-	uint2( 0u, 1u ),   uint2( 0u, 2u ),   uint2( 0u, 3u ),   uint2( 0u, 4u ),   uint2( 0u, 5u ),
-	uint2( 0u, 6u ),   uint2( 0u, 7u ),   uint2( 0u, 8u ),   uint2( 0u, 9u ),   uint2( 0u, 10u ),
-	uint2( 0u, 11u ),  uint2( 0u, 12u ),  uint2( 0u, 13u ),  uint2( 0u, 14u ),  uint2( 0u, 15u ),
-	uint2( 1u, 2u ),   uint2( 1u, 3u ),   uint2( 1u, 4u ),   uint2( 1u, 5u ),   uint2( 1u, 6u ),
-	uint2( 1u, 7u ),   uint2( 1u, 8u ),   uint2( 1u, 9u ),   uint2( 1u, 10u ),  uint2( 1u, 11u ),
-	uint2( 1u, 12u ),  uint2( 1u, 13u ),  uint2( 1u, 14u ),  uint2( 1u, 15u ),  uint2( 2u, 3u ),
-	uint2( 2u, 4u ),   uint2( 2u, 5u ),   uint2( 2u, 6u ),   uint2( 2u, 7u ),   uint2( 2u, 8u ),
-	uint2( 2u, 9u ),   uint2( 2u, 10u ),  uint2( 2u, 11u ),  uint2( 2u, 12u ),  uint2( 2u, 13u ),
-	uint2( 2u, 14u ),  uint2( 2u, 15u ),  uint2( 3u, 4u ),   uint2( 3u, 5u ),   uint2( 3u, 6u ),
-	uint2( 3u, 7u ),   uint2( 3u, 8u ),   uint2( 3u, 9u ),   uint2( 3u, 10u ),  uint2( 3u, 11u ),
-	uint2( 3u, 12u ),  uint2( 3u, 13u ),  uint2( 3u, 14u ),  uint2( 3u, 15u ),  uint2( 4u, 5u ),
-	uint2( 4u, 6u ),   uint2( 4u, 7u ),   uint2( 4u, 8u ),   uint2( 4u, 9u ),   uint2( 4u, 10u ),
-	uint2( 4u, 11u ),  uint2( 4u, 12u ),  uint2( 4u, 13u ),  uint2( 4u, 14u ),  uint2( 4u, 15u ),
-	uint2( 5u, 6u ),   uint2( 5u, 7u ),   uint2( 5u, 8u ),   uint2( 5u, 9u ),   uint2( 5u, 10u ),
-	uint2( 5u, 11u ),  uint2( 5u, 12u ),  uint2( 5u, 13u ),  uint2( 5u, 14u ),  uint2( 5u, 15u ),
-	uint2( 6u, 7u ),   uint2( 6u, 8u ),   uint2( 6u, 9u ),   uint2( 6u, 10u ),  uint2( 6u, 11u ),
-	uint2( 6u, 12u ),  uint2( 6u, 13u ),  uint2( 6u, 14u ),  uint2( 6u, 15u ),  uint2( 7u, 8u ),
-	uint2( 7u, 9u ),   uint2( 7u, 10u ),  uint2( 7u, 11u ),  uint2( 7u, 12u ),  uint2( 7u, 13u ),
-	uint2( 7u, 14u ),  uint2( 7u, 15u ),  uint2( 8u, 9u ),   uint2( 8u, 10u ),  uint2( 8u, 11u ),
-	uint2( 8u, 12u ),  uint2( 8u, 13u ),  uint2( 8u, 14u ),  uint2( 8u, 15u ),  uint2( 9u, 10u ),
-	uint2( 9u, 11u ),  uint2( 9u, 12u ),  uint2( 9u, 13u ),  uint2( 9u, 14u ),  uint2( 9u, 15u ),
-	uint2( 10u, 11u ), uint2( 10u, 12u ), uint2( 10u, 13u ), uint2( 10u, 14u ), uint2( 10u, 15u ),
-	uint2( 11u, 12u ), uint2( 11u, 13u ), uint2( 11u, 14u ), uint2( 11u, 15u ), uint2( 12u, 13u ),
-	uint2( 12u, 14u ), uint2( 12u, 15u ), uint2( 13u, 14u ), uint2( 13u, 15u ), uint2( 14u, 15u )
 };
 
 /*
@@ -239,90 +200,6 @@ uint addSat( const uint packedRgb, float value )
 	float3 rgbValue = unpackUnorm4x8( packedRgb ).xyz;
 	rgbValue = saturate( rgbValue + value );
 	return packUnorm4x8( float4( rgbValue, 1.0f ) );
-}
-
-void block_main_colors_find( out uint outC0, out uint outC1, uint c0, uint c1 )
-{
-	const int kMaxIterations = 20;
-
-	bool bestMatchFound = false;
-
-	// k-means complexity is O(n^(d.k+1) log n)
-	// In this case, n = 16, k = 2, d = 3 so 20 loops
-
-	for( int iter = 0; iter < kMaxIterations && !bestMatchFound; ++iter )
-	{
-		int cluster0_cnt = 0, cluster1_cnt = 0;
-		int cluster0[16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-		int cluster1[16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-		float maxDist0 = 0, maxDist1 = 0;
-
-		// k-means assignment step
-		for( int k = 0; k < 16; ++k )
-		{
-			const float dist0 = calcError( c0, g_srcPixelsBlock[k] );
-			const float dist1 = calcError( c1, g_srcPixelsBlock[k] );
-			if( dist0 <= dist1 )
-			{
-				cluster0[cluster0_cnt++] = k;
-				maxDist0 = max( dist0, maxDist0 );
-			}
-			else
-			{
-				cluster1[cluster1_cnt++] = k;
-				maxDist1 = max( dist1, maxDist1 );
-			}
-		}
-
-		// k-means failed
-		if( cluster0_cnt == 0 || cluster1_cnt == 0 )
-		{
-			// Actually we did not find the best match. But set this flag to abort
-			// the loop and keep on going with the original colours (using 'break'
-			// makes compilers go crazy)
-			bestMatchFound = true;
-		}
-		else
-		{
-			float3 rgb0, rgb1;
-
-			// k-means update step
-			for( int k = 0; k < cluster0_cnt; ++k )
-				rgb0 += unpackUnorm4x8( g_srcPixelsBlock[cluster0[k]] ).xyz;
-
-			for( int k = 0; k < cluster1_cnt; ++k )
-				rgb1 += unpackUnorm4x8( g_srcPixelsBlock[cluster1[k]] ).xyz;
-
-			rgb0 = floor( rgb0 * ( 255.0f / cluster0_cnt ) + 0.5f );
-			rgb1 = floor( rgb1 * ( 255.0f / cluster1_cnt ) + 0.5f );
-
-			const uint newC0 = quant4( rgb0 );
-			const uint newC1 = quant4( rgb1 );
-			if( newC0 == c0 && newC1 == c1 )
-			{
-				bestMatchFound = true;
-			}
-			else
-			{
-				if( newC0 != newC1 )
-				{
-					c0 = newC0;
-					c1 = newC1;
-				}
-				else if( calcError( newC0, c0 ) > calcError( newC1, c1 ) )
-				{
-					c0 = newC0;
-				}
-				else
-				{
-					c1 = newC1;
-				}
-			}
-		}
-	}
-
-	outC0 = c0;
-	outC1 = c1;
 }
 
 float etc2_th_mode_calcError( const bool hMode, const uint c0, const uint c1, float distance )
@@ -504,19 +381,11 @@ void main()
 	//
 	// So we assign 1 thread to each
 	const uint distIdx = gl_LocalInvocationID.x;
-	const uint pix0 = kLocalInvocationToPixIdx[gl_LocalInvocationID.y].x;
-	const uint pix1 = kLocalInvocationToPixIdx[gl_LocalInvocationID.y].y;
 
-	uint c0 = quant4( g_srcPixelsBlock[pix0] );
-	uint c1 = quant4( g_srcPixelsBlock[pix1] );
-
-	if( c0 != c1 )
-	{
-		uint newC0, newC1;
-		block_main_colors_find( newC0, newC1, c0, c1 );
-		c0 = newC0;
-		c1 = newC1;
-	}
+	const uint2 c0c1 =
+		OGRE_imageLoad2DArray( c0c1Texture, uint3( gl_WorkGroupID.xy, gl_LocalInvocationID.y ) ).xy;
+	const uint c0 = c0c1.x;
+	const uint c1 = c0c1.y;
 
 	float minErr = FLT_MAX;
 	uint bestC0 = 0u;

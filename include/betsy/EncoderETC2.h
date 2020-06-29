@@ -16,8 +16,10 @@ namespace betsy
 
 		GLuint m_thModesTargetRes;
 		GLuint m_thModesError;
+		GLuint m_thModesC0C1;
 
 		ComputePso m_thModesPso;
+		ComputePso m_thModesFindBestC0C1;
 
 	public:
 		EncoderETC2();
@@ -34,7 +36,7 @@ namespace betsy
 		void initResources( const CpuImage &srcImage, const bool bCompressAlpha, const bool bDither );
 		void deinitResources();
 
-		// void execute00(); Don't forget to call this (it's in our base class!)
+		void execute00();
 		void execute01( EncoderETC2::Etc1Quality quality = cHighQuality );
 		void execute02();
 		void execute03();
