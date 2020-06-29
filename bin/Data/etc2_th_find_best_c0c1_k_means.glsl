@@ -7,10 +7,6 @@
 #include "CrossPlatformSettings_piece_all.glsl"
 #include "UavCrossPlatform_piece_all.glsl"
 
-shared uint g_srcPixelsBlock[2][4][16];
-
-#define g_srcPixelsBlockBlk g_srcPixelsBlock[gl_LocalInvocationID.z][gl_LocalInvocationID.y]
-
 uniform sampler2D srcTex;
 
 layout( rg32ui, binding = 0 ) uniform restrict writeonly uimage2DArray dstTexture;
@@ -59,6 +55,17 @@ const uint2 kLocalInvocationToPixIdx[120] = {
 	uint2( 12u, 14u ), uint2( 12u, 15u ), uint2( 13u, 14u ), uint2( 13u, 15u ), uint2( 14u, 15u )
 };
 
+float3 getSrcPixel( uint idx )
+{
+	const uint2 pixelsToLoadBase = gl_GlobalInvocationID.yz << 2u;
+	uint2 pixelsToLoad = pixelsToLoadBase;
+	// Note ETC2 wants the src pixels transposed!
+	pixelsToLoad.x += idx >> 2u;    //+= threadId / 4
+	pixelsToLoad.y += idx & 0x03u;  //+= threadId % 4
+	const float3 srcPixels0 = OGRE_Load2D( srcTex, int2( pixelsToLoad ), 0 ).xyz;
+	return srcPixels0;
+}
+
 /// Quantizes 'srcValue' which is originally in 888 (full range),
 /// converting it to 444 and then back to 888 (quantized)
 uint quant4( const uint packedRgb )
@@ -82,6 +89,12 @@ float calcError( const uint colour0, const uint colour1 )
 	return dot( diff, diff ) * 65025.0f;  // 65025 = 255 * 255
 }
 
+float calcError( const uint colour0, const float3 colour1 )
+{
+	float3 diff = unpackUnorm4x8( colour0 ).xyz - colour1.xyz;
+	return dot( diff, diff ) * 65025.0f;  // 65025 = 255 * 255
+}
+
 void block_main_colors_find( out uint outC0, out uint outC1, uint c0, uint c1 )
 {
 	const int kMaxIterations = 20;
@@ -101,8 +114,8 @@ void block_main_colors_find( out uint outC0, out uint outC1, uint c0, uint c1 )
 		// k-means assignment step
 		for( int k = 0; k < 16; ++k )
 		{
-			const float dist0 = calcError( c0, g_srcPixelsBlockBlk[k] );
-			const float dist1 = calcError( c1, g_srcPixelsBlockBlk[k] );
+			const float dist0 = calcError( c0, getSrcPixel( k ) );
+			const float dist1 = calcError( c1, getSrcPixel( k ) );
 			if( dist0 <= dist1 )
 			{
 				cluster0[cluster0_cnt++] = k;
@@ -130,10 +143,10 @@ void block_main_colors_find( out uint outC0, out uint outC1, uint c0, uint c1 )
 
 			// k-means update step
 			for( int k = 0; k < cluster0_cnt; ++k )
-				rgb0 += unpackUnorm4x8( g_srcPixelsBlockBlk[cluster0[k]] ).xyz;
+				rgb0 += getSrcPixel( cluster0[k] );
 
 			for( int k = 0; k < cluster1_cnt; ++k )
-				rgb1 += unpackUnorm4x8( g_srcPixelsBlockBlk[cluster1[k]] ).xyz;
+				rgb1 += getSrcPixel( cluster1[k] );
 
 			rgb0 = floor( rgb0 * ( 255.0f / cluster0_cnt ) + 0.5f );
 			rgb1 = floor( rgb1 * ( 255.0f / cluster1_cnt ) + 0.5f );
@@ -169,25 +182,11 @@ void block_main_colors_find( out uint outC0, out uint outC1, uint c0, uint c1 )
 
 void main()
 {
-	// The first 16 threads of each subblock load one pixel each into shared memory
-	if( gl_LocalInvocationID.x < 16u )
-	{
-		const uint2 pixelsToLoadBase = gl_GlobalInvocationID.yz << 2u;
-		uint2 pixelsToLoad = pixelsToLoadBase;
-		// Note ETC2 wants the src pixels transposed!
-		pixelsToLoad.x += gl_LocalInvocationID.x >> 2u;    //+= threadId / 4
-		pixelsToLoad.y += gl_LocalInvocationID.x & 0x03u;  //+= threadId % 4
-		const float3 srcPixels0 = OGRE_Load2D( srcTex, int2( pixelsToLoad ), 0 ).xyz;
-		g_srcPixelsBlockBlk[gl_LocalInvocationID.x] = packUnorm4x8( float4( srcPixels0, 0.0f ) );
-	}
-
-	__sharedOnlyBarrier;
-
 	const uint pix0 = kLocalInvocationToPixIdx[gl_LocalInvocationID.x].x;
 	const uint pix1 = kLocalInvocationToPixIdx[gl_LocalInvocationID.x].y;
 
-	uint c0 = quant4( g_srcPixelsBlockBlk[pix0] );
-	uint c1 = quant4( g_srcPixelsBlockBlk[pix1] );
+	uint c0 = quant4( getSrcPixel( pix0 ) * 255.0f );
+	uint c1 = quant4( getSrcPixel( pix1 ) * 255.0f );
 
 	if( c0 != c1 )
 	{
