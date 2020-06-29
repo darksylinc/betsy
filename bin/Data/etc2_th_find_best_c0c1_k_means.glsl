@@ -91,7 +91,6 @@ void block_main_colors_find( out uint outC0, out uint outC1, uint c0, uint c1 )
 	// k-means complexity is O(n^(d.k+1) log n)
 	// In this case, n = 16, k = 2, d = 3 so 20 loops
 
-	//for( int iter = 0; iter < kMaxIterations && !bestMatchFound; ++iter )
 	for( int iter = 0; iter < kMaxIterations && !bestMatchFound; ++iter )
 	{
 		int cluster0_cnt = 0, cluster1_cnt = 0;
