@@ -241,9 +241,7 @@ uint addSat( const uint packedRgb, float value )
 	return packUnorm4x8( float4( rgbValue, 1.0f ) );
 }
 
-/// Returns false if it failed to find a proper pair
-/// True on success
-bool block_main_colors_find( out uint outC0, out uint outC1, uint c0, uint c1 )
+void block_main_colors_find( out uint outC0, out uint outC1, uint c0, uint c1 )
 {
 	const int kMaxIterations = 20;
 
@@ -278,48 +276,53 @@ bool block_main_colors_find( out uint outC0, out uint outC1, uint c0, uint c1 )
 
 		// k-means failed
 		if( cluster0_cnt == 0 || cluster1_cnt == 0 )
-			return false;
-
-		float3 rgb0, rgb1;
-
-		// k-means update step
-		for( int k = 0; k < cluster0_cnt; ++k )
-			rgb0 += unpackUnorm4x8( g_srcPixelsBlock[cluster0[k]] ).xyz;
-
-		for( int k = 0; k < cluster1_cnt; ++k )
-			rgb1 += unpackUnorm4x8( g_srcPixelsBlock[cluster1[k]] ).xyz;
-
-		rgb0 = floor( rgb0 * ( 255.0f / cluster0_cnt ) + 0.5f );
-		rgb1 = floor( rgb1 * ( 255.0f / cluster1_cnt ) + 0.5f );
-
-		const uint newC0 = quant4( rgb0 );
-		const uint newC1 = quant4( rgb1 );
-		if( newC0 == c0 && newC1 == c1 )
 		{
+			// Actually we did not find the best match. But set this flag to abort
+			// the loop and keep on going with the original colours (using 'break'
+			// makes compilers go crazy)
 			bestMatchFound = true;
 		}
 		else
 		{
-			if( newC0 != newC1 )
+			float3 rgb0, rgb1;
+
+			// k-means update step
+			for( int k = 0; k < cluster0_cnt; ++k )
+				rgb0 += unpackUnorm4x8( g_srcPixelsBlock[cluster0[k]] ).xyz;
+
+			for( int k = 0; k < cluster1_cnt; ++k )
+				rgb1 += unpackUnorm4x8( g_srcPixelsBlock[cluster1[k]] ).xyz;
+
+			rgb0 = floor( rgb0 * ( 255.0f / cluster0_cnt ) + 0.5f );
+			rgb1 = floor( rgb1 * ( 255.0f / cluster1_cnt ) + 0.5f );
+
+			const uint newC0 = quant4( rgb0 );
+			const uint newC1 = quant4( rgb1 );
+			if( newC0 == c0 && newC1 == c1 )
 			{
-				c0 = newC0;
-				c1 = newC1;
-			}
-			else if( calcError( newC0, c0 ) > calcError( newC1, c1 ) )
-			{
-				c0 = newC0;
+				bestMatchFound = true;
 			}
 			else
 			{
-				c1 = newC1;
+				if( newC0 != newC1 )
+				{
+					c0 = newC0;
+					c1 = newC1;
+				}
+				else if( calcError( newC0, c0 ) > calcError( newC1, c1 ) )
+				{
+					c0 = newC0;
+				}
+				else
+				{
+					c1 = newC1;
+				}
 			}
 		}
 	}
 
 	outC0 = c0;
 	outC1 = c1;
-
-	return true;
 }
 
 float etc2_th_mode_calcError( const bool hMode, const uint c0, const uint c1, float distance )
@@ -507,11 +510,10 @@ void main()
 	uint c0 = quant4( g_srcPixelsBlock[pix0] );
 	uint c1 = quant4( g_srcPixelsBlock[pix1] );
 
-	bool bFoundColours = true;
 	if( c0 != c1 )
 	{
 		uint newC0, newC1;
-		bFoundColours = block_main_colors_find( newC0, newC1, c0, c1 );
+		block_main_colors_find( newC0, newC1, c0, c1 );
 		c0 = newC0;
 		c1 = newC1;
 	}
@@ -521,40 +523,37 @@ void main()
 	uint bestC1 = 0u;
 	bool bestModeIsH;
 
-	if( bFoundColours )
+	float err;
+
+	const float distance = kDistances[distIdx];
+
+	// T modes (swapping c0 / c1 makes produces different result)
+	err = etc2_th_mode_calcError( false, c0, c1, distance );
+	if( err < minErr )
 	{
-		float err;
+		minErr = err;
+		bestC0 = c0;
+		bestC1 = c1;
+		bestModeIsH = false;
+	}
 
-		const float distance = kDistances[distIdx];
+	err = etc2_th_mode_calcError( false, c1, c0, distance );
+	if( err < minErr )
+	{
+		minErr = err;
+		bestC0 = c1;
+		bestC1 = c0;
+		bestModeIsH = false;
+	}
 
-		// T modes (swapping c0 / c1 makes produces different result)
-		err = etc2_th_mode_calcError( false, c0, c1, distance );
-		if( err < minErr )
-		{
-			minErr = err;
-			bestC0 = c0;
-			bestC1 = c1;
-			bestModeIsH = false;
-		}
-
-		err = etc2_th_mode_calcError( false, c1, c0, distance );
-		if( err < minErr )
-		{
-			minErr = err;
-			bestC0 = c1;
-			bestC1 = c0;
-			bestModeIsH = false;
-		}
-
-		// H mode (swapping c0 / c1 is pointless, and is used in encoding to increase 1 bit)
-		err = etc2_th_mode_calcError( true, c0, c1, distance );
-		if( err < minErr )
-		{
-			minErr = err;
-			bestC0 = c0;
-			bestC1 = c1;
-			bestModeIsH = true;
-		}
+	// H mode (swapping c0 / c1 is pointless, and is used in encoding to increase 1 bit)
+	err = etc2_th_mode_calcError( true, c0, c1, distance );
+	if( err < minErr )
+	{
+		minErr = err;
+		bestC0 = c0;
+		bestC1 = c1;
+		bestModeIsH = true;
 	}
 
 	g_bestCandidates[gl_LocalInvocationIndex] = float2( minErr, gl_LocalInvocationIndex );
