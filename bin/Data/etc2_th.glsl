@@ -369,8 +369,8 @@ uint etc2_gen_header_t_mode( const uint c0, const uint c1, const uint distIdx )
 
 	float4 bytes;
 	bytes.x = kTmodeEncoderR[uint( rgb0.x )];
-	bytes.y = rgb0.y * 16.0f + rgb0.z;  // G1, B1
-	bytes.z = rgb1.x * 16.0f + rgb0.g;  // R2 G2
+	bytes.y = rgb0.y * 16.0f + rgb0.z;  // G0, B0
+	bytes.z = rgb1.x * 16.0f + rgb0.y;  // R1, G1
 	bytes.w = rgb1.z * 16.0f + floor( fDistIdx * 0.5f ) * 4.0f + 2.0f + mod( fDistIdx, 2.0f );
 	// bytes.w = rgb1.z * 16.0f | ( ( distIdx >> 1u ) << 2u ) | ( 1u << 1u ) | ( distIdx & 0x1u );
 
@@ -411,8 +411,9 @@ uint etc2_gen_header_h_mode( const uint colour0, const uint colour1, const uint 
 	bytes.z = mod( rgb0.z, 2.0f ) * 128.0f + rgb1.x * 8.0f + floor( rgb1.y * 0.5f );
 	// G1 (1 bit lsb) + B1 + distance (2 bits msb, the 3rd one was implicit in c0 < c1 order)
 	bytes.w = mod( rgb1.g, 2.0f ) * 128.0f + rgb1.z * 8.0f + 2.0f;
-	bytes.w += floor( fDistIdx * 0.5f ) + floor( fDistIdx * ( 1.0f / 4.0f ) ) * 4.0f;
-	// bytes.w = ( rgb1.g & 0x1 ) << 7 | rgb1.z << 3 | 0x2 | ( distIdx >> 1u ) | ( distIdx & 0x04 );
+	bytes.w += mod( floor( fDistIdx * 0.5f ), 2.0f ) + floor( fDistIdx * ( 1.0f / 4.0f ) ) * 4.0f;
+	// bytes.w = ( rgb1.g & 0x1 ) << 7 | rgb1.z << 3 | 0x2 |
+	//			 ( ( distIdx >> 1u ) & 0x01 ) | ( distIdx & 0x04 );
 
 	return packUnorm4x8( bytes * ( 1.0f / 255.0f ) );
 }
