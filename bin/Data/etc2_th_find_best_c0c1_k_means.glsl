@@ -125,7 +125,8 @@ void block_main_colors_find( out uint outC0, out uint outC1, uint c0, uint c1 )
 		}
 		else
 		{
-			float3 rgb0, rgb1;
+			float3 rgb0 = float3( 0, 0, 0 );
+			float3 rgb1 = float3( 0, 0, 0 );
 
 			// k-means update step
 			for( int k = 0; k < cluster0_cnt; ++k )
