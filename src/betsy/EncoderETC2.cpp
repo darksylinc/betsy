@@ -9,7 +9,14 @@
 
 namespace betsy
 {
-	EncoderETC2::EncoderETC2() : m_thModesTargetRes( 0 ), m_thModesError( 0 ), m_thModesC0C1( 0 ) {}
+	EncoderETC2::EncoderETC2() :
+		m_thModesTargetRes( 0 ),
+		m_thModesError( 0 ),
+		m_thModesC0C1( 0 ),
+		m_pModeTargetRes( 0 ),
+		m_pModeError( 0 )
+	{
+	}
 	//-------------------------------------------------------------------------
 	EncoderETC2::~EncoderETC2() { assert( !m_thModesTargetRes && "deinitResources not called!" ); }
 	//-------------------------------------------------------------------------
@@ -25,17 +32,28 @@ namespace betsy
 		m_thModesC0C1 = createTexture( TextureParams( m_width >> 2u, m_height >> 2u, PFG_RG32_UINT,
 													  "m_thModesC0C1", TextureFlags::Uav, 120u ) );
 
+		m_pModeTargetRes = createTexture( TextureParams( m_width >> 2u, m_height >> 2u, PFG_RG32_UINT,
+														 "m_pModeTargetRes", TextureFlags::Uav ) );
+		m_pModeError = createTexture( TextureParams( m_width >> 2u, m_height >> 2u, PFG_R32_FLOAT,
+													 "m_pModeError", TextureFlags::Uav ) );
+
 		m_thModesPso = createComputePsoFromFile( "etc2_th.glsl", "../Data/" );
 		m_thModesFindBestC0C1 =
 			createComputePsoFromFile( "etc2_th_find_best_c0c1_k_means.glsl", "../Data/" );
+		m_pModePso = createComputePsoFromFile( "etc2_p.glsl", "../Data/" );
 	}
 	//-------------------------------------------------------------------------
 	void EncoderETC2::deinitResources()
 	{
+		destroyTexture( m_pModeError );
+		m_pModeError = 0;
+		destroyTexture( m_pModeTargetRes );
+		m_pModeTargetRes = 0;
 		destroyTexture( m_thModesError );
 		m_thModesError = 0;
 		destroyTexture( m_thModesTargetRes );
 		m_thModesTargetRes = 0;
+		destroyPso( m_pModePso );
 		destroyPso( m_thModesFindBestC0C1 );
 		destroyPso( m_thModesPso );
 
@@ -56,6 +74,7 @@ namespace betsy
 
 		TODO_better_barrier;
 		glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
+		glMemoryBarrier( GL_ALL_BARRIER_BITS );
 	}
 	//-------------------------------------------------------------------------
 	void EncoderETC2::execute01( EncoderETC2::Etc1Quality quality )
@@ -71,6 +90,12 @@ namespace betsy
 		bindComputePso( m_thModesPso );
 		glDispatchCompute( alignToNextMultiple( m_width, 4u ) / 4u,
 						   alignToNextMultiple( m_height, 4u ) / 4u, 1u );
+
+		bindUav( 0u, m_pModeTargetRes, PFG_RG32_UINT, ResourceAccess::Write );
+		bindUav( 1u, m_pModeError, PFG_R32_FLOAT, ResourceAccess::Write );
+		bindComputePso( m_pModePso );
+		glDispatchCompute( alignToNextMultiple( m_width, 32u ) / 32u,
+						   alignToNextMultiple( m_height, 32u ) / 32u, 1u );
 	}
 	//-------------------------------------------------------------------------
 	void EncoderETC2::execute02()
@@ -80,13 +105,13 @@ namespace betsy
 		glMemoryBarrier( GL_TEXTURE_UPDATE_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 
 		// Copy "8x8" PFG_RG32_UINT -> 32x32 PFG_ETC1_RGB8_UNORM
-		glCopyImageSubData( m_thModesTargetRes, GL_TEXTURE_2D, 0, 0, 0, 0,  //
-							m_dstTexture, GL_TEXTURE_2D, 0, 0, 0, 0,        //
+		glCopyImageSubData( m_pModeTargetRes, GL_TEXTURE_2D, 0, 0, 0, 0,  //
+							m_dstTexture, GL_TEXTURE_2D, 0, 0, 0, 0,      //
 							( GLsizei )( m_width >> 2u ), ( GLsizei )( m_height >> 2u ), 1 );
 
 		StagingTexture stagingTex =
 			createStagingTexture( m_width >> 2u, m_height >> 2u, PFG_RG32_UINT, false );
-		downloadStagingTexture( m_thModesTargetRes, stagingTex );
+		downloadStagingTexture( m_pModeTargetRes, stagingTex );
 		glFinish();
 	}
 	//-------------------------------------------------------------------------
@@ -116,7 +141,7 @@ namespace betsy
 			destroyStagingTexture( m_downloadStaging );
 		m_downloadStaging = createStagingTexture(
 			m_width >> 2u, m_height >> 2u, m_eacTargetRes ? PFG_RGBA32_UINT : PFG_RG32_UINT, false );
-		downloadStagingTexture( m_eacTargetRes ? m_stitchedTarget : m_thModesTargetRes,
+		downloadStagingTexture( m_eacTargetRes ? m_stitchedTarget : m_pModeTargetRes,
 								m_downloadStaging );
 	}
 	//-------------------------------------------------------------------------

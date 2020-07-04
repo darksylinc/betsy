@@ -17,9 +17,12 @@ namespace betsy
 		GLuint m_thModesTargetRes;
 		GLuint m_thModesError;
 		GLuint m_thModesC0C1;
+		GLuint m_pModeTargetRes;
+		GLuint m_pModeError;
 
 		ComputePso m_thModesPso;
 		ComputePso m_thModesFindBestC0C1;
+		ComputePso m_pModePso;
 
 	public:
 		EncoderETC2();
