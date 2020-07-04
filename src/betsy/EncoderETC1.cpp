@@ -31,6 +31,7 @@ namespace betsy
 		m_srcTexture( 0 ),
 		m_ditheredTexture( 0 ),
 		m_compressTargetRes( 0 ),
+		m_etc1Error( 0 ),
 		m_eacTargetRes( 0 ),
 		m_stitchedTarget( 0 ),
 		m_dstTexture( 0 ),
@@ -117,6 +118,12 @@ namespace betsy
 		m_compressTargetRes = createTexture( TextureParams( m_width >> 2u, m_height >> 2u, PFG_RG32_UINT,
 															"m_compressTargetRes", TextureFlags::Uav ) );
 
+		if( bForEtc2 )
+		{
+			m_etc1Error = createTexture( TextureParams( m_width >> 2u, m_height >> 2u, PFG_R32_FLOAT,
+														"m_etc1Error", TextureFlags::Uav ) );
+		}
+
 		m_dstTexture =
 			createTexture( TextureParams( m_width, m_height, PFG_ETC1_RGB8_UNORM, "m_dstTexture" ) );
 
@@ -126,7 +133,8 @@ namespace betsy
 			delete[] filledTables;
 		}
 
-		m_compressPso = createComputePsoFromFile( "etc1.glsl", "../Data/" );
+		m_compressPso =
+			createComputePsoFromFile( bForEtc2 ? "etc1_with_error.glsl" : "etc1.glsl", "../Data/" );
 
 		if( bCompressAlpha )
 		{
@@ -158,6 +166,11 @@ namespace betsy
 
 		destroyTexture( m_dstTexture );
 		m_dstTexture = 0;
+		if( m_etc1Error )
+		{
+			destroyTexture( m_etc1Error );
+			m_etc1Error = 0;
+		}
 		destroyTexture( m_compressTargetRes );
 		m_compressTargetRes = 0;
 		if( m_eacTargetRes )
@@ -211,6 +224,8 @@ namespace betsy
 		bindTexture( 0u, m_ditheredTexture );
 		bindUav( 0u, m_compressTargetRes, PFG_RG32_UINT, ResourceAccess::Write );
 		bindUavBuffer( 1u, m_etc1TablesSsbo, 0u, getEtc1TablesSize() );
+		if( m_etc1Error )
+			bindUav( 2u, m_etc1Error, PFG_R32_FLOAT, ResourceAccess::Write );
 		bindComputePso( m_compressPso );
 
 		struct Params

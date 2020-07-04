@@ -35,7 +35,7 @@ layout( location = 0 ) uniform float4 params;
 // This is due to packing in g_srcPixelsBlock
 uniform sampler2D srcTex;
 
-layout( rg32ui ) uniform restrict writeonly uimage2D dstTexture;
+layout( rg32ui, binding = 0 ) uniform restrict writeonly uimage2D dstTexture;
 
 layout( std430, binding = 1 ) readonly restrict buffer globalBuffer
 {
@@ -44,6 +44,11 @@ layout( std430, binding = 1 ) readonly restrict buffer globalBuffer
 	float pBuff_etc1_inverse_lookup[2 * 8 * 4][256];  // [diff/inten_table/selector][desired_color]
 	uint pBuff_color8_to_etc_block_config[];
 };
+
+#ifdef OUTPUT_ERROR
+// Used by ETC2 to decide between this and T, H and P modes
+layout( r32f, binding = 2 ) uniform restrict writeonly image2D dstError;
+#endif
 
 layout( local_size_x = 4,  //
 		local_size_y = 4,  //
@@ -396,6 +401,10 @@ void pack_etc1_block_solid_color( const float3 srcPixel )
 
 	uint2 dstUV = gl_GlobalInvocationID.yz;
 	imageStore( dstTexture, int2( dstUV ), uint4( outputBytes.xy, 0u, 0u ) );
+
+#ifdef OUTPUT_ERROR
+	imageStore( dstError, int2( dstUV ), float4( bestError, 0.0f, 0.0f, 0.0f ) );
+#endif
 }
 
 void pack_etc1_block_solid_color_constrained( const float3 srcPixel, const bool bUseDiff,
@@ -832,5 +841,9 @@ void main()
 
 		uint2 dstUV = gl_GlobalInvocationID.yz;
 		imageStore( dstTexture, int2( dstUV ), uint4( outputBytes.xy, 0u, 0u ) );
+#ifdef OUTPUT_ERROR
+		imageStore( dstError, int2( dstUV ),
+					float4( results[0].error + results[1].error, 0.0f, 0.0f, 0.0f ) );
+#endif
 	}
 }
