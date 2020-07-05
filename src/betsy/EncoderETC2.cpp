@@ -143,7 +143,6 @@ namespace betsy
 		downloadStagingTexture( m_pModeTargetRes, stagingTex );
 		glFinish();
 	}
-#if 1
 	//-------------------------------------------------------------------------
 	void EncoderETC2::startDownload()
 	{
@@ -155,14 +154,4 @@ namespace betsy
 												  hasAlpha() ? PFG_RGBA32_UINT : PFG_RG32_UINT, false );
 		downloadStagingTexture( hasAlpha() ? m_stitchedTarget : m_pModeTargetRes, m_downloadStaging );
 	}
-	//-------------------------------------------------------------------------
-	void EncoderETC2::downloadTo( CpuImage &outImage )
-	{
-		glFinish();
-		outImage.width = m_width;
-		outImage.height = m_height;
-		outImage.format = hasAlpha() ? PFG_ETC2_RGBA8_UNORM : PFG_ETC1_RGB8_UNORM;
-		outImage.data = reinterpret_cast<uint8_t *>( m_downloadStaging.data );
-	}
-#endif
 }  // namespace betsy

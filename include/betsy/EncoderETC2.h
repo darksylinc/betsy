@@ -45,6 +45,5 @@ namespace betsy
 		void execute03();
 
 		void startDownload();
-		void downloadTo( CpuImage &outImage );
 	};
 }  // namespace betsy
