@@ -14,3 +14,5 @@ This software uses code from:
 * [stb_dxt](https://github.com/nothings/stb/blob/master/stb_dxt.h), under dual-license: A. MIT License
 Copyright (c) 2017 Sean Barrett, B. Public Domain (www.unlicense.org). Original by fabian "ryg" giesen - ported to C by stb. Modifications by Matias N. Goldberg to adapt it as a compute shader
 * EAC loosely inspired on [etc2_encoder](https://github.com/titilambert/packaging-efl/blob/master/src/static_libs/rg_etc/etc2_encoder.c), Copyright (C) 2014 Jean-Philippe ANDRE, 2-clause BSD license
+* ETC2 T & H modes based on [etc2_encoder](https://github.com/titilambert/packaging-efl/blob/master/src/static_libs/rg_etc/etc2_encoder.c), Copyright (C) 2014 Jean-Philippe ANDRE, 2-clause BSD license. A couple minor bugfixes applied by Matias N. Goldberg. Modifications made by Matias N. Goldberg to adapt it as a compute shader
+* ETC2 P very loosely based on [etc2_encoder](https://github.com/titilambert/packaging-efl/blob/master/src/static_libs/rg_etc/etc2_encoder.c), Copyright (C) 2014 Jean-Philippe ANDRE, 2-clause BSD license. Considerable rewrite by Matias N. Goldberg to enhance its quality.
