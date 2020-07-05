@@ -13,7 +13,7 @@ At the moment it is WIP.
 
 Run:
 ```
-betsy input.hdr --codec=etc2 --quality=2 output.ktx
+betsy input.hdr --codec=etc2_rgb --quality=2 output.ktx
 ```
 
 Run `betsy --help` for full description
@@ -65,6 +65,7 @@ python2 Run.py
 |---------|----------------|------|
 | ETC1    | Done 			| <br/>Based on [rg-etc1](https://github.com/richgel999/rg-etc1).<br/>AMD Mesa Linux: Requires a very recent Mesa version due to a shader miscompilation issue. See [ticket](https://gitlab.freedesktop.org/mesa/mesa/-/issues/3044#note_515611).|
 | EAC     | Done           | Used for R11, RG11 and ETC2_RGBA (for encoding the alpha component).<br/>Quality: Maximum, we use brute force to check all possible combinations.|
+| ETC2	  | Done           | T, H and P modes implemented. Based on [etc2_encoder](https://github.com/titilambert/packaging-efl/blob/master/src/static_libs/rg_etc/etc2_encoder.c) for T and H modes with a couple minor bugfixes. P was based on the same implementation but uses a much higher quality fitting algorithm; thus neither of the 3 modes will produce the exact same output as the original C version|
 | BC1     | Done           | Based on [stb_dxt](https://github.com/nothings/stb/blob/master/stb_dxt.h).|
 | BC3     | Done           | This is just BC1 for RGB + BC4 for alpha |
 | BC4, BC5| Done           | Based on [stb_dxt](https://github.com/nothings/stb/blob/master/stb_dxt.h). Supports UNORM & SNORM variants|
@@ -86,6 +87,8 @@ There could also be compiler/driver/hardware bugs causing the code to misbehave,
 **Did you write these codecs yourself?**
 
 So far I only wrote the EAC codec from scratch, but I used [etc2_encoder](https://github.com/titilambert/packaging-efl/blob/master/src/static_libs/rg_etc/etc2_encoder.c) for reference, particularly figuring out the bit pattern of the bit output and the idea of just using brute force. Unfortunately this version had several bugs which is why I just wrote it from scratch.
+
+The P mode from ETC2 is also based on [etc2_encoder](https://github.com/titilambert/packaging-efl/blob/master/src/static_libs/rg_etc/etc2_encoder.c) but I rewrote the fitting algorithm because the original was way too basic. The new one produces significantly higher quality output.
 
 The rest of the codecs were originally written for different shading languages or architectures. See the supported formats' table for references to the original implementations.
 

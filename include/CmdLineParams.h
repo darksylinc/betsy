@@ -9,6 +9,7 @@ namespace Codec
 	enum Codec
 	{
 		etc1,
+		etc2_rgba_etc1,
 		etc2_rgb,
 		etc2_rgba,
 		eac_r11,

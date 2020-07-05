@@ -26,7 +26,7 @@ namespace betsy
 void printHelp()
 {
 	printf( "Usage:\n" );
-	printf( "	betsy input.hdr --codec=etc2 --quality=2 output.ktx\n\n" );
+	printf( "	betsy input.hdr --codec=etc2_rgb --quality=2 output.ktx\n\n" );
 
 	printf( "Supported input formats:\n" );
 	printf( "	Whatever FreeImage supports (png, jpg, hdr, exr, bmp, ...):\n" );
@@ -37,27 +37,29 @@ void printHelp()
 
 	printf( "Supported codecs:\n" );
 	printf(
-		"	etc1		0.5 bpp - ETC1 RGB, backwards compatible with etc2 hardware\n"
-		"	etc2_rgb	0.5 bpp - ETC2 RGB\n"
-		"	etc2_rgba	1.0 bpp - ETC2+EAC RGBA\n"
-		"	eac_r11		0.5 bpp - EAC Red unorm (source 11-bits per pixel)\n"
-		"	eac_rg11	1.0 bpp - EAC RG unorm (11-bits each, useful for normal maps)\n"
-		"	bc6h		1.0 bpp - BC6 Unsigned half-floating point format, RGB\n"
-		"	bc1		0.5 bpp - BC1 RGB aka DXT1\n"
-		"	bc3		1.0 bpp - BC3 RGBA aka DXT5\n"
-		"	bc4		0.5 bpp - BC4 Red unorm\n"
-		"	bc4_snorm	0.5 bpp - BC4 Red snorm\n"
-		"	bc5		1.0 bpp - BC5 RG unorm\n"
-		"	bc5_snorm	1.0 bpp - BC5 RG snorm. Ideal for normal maps\n" );
+		"	etc1            0.5 bpp - ETC1 RGB, Works on ETC1 HW. Backwards compatible w/ ETC2 HW\n"
+		"	etc2_rgba_etc1  1.0 bpp - ETC1 RGB + EAC Alpha. Requires ETC2 HW\n"
+		"	etc2_rgb        0.5 bpp - ETC2 RGB\n"
+		"	etc2_rgba       1.0 bpp - ETC2 RGB + EAC Alpha\n"
+		"	eac_r11         0.5 bpp - EAC Red unorm (source 11-bits per pixel)\n"
+		"	eac_rg11        1.0 bpp - EAC RG unorm (11-bits each, useful for normal maps)\n"
+		"	bc6h            1.0 bpp - BC6 Unsigned half-floating point format, RGB\n"
+		"	bc1             0.5 bpp - BC1 RGB aka DXT1\n"
+		"	bc3             1.0 bpp - BC3 RGBA aka DXT5\n"
+		"	bc4             0.5 bpp - BC4 Red unorm\n"
+		"	bc4_snorm       0.5 bpp - BC4 Red snorm\n"
+		"	bc5             1.0 bpp - BC5 RG unorm\n"
+		"	bc5_snorm       1.0 bpp - BC5 RG snorm. Ideal for normal maps\n" );
 
-	printf( "Other options:\n" );
+	printf( "\nbpp here stands for 'bytes per pixel', rather than bits per pixel.\n"
+			"\nOther options:\n" );
 	printf(
-		"	--quality		Value in range [0; 2] where 0 is lowest quality.\n"
-		"				Not all codecs support it.\n"
-		"	--dither		Use Floyd-steinberg dithering. Anti-banding method.\n"
-		"					Not recommended on images with flat colours (e.g. charts, normal maps)\n"
-		"					Supported by BC1 & ETC1/2\n"
-		"	--renderdoc		Use this to ensure RenderDoc capture works (slower)\n" );
+		"	--quality       Value in range [0; 2] where 0 is lowest quality.\n"
+		"	                Not all codecs support it.\n"
+		"	--dither        Use Floyd-steinberg dithering. Anti-banding method.\n"
+		"	                Not recommended on images with flat colours (e.g. charts, normal maps)\n"
+		"	                Supported by BC1 & ETC1/2\n"
+		"	--renderdoc     Use this to ensure RenderDoc capture works (slower)\n" );
 }
 
 /** Returns true if 'str' starts with the text contained in 'what'
@@ -177,10 +179,10 @@ int main( int nargs, char *const argv[] )
 	switch( params.codec )
 	{
 	case Codec::etc1:
-	case Codec::etc2_rgba:
+	case Codec::etc2_rgba_etc1:
 	{
 		betsy::EncoderETC1 encoder;
-		encoder.initResources( cpuImage, params.codec == Codec::etc2_rgba, params.dither );
+		encoder.initResources( cpuImage, params.codec == Codec::etc2_rgba_etc1, params.dither );
 		while( repeat-- )
 		{
 			encoder.execute00();
@@ -195,6 +197,7 @@ int main( int nargs, char *const argv[] )
 	}
 	break;
 	case Codec::etc2_rgb:
+	case Codec::etc2_rgba:
 	{
 		betsy::EncoderETC2 encoder;
 		encoder.initResources( cpuImage, params.codec == Codec::etc2_rgba, params.dither );

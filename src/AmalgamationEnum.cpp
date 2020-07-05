@@ -11,36 +11,38 @@ const std::string BLANKSTRING = "";
 
 namespace Codec
 {
-	CodecEnum::EnumData CodecEnum::mSortedByEnum[12 + 1] = {
-		CodecEnum::EnumData( bc1, "bc1" ),              //
-		CodecEnum::EnumData( bc3, "bc3" ),              //
-		CodecEnum::EnumData( bc4, "bc4" ),              //
-		CodecEnum::EnumData( bc4_snorm, "bc4_snorm" ),  //
-		CodecEnum::EnumData( bc5, "bc5" ),              //
-		CodecEnum::EnumData( bc5_snorm, "bc5_snorm" ),  //
-		CodecEnum::EnumData( bc6h, "bc6h" ),            //
-		CodecEnum::EnumData( eac_r11, "eac_r11" ),      //
-		CodecEnum::EnumData( eac_rg11, "eac_rg11" ),    //
-		CodecEnum::EnumData( etc1, "etc1" ),            //
-		CodecEnum::EnumData( etc2_rgb, "etc2_rgb" ),    //
-		CodecEnum::EnumData( etc2_rgba, "etc2_rgba" ),  //
-		CodecEnum::EnumData( etc2_rgba, "__INVALID" )
+	CodecEnum::EnumData CodecEnum::mSortedByEnum[13 + 1] = {
+		CodecEnum::EnumData( bc1, "bc1" ),                        //
+		CodecEnum::EnumData( bc3, "bc3" ),                        //
+		CodecEnum::EnumData( bc4, "bc4" ),                        //
+		CodecEnum::EnumData( bc4_snorm, "bc4_snorm" ),            //
+		CodecEnum::EnumData( bc5, "bc5" ),                        //
+		CodecEnum::EnumData( bc5_snorm, "bc5_snorm" ),            //
+		CodecEnum::EnumData( bc6h, "bc6h" ),                      //
+		CodecEnum::EnumData( eac_r11, "eac_r11" ),                //
+		CodecEnum::EnumData( eac_rg11, "eac_rg11" ),              //
+		CodecEnum::EnumData( etc1, "etc1" ),                      //
+		CodecEnum::EnumData( etc2_rgb, "etc2_rgb" ),              //
+		CodecEnum::EnumData( etc2_rgba, "etc2_rgba" ),            //
+		CodecEnum::EnumData( etc2_rgba_etc1, "etc2_rgba_etc1" ),  //
+		CodecEnum::EnumData( etc2_rgba_etc1, "__INVALID" )
 	};
 
-	CodecEnum::EnumData CodecEnum::mSortedByString[12 + 1] = {
-		CodecEnum::EnumData( bc1, "bc1" ),              //
-		CodecEnum::EnumData( bc3, "bc3" ),              //
-		CodecEnum::EnumData( bc4, "bc4" ),              //
-		CodecEnum::EnumData( bc4_snorm, "bc4_snorm" ),  //
-		CodecEnum::EnumData( bc5, "bc5" ),              //
-		CodecEnum::EnumData( bc5_snorm, "bc5_snorm" ),  //
-		CodecEnum::EnumData( bc6h, "bc6h" ),            //
-		CodecEnum::EnumData( eac_r11, "eac_r11" ),      //
-		CodecEnum::EnumData( eac_rg11, "eac_rg11" ),    //
-		CodecEnum::EnumData( etc1, "etc1" ),            //
-		CodecEnum::EnumData( etc2_rgb, "etc2_rgb" ),    //
-		CodecEnum::EnumData( etc2_rgba, "etc2_rgba" ),  //
-		CodecEnum::EnumData( etc2_rgba, "__INVALID" )
+	CodecEnum::EnumData CodecEnum::mSortedByString[13 + 1] = {
+		CodecEnum::EnumData( bc1, "bc1" ),                        //
+		CodecEnum::EnumData( bc3, "bc3" ),                        //
+		CodecEnum::EnumData( bc4, "bc4" ),                        //
+		CodecEnum::EnumData( bc4_snorm, "bc4_snorm" ),            //
+		CodecEnum::EnumData( bc5, "bc5" ),                        //
+		CodecEnum::EnumData( bc5_snorm, "bc5_snorm" ),            //
+		CodecEnum::EnumData( bc6h, "bc6h" ),                      //
+		CodecEnum::EnumData( eac_r11, "eac_r11" ),                //
+		CodecEnum::EnumData( eac_rg11, "eac_rg11" ),              //
+		CodecEnum::EnumData( etc1, "etc1" ),                      //
+		CodecEnum::EnumData( etc2_rgb, "etc2_rgb" ),              //
+		CodecEnum::EnumData( etc2_rgba, "etc2_rgba" ),            //
+		CodecEnum::EnumData( etc2_rgba_etc1, "etc2_rgba_etc1" ),  //
+		CodecEnum::EnumData( etc2_rgba_etc1, "__INVALID" )
 	};
 
 	//---------------------------------------------------------------------------------------
@@ -77,16 +79,16 @@ namespace Codec
 	//---------------------------------------------------------------------------------------
 	int CodecEnum::minValue() { return mSortedByEnum[0].enumValue; }
 	//---------------------------------------------------------------------------------------
-	int CodecEnum::maxValue() { return mSortedByEnum[12 - 1].enumValue; }
+	int CodecEnum::maxValue() { return mSortedByEnum[13 - 1].enumValue; }
 	//---------------------------------------------------------------------------------------
-	size_t CodecEnum::count() { return 12; }
+	size_t CodecEnum::count() { return 13; }
 	//---------------------------------------------------------------------------------------
 	bool CodecEnum::find( const std::string &strValue, Codec &outValue )
 	{
 		const EnumData *itor =
-			std::lower_bound( &mSortedByString[0], &mSortedByString[12], strValue, OrderByStr() );
+			std::lower_bound( &mSortedByString[0], &mSortedByString[13], strValue, OrderByStr() );
 
-		if( itor != &mSortedByString[12] && itor->enumString == strValue )
+		if( itor != &mSortedByString[13] && itor->enumString == strValue )
 		{
 			outValue = itor->enumValue;
 			return true;
