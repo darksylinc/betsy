@@ -71,6 +71,34 @@ python2 Run.py
 | BC4, BC5| Done           | Based on [stb_dxt](https://github.com/nothings/stb/blob/master/stb_dxt.h). Supports UNORM & SNORM variants|
 | BC6H UF | Done           | Unsigned variation of B6CH. GLSL port of [GPURealTimeBC6H](https://github.com/knarkowicz/GPURealTimeBC6H)|
 
+**When I run betsy, I get a 'Display driver stopped responding and has recovered' error**
+
+Some textures are very big and take too long to encode, thus Windows has no way of
+knowing if the GPU is stuck in an infinite loop. This problem is not unique to betsy
+and if you've used GPU-based tools before, you may already be familiar with this.
+
+To solve this problem try:
+
+   1. Lowering the --quality setting
+   1. Use a smaller resolution texture
+   1. [Increase the TdrDelay and TdrDdiDelay](https://docs.substance3d.com/spdoc/gpu-drivers-crash-with-long-computations-128745489.html) to a higher value via Registry.
+
+Alternatively if you're on Linux, you may see your X11 session restarts on its own.
+
+**Can I encode using the CPU and GPU at the same time?**
+
+Betsy does not support CPU encoding. However you can run another 3rd party tool to compress
+a set of textures while betsy works on a different set.
+
+Note however this could put a lot of stress on your machine (both CPU and GPU to 100%).
+Make sure your PSU can handle the load and your cooling solution keeps your system from overheating.
+
+If you're overclocking your hardware, your system could become unstable or
+silently produce incorrect output on a few pixels
+
+*Note:* You can use Mesa's llvmpipe DLLs to run betsy under the CPU.
+I did not try this and I don't know what the performance would be like.
+
 **Does betsy produce the same quality as the original implementations they were based on? (or bit-exact output)?**
 
 In theory yes. In practice there could have been bugs during the port/adaptation,
@@ -92,6 +120,48 @@ The P mode from ETC2 is also based on [etc2_encoder](https://github.com/titilamb
 
 The rest of the codecs were originally written for different shading languages or architectures. See the supported formats' table for references to the original implementations.
 
+**Why does it use OpenGL?**
+
+This project has been [contracted by Godot](https://godotengine.org/article/godot-core-budget-meeting-report-1)
+to improve its import time process.
+
+One of the main requirements was that the shading language had to be GLSL to ease its integration into Godot.
+
+Vulkan requires a lot of boiler-plate initialization code and dealing with unnecessary complexity that would
+have burnt too much of the contract's budget which is better spent on improving the conversion algorithms,
+thus OpenGL was a much more reasonable choice.
+
+OpenGL allowed us to get into writing the application right away while also using GLSL as the main shading language.
+
+Note that betsy has abstracted almost all of the API code to
+[PlatformGL.cpp](src/PlatformGL.cpp) and [EncoderGL.cpp](src/betsy/EncoderGL.cpp),
+meaning that it should be possible to port it to Vulkan (in fact it has been made so,
+so that it is easy to integrate into Godot)
+
+**Why does the code have execute01(), execute02(), and so on...?**
+
+Many of the compute shaders can be run in parallel via Async Compute and have multiple steps.
+
+Each step must wait for the completion of the previous step in order to process (e.g. barrier)
+
+This means that you can call (assuming a Vulkan solution):
+
+```
+for( int i=0; i < numEncoders; ++i )
+    encoder[i].execute01();
+for( int i=0; i < numEncoders; ++i )
+    encoder[i].barriers01(); // Not implemented in OpenGL
+
+for( int i=0; i < numEncoders; ++i )
+    encoder[i].execute02();
+for( int i=0; i < numEncoders; ++i )
+    encoder[i].barriers02(); // Not implemented in OpenGL
+
+for( int i=0; i < numEncoders; ++i )
+    encoder[i].execute03();
+```
+
+to have them all run in parallel
 
 ## Legal
 
