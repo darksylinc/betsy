@@ -250,7 +250,7 @@ uint etc2_gen_header_t_mode( const uint c0, const uint c1, const uint distIdx )
 	float4 bytes;
 	bytes.x = kTmodeEncoderR[uint( rgb0.x )];
 	bytes.y = rgb0.y * 16.0f + rgb0.z;  // G0, B0
-	bytes.z = rgb1.x * 16.0f + rgb0.y;  // R1, G1
+	bytes.z = rgb1.x * 16.0f + rgb1.y;  // R1, G1
 	bytes.w = rgb1.z * 16.0f + floor( fDistIdx * 0.5f ) * 4.0f + 2.0f + mod( fDistIdx, 2.0f );
 	// bytes.w = rgb1.z * 16.0f | ( ( distIdx >> 1u ) << 2u ) | ( 1u << 1u ) | ( distIdx & 0x1u );
 
