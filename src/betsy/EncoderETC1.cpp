@@ -144,7 +144,10 @@ namespace betsy
 				createTexture( TextureParams( m_width >> 2u, m_height >> 2u, PFG_RGBA32_UINT,
 											  "m_stitchedTarget", TextureFlags::Uav ) );
 			m_eacPso = createComputePsoFromFile( "eac.glsl", "../Data/" );
-			m_stitchPso = createComputePsoFromFile( "etc2_rgba_stitch.glsl", "../Data/" );
+
+			// ETC2 codec does its own stitching
+			if( !bForEtc2 )
+				m_stitchPso = createComputePsoFromFile( "etc2_rgba_stitch.glsl", "../Data/" );
 		}
 
 		StagingTexture stagingTex = createStagingTexture( m_width, m_height, srcImage.format, true );
@@ -287,8 +290,8 @@ namespace betsy
 		bindTexture( 1u, m_eacTargetRes );
 		bindUav( 0u, m_stitchedTarget, PFG_RGBA32_UINT, ResourceAccess::Write );
 		bindComputePso( m_stitchPso );
-		glDispatchCompute( alignToNextMultiple( m_width, 4u ) / 4u,
-						   alignToNextMultiple( m_height, 4u ) / 4u, 1u );
+		glDispatchCompute( alignToNextMultiple( m_width, 32u ) / 32u,
+						   alignToNextMultiple( m_height, 32u ) / 32u, 1u );
 	}
 	//-------------------------------------------------------------------------
 	void EncoderETC1::execute03()

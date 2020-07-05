@@ -26,7 +26,7 @@ namespace betsy
 		GLuint m_srcTexture;
 		GLuint m_ditheredTexture;  // m_ditheredTexture = m_srcTexture when dither is disabled
 		GLuint m_compressTargetRes;
-		GLuint m_etc1Error;
+		GLuint m_etc1Error;       // Only used if bForEtc2 = true
 		GLuint m_eacTargetRes;    // Only used for ETC2_RGBA
 		GLuint m_stitchedTarget;  // Only used for ETC2_RGBA
 		GLuint m_dstTexture;

@@ -23,6 +23,15 @@ namespace betsy
 		file.seekg( 0, std::ios_base::beg );
 		file.read( &outSource[0], static_cast<std::streamsize>( fileSize ) );
 
+		// Remove "#version" from first newline
+		const size_t firstNewlinePos = outSource.find_first_of( '\n' );
+		if( firstNewlinePos != std::string::npos )
+		{
+			const size_t versionPos = outSource.substr( 0u, firstNewlinePos ).find( "#version ", 0u );
+			if( versionPos != std::string::npos )
+				outSource.erase( 0u, firstNewlinePos + 1u );
+		}
+
 		return true;
 	}
 	//-------------------------------------------------------------------------

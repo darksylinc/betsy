@@ -41,6 +41,11 @@ namespace betsy
 		m_thModesFindBestC0C1 =
 			createComputePsoFromFile( "etc2_th_find_best_c0c1_k_means.glsl", "../Data/" );
 		m_pModePso = createComputePsoFromFile( "etc2_p.glsl", "../Data/" );
+
+		if( bCompressAlpha )
+			m_stitchPso = createComputePsoFromFile( "etc2_rgba_selector.glsl", "../Data/" );
+		else
+			m_stitchPso = createComputePsoFromFile( "etc2_rgb_selector.glsl", "../Data/" );
 	}
 	//-------------------------------------------------------------------------
 	void EncoderETC2::deinitResources()
@@ -74,14 +79,11 @@ namespace betsy
 
 		TODO_better_barrier;
 		glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
-		glMemoryBarrier( GL_ALL_BARRIER_BITS );
 	}
 	//-------------------------------------------------------------------------
 	void EncoderETC2::execute01( EncoderETC2::Etc1Quality quality )
 	{
-#if 0
 		EncoderETC1::execute01( quality );
-#endif
 
 		bindTexture( 0u, m_ditheredTexture );
 		bindUav( 0u, m_thModesTargetRes, PFG_RG32_UINT, ResourceAccess::Write );
@@ -100,36 +102,46 @@ namespace betsy
 	//-------------------------------------------------------------------------
 	void EncoderETC2::execute02()
 	{
-		// Decide which the best modes and merge
-
+		// Decide which the best modes and merge and stitch
 		glMemoryBarrier( GL_TEXTURE_UPDATE_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 
+		bindTexture( 0u, m_etc1Error );
+		bindTexture( 1u, m_thModesError );
+		bindTexture( 2u, m_pModeError );
+
+		bindTexture( 3u, m_compressTargetRes );
+		bindTexture( 4u, m_thModesTargetRes );
+
+		if( m_eacTargetRes )
+		{
+			bindTexture( 5u, m_pModeTargetRes );
+			bindTexture( 6u, m_eacTargetRes );
+
+			bindUav( 0u, m_stitchedTarget, PFG_RGBA32_UINT, ResourceAccess::Write );
+		}
+		else
+		{
+			bindUav( 0u, m_pModeTargetRes, PFG_RG32_UINT, ResourceAccess::ReadWrite );
+		}
+
+		bindComputePso( m_stitchPso );
+		glDispatchCompute( alignToNextMultiple( m_width, 32u ) / 32u,
+						   alignToNextMultiple( m_height, 32u ) / 32u, 1u );
+	}
+	//-------------------------------------------------------------------------
+	void EncoderETC2::execute03()
+	{
 		// Copy "8x8" PFG_RG32_UINT -> 32x32 PFG_ETC1_RGB8_UNORM
-		glCopyImageSubData( m_pModeTargetRes, GL_TEXTURE_2D, 0, 0, 0, 0,  //
-							m_dstTexture, GL_TEXTURE_2D, 0, 0, 0, 0,      //
+		// Copy "8x8" PFG_RGBA32_UINT -> 32x32 PFG_ETC2_RGBA8_UNORM
+		glCopyImageSubData( m_stitchedTarget ? m_stitchedTarget : m_pModeTargetRes,  //
+							GL_TEXTURE_2D, 0, 0, 0, 0,                               //
+							m_dstTexture, GL_TEXTURE_2D, 0, 0, 0, 0,                 //
 							( GLsizei )( m_width >> 2u ), ( GLsizei )( m_height >> 2u ), 1 );
 
 		StagingTexture stagingTex =
 			createStagingTexture( m_width >> 2u, m_height >> 2u, PFG_RG32_UINT, false );
 		downloadStagingTexture( m_pModeTargetRes, stagingTex );
 		glFinish();
-	}
-	//-------------------------------------------------------------------------
-	void EncoderETC2::execute03()
-	{
-		// It's not a typo. Stitching EAC into ETC2_RGBA must happen in our
-		// EncoderETC2::execute03 which is EncoderETC1::execute02 for our base class
-#if 0
-		EncoderETC1::execute02();
-#endif
-	}
-	//-------------------------------------------------------------------------
-	void EncoderETC2::execute04()
-	{
-#if 0
-		// Also not a typo. Our 04 is our base's 03
-		EncoderETC1::execute03();
-#endif
 	}
 #if 1
 	//-------------------------------------------------------------------------

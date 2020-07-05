@@ -106,8 +106,8 @@ namespace betsy
 		bindTexture( 1u, m_eacTargetRes[0] );
 		bindUav( 0u, m_stitchedTarget, PFG_RGBA32_UINT, ResourceAccess::Write );
 		bindComputePso( m_stitchPso );
-		glDispatchCompute( alignToNextMultiple( m_width, 4u ) / 4u,
-						   alignToNextMultiple( m_height, 4u ) / 4u, 1u );
+		glDispatchCompute( alignToNextMultiple( m_width, 32u ) / 32u,
+						   alignToNextMultiple( m_height, 32u ) / 32u, 1u );
 	}
 	//-------------------------------------------------------------------------
 	void EncoderEAC::startDownload()

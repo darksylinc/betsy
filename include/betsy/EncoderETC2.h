@@ -43,7 +43,6 @@ namespace betsy
 		void execute01( EncoderETC2::Etc1Quality quality = cHighQuality );
 		void execute02();
 		void execute03();
-		void execute04();
 
 		void startDownload();
 		void downloadTo( CpuImage &outImage );

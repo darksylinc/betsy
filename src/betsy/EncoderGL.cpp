@@ -7,8 +7,8 @@
 #include <assert.h>
 #include <string.h>
 
-// #define DUMP_SHADER
-// #define DEBUG_LINK_ERRORS
+//#define DUMP_SHADER
+//#define DEBUG_LINK_ERRORS
 
 #if defined( DUMP_SHADER ) || defined( DEBUG_LINK_ERRORS )
 #	include <stdio.h>
@@ -373,6 +373,17 @@ namespace betsy
 		glShaderSource( retVal.computeShader, 1, &csShader, 0 );
 		glCompileShader( retVal.computeShader );
 
+#ifdef DEBUG_LINK_ERRORS
+		{
+			GLsizei logLength = 0;
+			char infoLog[1024];
+			glGetShaderiv( retVal.computeShader, GL_INFO_LOG_LENGTH, &logLength );
+			glGetShaderInfoLog( retVal.computeShader, sizeof( infoLog ), &logLength, infoLog );
+			if( logLength > 0 )
+				printf( "%s\n", infoLog );
+		}
+#endif
+
 		retVal.computePso = glCreateProgram();
 		glAttachShader( retVal.computePso, retVal.computeShader );
 		glLinkProgram( retVal.computePso );
@@ -382,7 +393,8 @@ namespace betsy
 			GLsizei logLength = 0;
 			char infoLog[1024];
 			glGetProgramInfoLog( retVal.computePso, sizeof( infoLog ), &logLength, infoLog );
-			printf( "%s", infoLog );
+			if( logLength > 0 )
+				printf( "%s\n", infoLog );
 		}
 #endif
 

@@ -203,9 +203,8 @@ int main( int nargs, char *const argv[] )
 			encoder.execute00();
 			encoder.execute01( static_cast<betsy::EncoderETC1::Etc1Quality>( params.quality ) );
 			encoder.execute02();
-			encoder.execute03();
 			if( params.usingRenderDoc )
-				encoder.execute04();  // Not needed in offline mode
+				encoder.execute03();  // Not needed in offline mode
 			betsy::pollPlatformWindow();
 		}
 		saveToDisk( encoder, params );
