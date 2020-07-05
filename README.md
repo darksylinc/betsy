@@ -71,6 +71,8 @@ python2 Run.py
 | BC4, BC5| Done           | Based on [stb_dxt](https://github.com/nothings/stb/blob/master/stb_dxt.h). Supports UNORM & SNORM variants|
 | BC6H UF | Done           | Unsigned variation of B6CH. GLSL port of [GPURealTimeBC6H](https://github.com/knarkowicz/GPURealTimeBC6H)|
 
+## FAQ
+
 **When I run betsy, I get a 'Display driver stopped responding and has recovered' error**
 
 Some textures are very big and take too long to encode, thus Windows has no way of
