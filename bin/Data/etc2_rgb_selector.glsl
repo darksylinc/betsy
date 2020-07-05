@@ -1,3 +1,5 @@
+#version 430 core
+
 // RGB and Alpha components of ETC2 RGBA are computed separately.
 //
 // ETC2 also adds modes T and H (which we compute together) and mode P
@@ -8,8 +10,6 @@
 //	3. If using Alpha, it will also stitch the alpha and output to another texture
 //
 // See etc2_rgba_selector.glsl for this shader performing stitching (defines HAS_ALPHA)
-
-#version 430 core
 
 // #include "/media/matias/Datos/SyntaxHighlightingMisc.h"
 
@@ -28,9 +28,9 @@ layout( binding = 3 ) uniform usampler2D srcEtc1;
 layout( binding = 4 ) uniform usampler2D srcThModes;
 #ifdef HAS_ALPHA
 layout( binding = 5 ) uniform usampler2D srcPMode;
-layout( binding = 6 ) uniform sampler2D srcAlpha;
+layout( binding = 6 ) uniform usampler2D srcAlpha;
 
-layout( rgba32ui, binding = 0 ) uniform restrict uimage2D dstTexture;
+layout( rgba32ui, binding = 0 ) uniform restrict writeonly uimage2D dstTexture;
 #	define outputValue uint4( etcAlpha.xy, etcRgb.xy )
 #else
 layout( rg32ui, binding = 0 ) uniform restrict uimage2D inOutPMode;
