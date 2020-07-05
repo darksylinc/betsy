@@ -112,7 +112,7 @@ namespace betsy
 		bindTexture( 3u, m_compressTargetRes );
 		bindTexture( 4u, m_thModesTargetRes );
 
-		if( m_eacTargetRes )
+		if( hasAlpha() )
 		{
 			bindTexture( 5u, m_pModeTargetRes );
 			bindTexture( 6u, m_eacTargetRes );
@@ -133,9 +133,9 @@ namespace betsy
 	{
 		// Copy "8x8" PFG_RG32_UINT -> 32x32 PFG_ETC1_RGB8_UNORM
 		// Copy "8x8" PFG_RGBA32_UINT -> 32x32 PFG_ETC2_RGBA8_UNORM
-		glCopyImageSubData( m_stitchedTarget ? m_stitchedTarget : m_pModeTargetRes,  //
-							GL_TEXTURE_2D, 0, 0, 0, 0,                               //
-							m_dstTexture, GL_TEXTURE_2D, 0, 0, 0, 0,                 //
+		glCopyImageSubData( hasAlpha() ? m_stitchedTarget : m_pModeTargetRes,  //
+							GL_TEXTURE_2D, 0, 0, 0, 0,                         //
+							m_dstTexture, GL_TEXTURE_2D, 0, 0, 0, 0,           //
 							( GLsizei )( m_width >> 2u ), ( GLsizei )( m_height >> 2u ), 1 );
 
 		StagingTexture stagingTex =
@@ -151,10 +151,9 @@ namespace betsy
 
 		if( m_downloadStaging.bufferName )
 			destroyStagingTexture( m_downloadStaging );
-		m_downloadStaging = createStagingTexture(
-			m_width >> 2u, m_height >> 2u, m_eacTargetRes ? PFG_RGBA32_UINT : PFG_RG32_UINT, false );
-		downloadStagingTexture( m_eacTargetRes ? m_stitchedTarget : m_pModeTargetRes,
-								m_downloadStaging );
+		m_downloadStaging = createStagingTexture( m_width >> 2u, m_height >> 2u,
+												  hasAlpha() ? PFG_RGBA32_UINT : PFG_RG32_UINT, false );
+		downloadStagingTexture( hasAlpha() ? m_stitchedTarget : m_pModeTargetRes, m_downloadStaging );
 	}
 	//-------------------------------------------------------------------------
 	void EncoderETC2::downloadTo( CpuImage &outImage )
@@ -162,7 +161,7 @@ namespace betsy
 		glFinish();
 		outImage.width = m_width;
 		outImage.height = m_height;
-		outImage.format = m_eacTargetRes ? PFG_ETC2_RGBA8_UNORM : PFG_ETC1_RGB8_UNORM;
+		outImage.format = hasAlpha() ? PFG_ETC2_RGBA8_UNORM : PFG_ETC1_RGB8_UNORM;
 		outImage.data = reinterpret_cast<uint8_t *>( m_downloadStaging.data );
 	}
 #endif

@@ -93,6 +93,8 @@ namespace betsy
 		return data;
 	}
 	//-------------------------------------------------------------------------
+	bool EncoderETC1::hasAlpha() const { return m_eacTargetRes != 0; }
+	//-------------------------------------------------------------------------
 	void EncoderETC1::initResources( const CpuImage &srcImage, const bool bCompressAlpha,
 									 const bool bDither, const bool bForEtc2 )
 	{
@@ -266,7 +268,7 @@ namespace betsy
 						   alignToNextMultiple( m_width, 16u ) / 16u,
 						   alignToNextMultiple( m_height, 16u ) / 16u );
 
-		if( m_eacTargetRes )
+		if( hasAlpha() )
 		{
 			// Compress Alpha too (using EAC compressor)
 			bindTexture( 0u, m_srcTexture );
@@ -279,7 +281,7 @@ namespace betsy
 	//-------------------------------------------------------------------------
 	void EncoderETC1::execute02()
 	{
-		if( !m_eacTargetRes )
+		if( !hasAlpha() )
 		{
 			// This step is only relevant when doing ETC2_RGBA
 			return;
@@ -326,10 +328,9 @@ namespace betsy
 
 		if( m_downloadStaging.bufferName )
 			destroyStagingTexture( m_downloadStaging );
-		m_downloadStaging = createStagingTexture(
-			m_width >> 2u, m_height >> 2u, m_eacTargetRes ? PFG_RGBA32_UINT : PFG_RG32_UINT, false );
-		downloadStagingTexture( m_eacTargetRes ? m_stitchedTarget : m_compressTargetRes,
-								m_downloadStaging );
+		m_downloadStaging = createStagingTexture( m_width >> 2u, m_height >> 2u,
+												  hasAlpha() ? PFG_RGBA32_UINT : PFG_RG32_UINT, false );
+		downloadStagingTexture( hasAlpha() ? m_stitchedTarget : m_compressTargetRes, m_downloadStaging );
 	}
 	//-------------------------------------------------------------------------
 	void EncoderETC1::downloadTo( CpuImage &outImage )
@@ -337,7 +338,7 @@ namespace betsy
 		glFinish();
 		outImage.width = m_width;
 		outImage.height = m_height;
-		outImage.format = m_eacTargetRes ? PFG_ETC2_RGBA8_UNORM : PFG_ETC1_RGB8_UNORM;
+		outImage.format = hasAlpha() ? PFG_ETC2_RGBA8_UNORM : PFG_ETC1_RGB8_UNORM;
 		outImage.data = reinterpret_cast<uint8_t *>( m_downloadStaging.data );
 	}
 }  // namespace betsy

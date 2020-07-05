@@ -46,6 +46,8 @@ namespace betsy
 		static size_t   getEtc1TablesSize();
 		static uint8_t *createFilledEtc1Tables();
 
+		bool hasAlpha() const;
+
 		void initResources( const CpuImage &srcImage, const bool bCompressAlpha, const bool bDither,
 							const bool bForEtc2 );
 
