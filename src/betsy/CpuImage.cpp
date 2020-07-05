@@ -90,7 +90,7 @@ namespace betsy
 			case 32:
 				format = PFG_RGBA8_UNORM_SRGB;
 				break;
-			};
+			}
 			break;
 		case FIT_UINT16:
 		case FIT_INT16:
@@ -115,7 +115,7 @@ namespace betsy
 		case FIT_RGBAF:
 			format = PFG_RGBA32_FLOAT;
 			break;
-		};
+		}
 
 		width = FreeImage_GetWidth( fiBitmap );
 		height = FreeImage_GetHeight( fiBitmap );
@@ -191,6 +191,8 @@ namespace betsy
 		case PFG_BC6H_UF16:
 			return 0u;
 		}
+
+		return 0u;
 	}
 	//-----------------------------------------------------------------------------------
 	bool CpuImage::isCompressed( PixelFormat pixelFormat )
@@ -257,10 +259,12 @@ namespace betsy
 	{
 		const size_t imgHeight = height;
 		const size_t imgWidth = width;
-		uint8_t *__restrict dstData = reinterpret_cast<uint8_t *__restrict>( data );
-		for( size_t i = 0u; i < imgHeight; ++i )
+		for( size_t y = 0u; y < imgHeight; ++y )
 		{
-			for( size_t i = 0u; i < imgWidth; ++i )
+			uint8_t *__restrict dstData =
+				reinterpret_cast<uint8_t *__restrict>( data ) + ( imgHeight - y - 1u ) * imgWidth * 4u;
+
+			for( size_t x = 0u; x < imgWidth; ++x )
 			{
 				const uint8_t b = *srcData++;
 				const uint8_t g = *srcData++;
@@ -278,11 +282,13 @@ namespace betsy
 	//-------------------------------------------------------------------------
 	void CpuImage::R32toRGBA32( uint32_t const *__restrict srcData, size_t bytesPerRow )
 	{
+		const size_t imgWidth = width;
 		const size_t imgHeight = height;
-		uint32_t *__restrict dstData = reinterpret_cast<uint32_t *__restrict>( data );
-		for( size_t i = 0u; i < imgHeight; ++i )
+		for( size_t y = 0u; y < imgHeight; ++y )
 		{
-			for( size_t i = 0u; i < ( bytesPerRow >> 2u ); ++i )
+			uint32_t *__restrict dstData =
+				reinterpret_cast<uint32_t *__restrict>( data ) + ( imgHeight - y - 1u ) * imgWidth * 4u;
+			for( size_t x = 0u; x < ( bytesPerRow >> 2u ); ++x )
 			{
 				const uint32_t value = *srcData++;
 				*dstData++ = value;
@@ -295,11 +301,13 @@ namespace betsy
 	//-------------------------------------------------------------------------
 	void CpuImage::RGB32toRGBA32( uint32_t const *__restrict srcData, size_t bytesPerRow )
 	{
+		const size_t imgWidth = width;
 		const size_t imgHeight = height;
-		uint32_t *__restrict dstData = reinterpret_cast<uint32_t *__restrict>( data );
-		for( size_t i = 0u; i < imgHeight; ++i )
+		for( size_t y = 0u; y < imgHeight; ++y )
 		{
-			for( size_t i = 0u; i < ( bytesPerRow >> 2u ); ++i )
+			uint32_t *__restrict dstData =
+				reinterpret_cast<uint32_t *__restrict>( data ) + ( imgHeight - y - 1u ) * imgWidth * 4u;
+			for( size_t x = 0u; x < ( bytesPerRow >> 2u ) / 3u; ++x )
 			{
 				const uint32_t b = *srcData++;
 				const uint32_t g = *srcData++;
@@ -317,10 +325,12 @@ namespace betsy
 	{
 		const size_t imgWidth = width;
 		const size_t imgHeight = height;
-		T *__restrict dstData = reinterpret_cast<T *__restrict>( data );
-		for( size_t i = 0u; i < imgHeight; ++i )
+		for( size_t y = 0u; y < imgHeight; ++y )
 		{
-			for( size_t i = 0u; i < imgWidth; ++i )
+			T *__restrict dstData =
+				reinterpret_cast<T *__restrict>( data ) + ( imgHeight - y - 1u ) * imgWidth * 4u;
+
+			for( size_t x = 0u; x < imgWidth; ++x )
 			{
 				const T b = *srcData++;
 				const T g = *srcData++;
