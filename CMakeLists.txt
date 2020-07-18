@@ -7,9 +7,25 @@ project( betsy )
 set( EXECUTABLE_OUTPUT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/bin/${CMAKE_BUILD_TYPE}" )
 
 include( CMake/Bootstrap.cmake )
-include( CMake/Dependencies/FindSDL2.cmake )
 
-find_package( SDL2 REQUIRED )
+if( WIN32 )
+	set( SDL2_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Dependencies/SDL/Windows/include" )
+	set( ARCH_SUFFIX "x64" )
+	if( ${CMAKE_SIZEOF_VOID_P} EQUAL 4 )
+		set( ARCH_SUFFIX "x86" )
+	endif()
+	set( SDL2_LIBRARY
+		"${CMAKE_CURRENT_SOURCE_DIR}/Dependencies/SDL/Windows/lib/${ARCH_SUFFIX}/SDL2.lib" )
+	set( SDL2_BINARY
+		"${CMAKE_CURRENT_SOURCE_DIR}/Dependencies/SDL/Windows/lib/${ARCH_SUFFIX}/SDL2.dll" )
+	file( COPY ${SDL2_BINARY} DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/bin/Debug/" )
+	file( COPY ${SDL2_BINARY} DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/bin/Release/" )
+	file( COPY ${SDL2_BINARY} DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/bin/RelWithDebInfo/" )
+	file( COPY ${SDL2_BINARY} DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/bin/MinSizeRel/" )
+else()
+	include( CMake/Dependencies/FindSDL2.cmake )
+	find_package( SDL2 REQUIRED )
+endif()
 
 add_subdirectory( Dependencies )
 
