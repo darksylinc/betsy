@@ -12,6 +12,7 @@
 #include "CmdLineParams.h"
 #include "CmdLineParamsEnum.h"
 
+#include <algorithm>
 #include <memory.h>
 #include <stdio.h>
 #include <stdlib.h>
