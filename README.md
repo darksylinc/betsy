@@ -44,9 +44,14 @@ cd ../../bin/Release
 
 ### Windows
 
-TBD.
-Build works on VS2019. CMake generation, but it will complain about SDL2 due to poorly setup sdl2-config.cmake.
-You'll need to setup the paths to SDL2 by hand.
+Double click on build_Visual_Studio_16_2019_x64.bat
+
+If you want to use another target edit the beginning of the bat script, or manually:
+
+1. Point CMake source to %bety_repo_path%
+1. Point CMake generation path to %bety_repo_path%/build
+
+Build tested on VS2019.
 
 ### Python scripts
 
