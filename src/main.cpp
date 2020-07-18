@@ -1,3 +1,4 @@
+#define NOMINMAX
 
 #include "betsy/CpuImage.h"
 #include "betsy/EncoderBC1.h"

@@ -1,3 +1,4 @@
+#define NOMINMAX
 
 #include "betsy/EncoderETC1.h"
 
