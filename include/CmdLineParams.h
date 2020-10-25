@@ -26,9 +26,11 @@ namespace Codec
 
 struct CmdLineParams
 {
-	uint8_t quality;
-	bool dither;
-	bool usingRenderDoc;
+	uint8_t      quality;
+	bool         dither;
+	bool         usingRenderDoc;
 	Codec::Codec codec;
-	std::string filename[2];
+	std::string  filename[2];
+
+	CmdLineParams() : quality( 0 ), dither( false ), usingRenderDoc( false ), codec( Codec::etc1 ) {}
 };

@@ -162,7 +162,6 @@ void saveToDisk( T &encoder, const CmdLineParams params )
 int main( int nargs, char *const argv[] )
 {
 	CmdLineParams params;
-	memset( &params, 0, sizeof( params ) );
 	params.quality = 2;
 
 	if( !parseCmdLine( nargs, argv, params ) )
