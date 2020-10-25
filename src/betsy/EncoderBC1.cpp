@@ -57,7 +57,7 @@ namespace betsy
 
 		m_srcTexture = createTexture( TextureParams( m_width, m_height, srcFormat, "m_srcTexture" ) );
 
-		m_bc1TargetRes = createTexture( TextureParams( m_width >> 2u, m_height >> 2u, PFG_RG32_UINT,
+		m_bc1TargetRes = createTexture( TextureParams( getBlockWidth(), getBlockHeight(), PFG_RG32_UINT,
 													   "m_bc1TargetRes", TextureFlags::Uav ) );
 		m_dstTexture = createTexture(
 			TextureParams( m_width, m_height, useBC3 ? PFG_BC3_UNORM : PFG_BC1_UNORM, "m_dstTexture" ) );
@@ -71,10 +71,11 @@ namespace betsy
 
 		if( useBC3 )
 		{
-			m_bc4TargetRes = createTexture( TextureParams( m_width >> 2u, m_height >> 2u, PFG_RG32_UINT,
-														   "m_bc4TargetRes", TextureFlags::Uav ) );
+			m_bc4TargetRes =
+				createTexture( TextureParams( getBlockWidth(), getBlockHeight(), PFG_RG32_UINT,
+											  "m_bc4TargetRes", TextureFlags::Uav ) );
 			m_stitchedTarget =
-				createTexture( TextureParams( m_width >> 2u, m_height >> 2u, PFG_RGBA32_UINT,
+				createTexture( TextureParams( getBlockWidth(), getBlockHeight(), PFG_RGBA32_UINT,
 											  "m_stitchedTarget", TextureFlags::Uav ) );
 			m_bc4Pso = createComputePsoFromFile( "bc4.glsl", "../Data/" );
 			m_stitchPso = createComputePsoFromFile( "etc2_rgba_stitch.glsl", "../Data/" );
@@ -162,7 +163,7 @@ namespace betsy
 		glCopyImageSubData( m_stitchedTarget ? m_stitchedTarget : m_bc1TargetRes,  //
 							GL_TEXTURE_2D, 0, 0, 0, 0,                             //
 							m_dstTexture, GL_TEXTURE_2D, 0, 0, 0, 0,               //
-							( GLsizei )( m_width >> 2u ), ( GLsizei )( m_height >> 2u ), 1 );
+							( GLsizei )( getBlockWidth() ), ( GLsizei )( getBlockHeight() ), 1 );
 	}
 	//-------------------------------------------------------------------------
 	void EncoderBC1::startDownload()
@@ -171,8 +172,9 @@ namespace betsy
 
 		if( m_downloadStaging.bufferName )
 			destroyStagingTexture( m_downloadStaging );
-		m_downloadStaging = createStagingTexture(
-			m_width >> 2u, m_height >> 2u, m_stitchedTarget ? PFG_RGBA32_UINT : PFG_RG32_UINT, false );
+		m_downloadStaging =
+			createStagingTexture( getBlockWidth(), getBlockHeight(),
+								  m_stitchedTarget ? PFG_RGBA32_UINT : PFG_RG32_UINT, false );
 		downloadStagingTexture( m_stitchedTarget ? m_stitchedTarget : m_bc1TargetRes,
 								m_downloadStaging );
 	}

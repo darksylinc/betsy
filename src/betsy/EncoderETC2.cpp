@@ -25,16 +25,17 @@ namespace betsy
 	{
 		EncoderETC1::initResources( srcImage, bCompressAlpha, bDither, true );
 
-		m_thModesTargetRes = createTexture( TextureParams( m_width >> 2u, m_height >> 2u, PFG_RG32_UINT,
-														   "m_thModesTargetRes", TextureFlags::Uav ) );
-		m_thModesError = createTexture( TextureParams( m_width >> 2u, m_height >> 2u, PFG_R32_FLOAT,
+		m_thModesTargetRes =
+			createTexture( TextureParams( getBlockWidth(), getBlockHeight(), PFG_RG32_UINT,
+										  "m_thModesTargetRes", TextureFlags::Uav ) );
+		m_thModesError = createTexture( TextureParams( getBlockWidth(), getBlockHeight(), PFG_R32_FLOAT,
 													   "m_thModesError", TextureFlags::Uav ) );
-		m_thModesC0C1 = createTexture( TextureParams( m_width >> 2u, m_height >> 2u, PFG_RG32_UINT,
+		m_thModesC0C1 = createTexture( TextureParams( getBlockWidth(), getBlockHeight(), PFG_RG32_UINT,
 													  "m_thModesC0C1", TextureFlags::Uav, 120u ) );
 
-		m_pModeTargetRes = createTexture( TextureParams( m_width >> 2u, m_height >> 2u, PFG_RG32_UINT,
-														 "m_pModeTargetRes", TextureFlags::Uav ) );
-		m_pModeError = createTexture( TextureParams( m_width >> 2u, m_height >> 2u, PFG_R32_FLOAT,
+		m_pModeTargetRes = createTexture( TextureParams(
+			getBlockWidth(), getBlockHeight(), PFG_RG32_UINT, "m_pModeTargetRes", TextureFlags::Uav ) );
+		m_pModeError = createTexture( TextureParams( getBlockWidth(), getBlockHeight(), PFG_R32_FLOAT,
 													 "m_pModeError", TextureFlags::Uav ) );
 
 		m_thModesPso = createComputePsoFromFile( "etc2_th.glsl", "../Data/" );
@@ -136,10 +137,10 @@ namespace betsy
 		glCopyImageSubData( hasAlpha() ? m_stitchedTarget : m_pModeTargetRes,  //
 							GL_TEXTURE_2D, 0, 0, 0, 0,                         //
 							m_dstTexture, GL_TEXTURE_2D, 0, 0, 0, 0,           //
-							( GLsizei )( m_width >> 2u ), ( GLsizei )( m_height >> 2u ), 1 );
+							( GLsizei )( getBlockWidth() ), ( GLsizei )( getBlockHeight() ), 1 );
 
 		StagingTexture stagingTex =
-			createStagingTexture( m_width >> 2u, m_height >> 2u, PFG_RG32_UINT, false );
+			createStagingTexture( getBlockWidth(), getBlockHeight(), PFG_RG32_UINT, false );
 		downloadStagingTexture( m_pModeTargetRes, stagingTex );
 		glFinish();
 	}
@@ -150,7 +151,7 @@ namespace betsy
 
 		if( m_downloadStaging.bufferName )
 			destroyStagingTexture( m_downloadStaging );
-		m_downloadStaging = createStagingTexture( m_width >> 2u, m_height >> 2u,
+		m_downloadStaging = createStagingTexture( getBlockWidth(), getBlockHeight(),
 												  hasAlpha() ? PFG_RGBA32_UINT : PFG_RG32_UINT, false );
 		downloadStagingTexture( hasAlpha() ? m_stitchedTarget : m_pModeTargetRes, m_downloadStaging );
 	}

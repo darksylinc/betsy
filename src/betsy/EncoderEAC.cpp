@@ -26,12 +26,13 @@ namespace betsy
 
 		m_srcTexture = createTexture( TextureParams( m_width, m_height, srcFormat, "m_srcTexture" ) );
 
-		m_eacTargetRes[0] = createTexture( TextureParams( m_width >> 2u, m_height >> 2u, PFG_RG32_UINT,
-														  "m_eacTargetRes[0]", TextureFlags::Uav ) );
+		m_eacTargetRes[0] = createTexture( TextureParams(
+			getBlockWidth(), getBlockHeight(), PFG_RG32_UINT, "m_eacTargetRes[0]", TextureFlags::Uav ) );
 		if( rg11 )
 		{
-			m_eacTargetRes[1] = createTexture( TextureParams(
-				m_width >> 2u, m_height >> 2u, PFG_RG32_UINT, "m_eacTargetRes[1]", TextureFlags::Uav ) );
+			m_eacTargetRes[1] =
+				createTexture( TextureParams( getBlockWidth(), getBlockHeight(), PFG_RG32_UINT,
+											  "m_eacTargetRes[1]", TextureFlags::Uav ) );
 		}
 
 		m_eacPso = createComputePsoFromFile( "eac_r11.glsl", "../Data/" );
@@ -39,7 +40,7 @@ namespace betsy
 		if( rg11 )
 		{
 			m_stitchedTarget =
-				createTexture( TextureParams( m_width >> 2u, m_height >> 2u, PFG_RGBA32_UINT,
+				createTexture( TextureParams( getBlockWidth(), getBlockHeight(), PFG_RGBA32_UINT,
 											  "m_stitchedTarget", TextureFlags::Uav ) );
 			m_stitchPso = createComputePsoFromFile( "etc2_rgba_stitch.glsl", "../Data/" );
 		}
@@ -116,8 +117,9 @@ namespace betsy
 
 		if( m_downloadStaging.bufferName )
 			destroyStagingTexture( m_downloadStaging );
-		m_downloadStaging = createStagingTexture(
-			m_width >> 2u, m_height >> 2u, m_eacTargetRes[1] ? PFG_RGBA32_UINT : PFG_RG32_UINT, false );
+		m_downloadStaging =
+			createStagingTexture( getBlockWidth(), getBlockHeight(),
+								  m_eacTargetRes[1] ? PFG_RGBA32_UINT : PFG_RG32_UINT, false );
 		downloadStagingTexture( m_eacTargetRes[1] ? m_stitchedTarget : m_eacTargetRes[0],
 								m_downloadStaging );
 	}

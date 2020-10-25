@@ -51,6 +51,9 @@ namespace betsy
 		void initResources( const CpuImage &srcImage, const bool bCompressAlpha, const bool bDither,
 							const bool bForEtc2 );
 
+		uint32_t getBlockWidth() const { return ( m_width + 3u ) >> 2u; }
+		uint32_t getBlockHeight() const { return ( m_height + 3u ) >> 2u; }
+
 	public:
 		EncoderETC1();
 		~EncoderETC1();

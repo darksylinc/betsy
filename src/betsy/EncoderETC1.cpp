@@ -118,12 +118,13 @@ namespace betsy
 			m_ditheredTexture = m_srcTexture;
 		}
 
-		m_compressTargetRes = createTexture( TextureParams( m_width >> 2u, m_height >> 2u, PFG_RG32_UINT,
-															"m_compressTargetRes", TextureFlags::Uav ) );
+		m_compressTargetRes =
+			createTexture( TextureParams( getBlockWidth(), getBlockHeight(), PFG_RG32_UINT,
+										  "m_compressTargetRes", TextureFlags::Uav ) );
 
 		if( bForEtc2 )
 		{
-			m_etc1Error = createTexture( TextureParams( m_width >> 2u, m_height >> 2u, PFG_R32_FLOAT,
+			m_etc1Error = createTexture( TextureParams( getBlockWidth(), getBlockHeight(), PFG_R32_FLOAT,
 														"m_etc1Error", TextureFlags::Uav ) );
 		}
 
@@ -141,10 +142,11 @@ namespace betsy
 
 		if( bCompressAlpha )
 		{
-			m_eacTargetRes = createTexture( TextureParams( m_width >> 2u, m_height >> 2u, PFG_RG32_UINT,
-														   "m_eacTargetRes", TextureFlags::Uav ) );
+			m_eacTargetRes =
+				createTexture( TextureParams( getBlockWidth(), getBlockHeight(), PFG_RG32_UINT,
+											  "m_eacTargetRes", TextureFlags::Uav ) );
 			m_stitchedTarget =
-				createTexture( TextureParams( m_width >> 2u, m_height >> 2u, PFG_RGBA32_UINT,
+				createTexture( TextureParams( getBlockWidth(), getBlockHeight(), PFG_RGBA32_UINT,
 											  "m_stitchedTarget", TextureFlags::Uav ) );
 			m_eacPso = createComputePsoFromFile( "eac.glsl", "../Data/" );
 
@@ -305,10 +307,10 @@ namespace betsy
 		// Copy "8x8" PFG_RG32_UINT -> 32x32 PFG_ETC1_RGB8_UNORM
 		glCopyImageSubData( m_compressTargetRes, GL_TEXTURE_2D, 0, 0, 0, 0,  //
 							m_dstTexture, GL_TEXTURE_2D, 0, 0, 0, 0,         //
-							( GLsizei )( m_width >> 2u ), ( GLsizei )( m_height >> 2u ), 1 );
+							( GLsizei )( getBlockWidth() ), ( GLsizei )( getBlockHeight() ), 1 );
 
 		StagingTexture stagingTex =
-			createStagingTexture( m_width >> 2u, m_height >> 2u, PFG_RG32_UINT, false );
+			createStagingTexture( getBlockWidth(), getBlockHeight(), PFG_RG32_UINT, false );
 		downloadStagingTexture( m_compressTargetRes, stagingTex );
 		glFinish();
 
@@ -329,7 +331,7 @@ namespace betsy
 
 		if( m_downloadStaging.bufferName )
 			destroyStagingTexture( m_downloadStaging );
-		m_downloadStaging = createStagingTexture( m_width >> 2u, m_height >> 2u,
+		m_downloadStaging = createStagingTexture( getBlockWidth(), getBlockHeight(),
 												  hasAlpha() ? PFG_RGBA32_UINT : PFG_RG32_UINT, false );
 		downloadStagingTexture( hasAlpha() ? m_stitchedTarget : m_compressTargetRes, m_downloadStaging );
 	}

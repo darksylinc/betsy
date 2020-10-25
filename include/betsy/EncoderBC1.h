@@ -34,6 +34,9 @@ namespace betsy
 		ComputePso m_bc4Pso;
 		ComputePso m_stitchPso;  // Only used for RG11, Combines EAC R11 with G11 to form RG11
 
+		uint32_t getBlockWidth() const { return ( m_width + 3u ) >> 2u; }
+		uint32_t getBlockHeight() const { return ( m_height + 3u ) >> 2u; }
+
 	public:
 		EncoderBC1();
 		~EncoderBC1();

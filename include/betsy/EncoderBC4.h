@@ -32,6 +32,9 @@ namespace betsy
 		ComputePso m_bc4Pso;
 		ComputePso m_stitchPso;  // Only used for BC5, Combines BC4 R with G to form BC5
 
+		uint32_t getBlockWidth() const { return ( m_width + 3u ) >> 2u; }
+		uint32_t getBlockHeight() const { return ( m_height + 3u ) >> 2u; }
+
 	public:
 		EncoderBC4();
 		~EncoderBC4();
