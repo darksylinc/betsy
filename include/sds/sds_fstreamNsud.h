@@ -102,7 +102,7 @@ namespace sds
 		void _changeFilename( const std::string &newFilename );
 
 		template <typename T>
-		size_t read( T *outValue )
+		size_t read( T &outValue )
 		{
 			return read( reinterpret_cast<char *>( &outValue ), sizeof( T ) );
 		}
@@ -142,7 +142,7 @@ namespace sds
 	};
 
 	template <>
-	size_t fstreamNsud::read<bool>( bool *outValue );
+	size_t fstreamNsud::read<bool>( bool &outValue );
 	template <>
 	size_t fstreamNsud::write<bool>( bool inValue );
 }  // namespace sds

@@ -1,14 +1,8 @@
 
 #pragma once
 
-#include <stdint.h>
-#include <algorithm>
 #include <string>
-
-#ifdef _MSC_VER
-#	include <BaseTsd.h>
-typedef SSIZE_T ssize_t;
-#endif
+#include <algorithm>
 
 namespace sds
 {
@@ -84,7 +78,7 @@ namespace sds
 		void fsync( bool preferDataSync );
 
 		template <typename T>
-		size_t read( T *outValue )
+		size_t read( T &outValue )
 		{
 			return read( reinterpret_cast<char*>( &outValue ), sizeof( T ) );
 		}
@@ -123,6 +117,6 @@ namespace sds
 		}
 	};
 
-	template <> size_t fstream::read<bool>( bool *outValue );
+	template <> size_t fstream::read<bool>( bool &outValue );
 	template <> size_t fstream::write<bool>( bool inValue );
 }

@@ -1,15 +1,9 @@
 
 #include "sds/sds_fstream.h"
 
-#include <stdio.h>
-
 #include <limits>
 
-#ifdef _MSC_VER
-#	include <io.h>
-#else
-#	include <unistd.h>
-#endif
+#include <unistd.h>
 
 #ifdef __APPLE__
 	#include <sys/fcntl.h>
@@ -274,11 +268,11 @@ namespace sds
 	}
 	//-------------------------------------------------------------------------
 	template <>
-	size_t fstream::read<bool>( bool *outValue )
+	size_t fstream::read<bool>( bool &outValue )
 	{
 		uint8_t value = 0;
-		const size_t retVal = read<uint8_t>( &value );
-		*outValue = value != 0;
+		const size_t retVal = read<uint8_t>( value );
+		outValue = value != 0;
 		return retVal;
 	}
 	//-------------------------------------------------------------------------

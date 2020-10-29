@@ -258,11 +258,11 @@ namespace sds
 	void fstreamNsud::_changeFilename( const std::string &newFilename ) { m_filename = newFilename; }
 	//-------------------------------------------------------------------------
 	template <>
-	size_t fstreamNsud::read<bool>( bool *outValue )
+	size_t fstreamNsud::read<bool>( bool &outValue )
 	{
 		uint8_t value = 0;
-		const size_t retVal = read<uint8_t>( &value );
-		*outValue = value != 0;
+		const size_t retVal = read<uint8_t>( value );
+		outValue = value != 0;
 		return retVal;
 	}
 	//-------------------------------------------------------------------------
