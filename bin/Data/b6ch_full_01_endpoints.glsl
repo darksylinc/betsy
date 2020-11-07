@@ -145,15 +145,7 @@ void EndpointSelector_finishPassDirection( EndpointSelector inout ep )
 		approx = product / largestComponent;
 	}
 
-	// Normalize
-	float approxLen = 0.0f;
-	for( int i = 0; i < 3; ++i )
-		approxLen = approxLen + approx[i] * approx[i];
-
-	approxLen = sqrt( approxLen );
-	approxLen = approxLen == 0.0f ? 1.0f : approxLen;
-
-	ep.direction = approx / approxLen;
+	ep.direction = normalize( approx );
 }
 
 void EndpointSelector_contributePassMinMax( EndpointSelector inout ep, const float3 value )
