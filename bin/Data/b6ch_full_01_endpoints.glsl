@@ -64,7 +64,7 @@ struct EndpointSelector
 EndpointSelector EndpointSelector_New()
 {
 	EndpointSelector ep;
-	ep.centroid = float3( 0, 0, 0 );
+	ep.centroidVal = float3( 0, 0, 0 );
 	ep.direction = float3( 0, 0, 0 );
 
 	for( int i = 0; i < 6; ++i )
@@ -114,20 +114,20 @@ void CovarianceMatrix_product( const float covarianceMatrix[6], float3 out outPr
 void EndpointSelector_contributePassCentroid( EndpointSelector inout ep, const float3 value,
 											  float weight )
 {
-	ep.centroid = ep.centroid + value * weight;
+	ep.centroidVal = ep.centroidVal + value * weight;
 	ep.weightTotal = ep.weightTotal + weight;
 }
 
 void EndpointSelector_finishPassCentroid( EndpointSelector inout ep )
 {
 	const float denom = ep.weightTotal == 0.0f ? 1.0f : ep.weightTotal;
-	ep.centroid = ep.centroid / denom;
+	ep.centroidVal = ep.centroidVal / denom;
 }
 
 void EndpointSelector_contributePassDirection( EndpointSelector inout ep, const float3 value,
 											   const float weight )
 {
-	const float3 diff = value - ep.centroid;
+	const float3 diff = value - ep.centroidVal;
 	CovarianceMatrix_add( ep.covarianceMatrix, diff, weight );
 }
 
@@ -150,10 +150,7 @@ void EndpointSelector_finishPassDirection( EndpointSelector inout ep )
 
 void EndpointSelector_contributePassMinMax( EndpointSelector inout ep, const float3 value )
 {
-	float dist = 0.0f;
-	for( int i = 0; i < 3; ++i )
-		dist = dist + ep.direction[i] * ( value[i] - ep.centroid[i] );
-
+	const float dist = dot( ep.direction, ( value - ep.centroidVal ) );
 	ep.minDist = min( ep.minDist, dist );
 	ep.maxDist = max( ep.maxDist, dist );
 }
@@ -164,8 +161,8 @@ UnfinishedEndpoints EndpointSelector_getEndpoints( const EndpointSelector ep,
 	float3 unweightedBase;
 	float3 unweightedOffset;
 
-	float3 fMin = ep.centroid + ep.direction * ep.minDist;
-	float3 fMax = ep.centroid + ep.direction * ep.maxDist;
+	float3 fMin = ep.centroidVal + ep.direction * ep.minDist;
+	float3 fMax = ep.centroidVal + ep.direction * ep.maxDist;
 
 	unweightedBase = fMin / channelWeights;
 	unweightedOffset = ( fMax - fMin ) / channelWeights;
