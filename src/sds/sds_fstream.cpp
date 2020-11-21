@@ -1,9 +1,15 @@
 
 #include "sds/sds_fstream.h"
 
+#include <stdio.h>
+
 #include <limits>
 
-#include <unistd.h>
+#ifdef _MSC_VER
+#	include <io.h>
+#else
+#	include <unistd.h>
+#endif
 
 #ifdef __APPLE__
 	#include <sys/fcntl.h>
