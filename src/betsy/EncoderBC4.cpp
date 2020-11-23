@@ -166,7 +166,7 @@ namespace betsy
 		glFinish();
 		outImage.width = m_width;
 		outImage.height = m_height;
-		outImage.format = m_bc4TargetRes[1] ? PFG_BC4_UNORM : PFG_BC5_UNORM;
+		outImage.format = m_bc4TargetRes[1] ? PFG_BC5_UNORM : PFG_BC4_UNORM;
 		outImage.data = reinterpret_cast<uint8_t *>( m_downloadStaging.data );
 	}
 }  // namespace betsy
