@@ -130,9 +130,13 @@ Once all threads are done, we use [parallel reduction](https://www.eximiaco.tech
 
 Why parallel reduction? Because it takes us only 8 iterations to find the best thread.
 
-If we only used thread 0, we would need 256 iterations. This doesn't sound that bad until we realize AMD GCN executes 1 instruction every 4 cycles. This is not a problem when running 64 threads, but it is really bad if you only have ONE thread doing all the work. GPUs are meant to be executed in parallel. Putting too much work into a single thread is bad.
+If we only used thread 0, we would need 256 iterations. This doesn't sound that bad until we realize AMD GCN executes 1 instruction every 4 cycles. This is not a problem when running 64+ threads, but it is really bad if you only have ONE thread doing all the work. GPUs are meant to be executed in parallel. Putting all the work into a single thread is bad.
 
-AMD Navi can run 1 instruction every 2 cycles when executing in Wave32 mode, and NVIDIA is subject to the same problem. A bit better than 1 instruction every 4 cycles, but still bad. Anyway, the problem is solved using parallel reduction.
+AMD Navi runs 1 instruction every 1 cycle, however each instruction still has a 4-cycle latency before the results can be used and relies on both thread- and instruction-level parallelism to hide that latency. Reduction algorithms are pretty much dependent thus not much can be hidden with instruction-level parallelism either.
+
+NVIDIA does not disclose the details of their architecture but one must assume it is subject to similar problems. It is only natural given GPUs optimized for parallel tasks, not to run a single thread.
+
+Anyway, the problem is solved using parallel reduction since it's the best fit for this type of Hardware.
 
 Betsy includes both code to gather the result in thread 0 and using parallel reduction, but the former is disabled. This is included for ground-truth check in case there's a bug in the parallel reduction code.
 
