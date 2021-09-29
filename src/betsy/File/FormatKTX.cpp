@@ -1,11 +1,12 @@
 
 #include "betsy/File/FormatKTX.h"
 
-#include "betsy/EncoderGL.h"
-
 #include <memory.h>
 #include <stdio.h>
+
 #include <fstream>
+
+#include "betsy/EncoderGL.h"
 
 #define KTX_ENDIAN_REF ( 0x04030201 )
 #define KTX_ENDIAN_REF_REV ( 0x01020304 )
@@ -13,9 +14,9 @@
 namespace betsy
 {
 	template <typename T>
-	static inline void write(std::ofstream& fout, const T& v)
+	static inline void write( std::ofstream &fout, const T &v )
 	{
-		fout.write(reinterpret_cast<const char*>(&v), sizeof(T));
+		fout.write( reinterpret_cast<const char *>( &v ), sizeof( T ) );
 	}
 
 	struct KTXHeader
@@ -38,19 +39,19 @@ namespace betsy
 	//-------------------------------------------------------------------------
 	void FormatKTX::save( const char *fullpath, const CpuImage &cpuImage )
 	{
-		std::ofstream file( fullpath, std::ios::trunc);
+		std::ofstream file( fullpath, std::ios::trunc );
 
 		if( !file.is_open() )
 		{
 			fprintf( stderr, "Could not save to '%s' Check write access and whether the disk is full\n",
-					 fullpath );
+			         fullpath );
 			return;
 		}
 
 		KTXHeader header;
 		memset( &header, 0, sizeof( header ) );
 		const uint8_t c_KtxFileIdentifier[12] = { 0xAB, 0x4B, 0x54, 0x58, 0x20, 0x31,
-												  0x31, 0xBB, 0x0D, 0x0A, 0x1A, 0x0A };
+			                                      0x31, 0xBB, 0x0D, 0x0A, 0x1A, 0x0A };
 		memcpy( header.identifier, c_KtxFileIdentifier, sizeof( c_KtxFileIdentifier ) );
 
 		header.endianness = KTX_ENDIAN_REF;
@@ -83,7 +84,7 @@ namespace betsy
 		for( uint32_t level = 0u; level < header.numberOfMipmapLevels; ++level )
 		{
 			const size_t imageSize = CpuImage::getSizeBytes( header.pixelWidth, header.pixelHeight, 1u,
-															 1u, cpuImage.format, 4u );
+			                                                 1u, cpuImage.format, 4u );
 			write<uint32_t>( file, static_cast<uint32_t>( imageSize ) );
 
 			for( uint32_t face = 0u; face < header.numberOfFaces; ++face )

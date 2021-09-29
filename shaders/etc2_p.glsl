@@ -19,35 +19,35 @@ shared float2 g_threadBestCandidates[4u][4u * 4u];
 #define g_bestCandidates g_threadBestCandidates[gl_LocalInvocationID.z]
 
 layout( local_size_x = 4,  //
-		local_size_y = 4,  //
-		local_size_z = 4 ) in;
+        local_size_y = 4,  //
+        local_size_z = 4 ) in;
 
 /*
 kPmodeEncoderRG table generated with:
-	static const int kSigned3bit[8] = { 0, 1, 2, 3, -4, -3, -2, -1 };
-	#define BITS( byteval, lowbit, highbit ) \
-		( ( ( byteval ) >> ( lowbit ) ) & ( ( 1 << ( ( highbit ) - ( lowbit ) + 1 ) ) - 1 ) )
-	#define BIT( byteval, bit ) ( ( ( byteval ) >> ( bit ) ) & 0x1 )
-	int main()
-	{
-		// kPmodeEncoderRG
-		for( int GO = 0; GO < 128; GO += 127u )
-		{
-			for( int RO = 0; RO < 64; ++RO )
-			{
-				// RO_6 [2..5]
-				int R = BITS( RO, 2, 5 );
-				// RO_6 [0..1] + GO_7[6]
-				int dR = ( BITS( RO, 0, 1 ) << 1 ) | BIT( GO, 6 );
-				if( !( ( R + kSigned3bit[dR] >= 0 ) && ( R + kSigned3bit[dR] <= 31 ) ) )
-					R |= 1 << 4;
-				assert( ( ( R + kSigned3bit[dR] >= 0 ) && ( R + kSigned3bit[dR] <= 31 ) ) );
-				printf( "%i, ", ( R << 3 ) | dR );
-			}
-		}
-		printf( "\n" );
-		return 0;
-	}
+    static const int kSigned3bit[8] = { 0, 1, 2, 3, -4, -3, -2, -1 };
+    #define BITS( byteval, lowbit, highbit ) \
+        ( ( ( byteval ) >> ( lowbit ) ) & ( ( 1 << ( ( highbit ) - ( lowbit ) + 1 ) ) - 1 ) )
+    #define BIT( byteval, bit ) ( ( ( byteval ) >> ( bit ) ) & 0x1 )
+    int main()
+    {
+        // kPmodeEncoderRG
+        for( int GO = 0; GO < 128; GO += 127u )
+        {
+            for( int RO = 0; RO < 64; ++RO )
+            {
+                // RO_6 [2..5]
+                int R = BITS( RO, 2, 5 );
+                // RO_6 [0..1] + GO_7[6]
+                int dR = ( BITS( RO, 0, 1 ) << 1 ) | BIT( GO, 6 );
+                if( !( ( R + kSigned3bit[dR] >= 0 ) && ( R + kSigned3bit[dR] <= 31 ) ) )
+                    R |= 1 << 4;
+                assert( ( ( R + kSigned3bit[dR] >= 0 ) && ( R + kSigned3bit[dR] <= 31 ) ) );
+                printf( "%i, ", ( R << 3 ) | dR );
+            }
+        }
+        printf( "\n" );
+        return 0;
+    }
 */
 const float kPmodeEncoderRG[128] = {
 	0,   2,   132, 134, 8,   10,  140, 142, 16,  18,  148, 22,  24,  26,  156, 30,  32,  34,  36,
@@ -64,50 +64,50 @@ const float kPmodeEncoderRG[128] = {
 
 /*
 kPmodeEncoderB table generated with:
-	static const int kSigned3bit[8] = { 0, 1, 2, 3, -4, -3, -2, -1 };
-	#define BITS( byteval, lowbit, highbit ) \
-		( ( ( byteval ) >> ( lowbit ) ) & ( ( 1 << ( ( highbit ) - ( lowbit ) + 1 ) ) - 1 ) )
-	int main()
-	{
-		for( int BO = 0; BO < 32; ++BO )
-		{
-			if( !( BO & 0x01 ) )
-			{
-				// BO_6[3..4]
-				int B = BITS( BO, 3, 4 );
-				// BO_6[1..2]
-				int dB = BITS( BO, 1, 2 );
-				// B + dB must be outside the range.
-				for( int Bx = 0; Bx < 8; Bx++ )
-				{
-					for( int dBx = 0; dBx < 2; dBx++ )
-					{
-						int Btry = B | ( Bx << 2 );
-						int dBtry = dB | ( dBx << 2 );
-						if( ( Btry + kSigned3bit[dBtry] ) < 0 || ( Btry + kSigned3bit[dBtry] > 31 ) )
-						{
-							B = Btry;
-							dB = dBtry;
-							break;
-						}
-					}
-				}
-				assert( !( ( B + kSigned3bit[dB] >= 0 ) && ( B + kSigned3bit[dB] <= 31 ) ) );
-				printf( "%i, ", ( B << 3 ) | dB );
-			}
-		}
-		printf( "\n" );
-		return 0;
-	}
+    static const int kSigned3bit[8] = { 0, 1, 2, 3, -4, -3, -2, -1 };
+    #define BITS( byteval, lowbit, highbit ) \
+        ( ( ( byteval ) >> ( lowbit ) ) & ( ( 1 << ( ( highbit ) - ( lowbit ) + 1 ) ) - 1 ) )
+    int main()
+    {
+        for( int BO = 0; BO < 32; ++BO )
+        {
+            if( !( BO & 0x01 ) )
+            {
+                // BO_6[3..4]
+                int B = BITS( BO, 3, 4 );
+                // BO_6[1..2]
+                int dB = BITS( BO, 1, 2 );
+                // B + dB must be outside the range.
+                for( int Bx = 0; Bx < 8; Bx++ )
+                {
+                    for( int dBx = 0; dBx < 2; dBx++ )
+                    {
+                        int Btry = B | ( Bx << 2 );
+                        int dBtry = dB | ( dBx << 2 );
+                        if( ( Btry + kSigned3bit[dBtry] ) < 0 || ( Btry + kSigned3bit[dBtry] > 31 ) )
+                        {
+                            B = Btry;
+                            dB = dBtry;
+                            break;
+                        }
+                    }
+                }
+                assert( !( ( B + kSigned3bit[dB] >= 0 ) && ( B + kSigned3bit[dB] <= 31 ) ) );
+                printf( "%i, ", ( B << 3 ) | dB );
+            }
+        }
+        printf( "\n" );
+        return 0;
+    }
 */
 const float kPmodeEncoderB[16] = { 4, 5, 6, 7, 12, 13, 14, 235, 20, 21, 242, 243, 28, 249, 250, 251 };
 
 float3 getSrcPixel( uint idx )
 {
 	const uint2 pixelsToLoadBase =
-		( ( gl_WorkGroupID.xy << 1u ) +
-		  uint2( gl_LocalInvocationID.z & 0x01u, gl_LocalInvocationID.z >> 1u ) )
-		<< 2u;
+	    ( ( gl_WorkGroupID.xy << 1u ) +
+	      uint2( gl_LocalInvocationID.z & 0x01u, gl_LocalInvocationID.z >> 1u ) )
+	    << 2u;
 	uint2 pixelsToLoad = pixelsToLoadBase;
 	// Note we are NOT transposing this time!
 	pixelsToLoad.x += idx & 0x03u;  //+= threadId % 4
@@ -119,9 +119,9 @@ float3 getSrcPixel( uint idx )
 float3 getSrcPixel( float x, float y )
 {
 	const uint2 pixelsToLoadBase =
-		( ( gl_WorkGroupID.xy << 1u ) +
-		  uint2( gl_LocalInvocationID.z & 0x01u, gl_LocalInvocationID.z >> 1u ) )
-		<< 2u;
+	    ( ( gl_WorkGroupID.xy << 1u ) +
+	      uint2( gl_LocalInvocationID.z & 0x01u, gl_LocalInvocationID.z >> 1u ) )
+	    << 2u;
 	uint2 pixelsToLoad = pixelsToLoadBase + uint2( float( x ), float( y ) );
 	const float3 srcPixels0 = OGRE_Load2D( srcTex, int2( pixelsToLoad ), 0 ).xyz;
 	return srcPixels0;
@@ -169,11 +169,11 @@ float calcErrorPMode( float3 cO, float3 cH, float3 cV )
 
 /**
 @param cO
-	xz in range [0; 64) y in range [0; 128)
+    xz in range [0; 64) y in range [0; 128)
 @param cH
-	xz in range [0; 64) y in range [0; 128)
+    xz in range [0; 64) y in range [0; 128)
 @param cV
-	xz in range [0; 64) y in range [0; 128)
+    xz in range [0; 64) y in range [0; 128)
 @param srcPixelsBlock
 */
 void etc2_planar_mode_write( const float3 cO, const float3 cH, const float3 cV )
@@ -201,23 +201,23 @@ void etc2_planar_mode_write( const float3 cO, const float3 cH, const float3 cV )
 	outputBytes.y = packUnorm4x8( bytes * ( 1.0f / 255.0f ) );
 
 	const uint2 dstUV = ( gl_WorkGroupID.xy << 1u ) +
-						uint2( gl_LocalInvocationID.z & 0x01u, gl_LocalInvocationID.z >> 1u );
+	                    uint2( gl_LocalInvocationID.z & 0x01u, gl_LocalInvocationID.z >> 1u );
 	imageStore( dstTexture, int2( dstUV ), uint4( outputBytes.xy, 0u, 0u ) );
 }
 
 /** Uses a Simple Linear Regression to find the best curve that fits all 4 samples in a row
 @param bVertical
 @param yOffset
-	When bVertical = true, yOffset becomes xOffset
+    When bVertical = true, yOffset becomes xOffset
 @param startIdx
 @param endIdx
 @param minEndpoint [out]
-	Value for cO
+    Value for cO
 @param maxEndpoint [out]
-	Value for either cH (bVertical = false) or cV (bVertical = true)
+    Value for either cH (bVertical = false) or cV (bVertical = true)
 */
 void getCoeffSLR( const bool bVertical, const float yOffset, const float startIdx, const float endIdx,
-				  out float3 minEndpoint, out float3 maxEndpoint )
+                  out float3 minEndpoint, out float3 maxEndpoint )
 {
 	float3 srcCol[4];
 	float3 avgCol = float3( 0.0f, 0.0f, 0.0f );
@@ -250,20 +250,20 @@ void getCoeffSLR( const bool bVertical, const float yOffset, const float startId
 
 /** Calculates O, H and V coefficients using SLR (Simple Linear Regression)
 @param oIdx
-	Where to start sampling O from. Must be in range [0; 2)
+    Where to start sampling O from. Must be in range [0; 2)
 @param hIdx
-	Where to end sampling H at. Must be in range [2; 4)
+    Where to end sampling H at. Must be in range [2; 4)
 @param vIdx
-	Where to end sampling V at. Must be in range [2; 4)
+    Where to end sampling V at. Must be in range [2; 4)
 @param cO [out]
-	xz in range [0; 64) y in range [0; 128)
+    xz in range [0; 64) y in range [0; 128)
 @param cH [out]
-	xz in range [0; 64) y in range [0; 128)
+    xz in range [0; 64) y in range [0; 128)
 @param cV [out]
-	xz in range [0; 64) y in range [0; 128)
+    xz in range [0; 64) y in range [0; 128)
 */
 void getCoeffs( const uint2 oIdx, const uint hIdx, const uint vIdx, out float3 cO, out float3 cH,
-				out float3 cV )
+                out float3 cV )
 {
 	float3 cOx, cOy;
 	getCoeffSLR( false, oIdx.y, oIdx.x, hIdx, cOx, cH );
@@ -343,7 +343,7 @@ void main()
 			if( nextError < thisError )
 			{
 				g_bestCandidates[thisThreadLocalIdx] =
-					float2( nextError, g_bestCandidates[nextThreadLocalIdx].y );
+				    float2( nextError, g_bestCandidates[nextThreadLocalIdx].y );
 			}
 		}
 		__sharedOnlyBarrier;
@@ -353,7 +353,7 @@ void main()
 	{
 		// This thread is the winner! Save the result
 		const uint2 dstUV = ( gl_WorkGroupID.xy << 1u ) +
-							uint2( gl_LocalInvocationID.z & 0x01u, gl_LocalInvocationID.z >> 1u );
+		                    uint2( gl_LocalInvocationID.z & 0x01u, gl_LocalInvocationID.z >> 1u );
 		imageStore( dstError, int2( dstUV ), float4( err, 0.0f, 0.0f, 0.0f ) );
 
 		etc2_planar_mode_write( cO, cH, cV );

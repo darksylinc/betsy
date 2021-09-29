@@ -23,19 +23,19 @@
 #define ushort3 uint3
 #define ushort4 uint4
 
-//Short used for read operations. It's an int in GLSL & HLSL. An ushort in Metal
+// Short used for read operations. It's an int in GLSL & HLSL. An ushort in Metal
 #define rshort int
 #define rshort2 int2
 #define rint int
-//Short used for write operations. It's an int in GLSL. An ushort in HLSL & Metal
+// Short used for write operations. It's an int in GLSL. An ushort in HLSL & Metal
 #define wshort2 int2
 #define wshort3 int3
 
 #define toFloat3x3( x ) mat3( x )
 #define buildFloat3x3( row0, row1, row2 ) mat3( row0, row1, row2 )
 
-#define mul( x, y ) ((x) * (y))
-#define saturate(x) clamp( (x), 0.0, 1.0 )
+#define mul( x, y ) ( ( x ) * ( y ) )
+#define saturate( x ) clamp( ( x ), 0.0, 1.0 )
 #define lerp mix
 #define rsqrt inversesqrt
 #define INLINE
@@ -50,10 +50,13 @@
 #define OGRE_Sample( tex, sampler, uv ) texture( tex, uv )
 #define OGRE_SampleLevel( tex, sampler, uv, lod ) textureLod( tex, uv, lod )
 #define OGRE_SampleArray2D( tex, sampler, uv, arrayIdx ) texture( tex, vec3( uv, arrayIdx ) )
-#define OGRE_SampleArray2DLevel( tex, sampler, uv, arrayIdx, lod ) textureLod( tex, vec3( uv, arrayIdx ), lod )
-#define OGRE_SampleArrayCubeLevel( tex, sampler, uv, arrayIdx, lod ) textureLod( tex, vec4( uv, arrayIdx ), lod )
+#define OGRE_SampleArray2DLevel( tex, sampler, uv, arrayIdx, lod ) \
+	textureLod( tex, vec3( uv, arrayIdx ), lod )
+#define OGRE_SampleArrayCubeLevel( tex, sampler, uv, arrayIdx, lod ) \
+	textureLod( tex, vec4( uv, arrayIdx ), lod )
 #define OGRE_SampleGrad( tex, sampler, uv, ddx, ddy ) textureGrad( tex, uv, ddx, ddy )
-#define OGRE_SampleArray2DGrad( tex, sampler, uv, arrayIdx, ddx, ddy ) textureGrad( tex, vec3( uv, arrayIdx ), ddx, ddy )
+#define OGRE_SampleArray2DGrad( tex, sampler, uv, arrayIdx, ddx, ddy ) \
+	textureGrad( tex, vec3( uv, arrayIdx ), ddx, ddy )
 #define OGRE_ddx( val ) dFdx( val )
 #define OGRE_ddy( val ) dFdy( val )
 #define OGRE_Load2D( tex, iuv, lod ) texelFetch( tex, iuv, lod )

@@ -1,11 +1,11 @@
 
 #include "betsy/EncoderBC6H.h"
 
-#include "betsy/CpuImage.h"
-#include "betsy/Shaders.h"
-
 #include <assert.h>
 #include <memory.h>
+
+#include "betsy/CpuImage.h"
+#include "betsy/Shaders.h"
 
 namespace betsy
 {
@@ -19,16 +19,16 @@ namespace betsy
 		m_height = srcImage.height;
 
 		m_srcTexture =
-			createTexture( TextureParams( m_width, m_height, srcImage.format, "m_srcTexture" ) );
+		    createTexture( TextureParams( m_width, m_height, srcImage.format, "m_srcTexture" ) );
 
 		m_compressTargetRes =
-			createTexture( TextureParams( getBlockWidth(), getBlockHeight(), PFG_RGBA32_UINT,
-										  "m_compressTargetRes", TextureFlags::Uav ) );
+		    createTexture( TextureParams( getBlockWidth(), getBlockHeight(), PFG_RGBA32_UINT,
+		                                  "m_compressTargetRes", TextureFlags::Uav ) );
 
 		m_dstTexture =
-			createTexture( TextureParams( m_width, m_height, PFG_BC6H_UF16, "m_dstTexture" ) );
+		    createTexture( TextureParams( m_width, m_height, PFG_BC6H_UF16, "m_dstTexture" ) );
 
-		m_compressPso = createComputePso(bc6h_glsl );
+		m_compressPso = createComputePso( bc6h_glsl );
 
 		StagingTexture stagingTex = createStagingTexture( m_width, m_height, srcImage.format, true );
 		memcpy( stagingTex.data, srcImage.data, stagingTex.sizeBytes );
@@ -59,7 +59,7 @@ namespace betsy
 		glUniform2f( 0, 1.0f / m_width, 1.0f / m_height );
 
 		glDispatchCompute( alignToNextMultiple( m_width, 32u ) / 32u,
-						   alignToNextMultiple( m_height, 32u ) / 32u, 1u );
+		                   alignToNextMultiple( m_height, 32u ) / 32u, 1u );
 	}
 	//-------------------------------------------------------------------------
 	void EncoderBC6H::execute02()
@@ -69,8 +69,8 @@ namespace betsy
 
 		// Copy "8x8" PFG_RGBA32_UINT -> 32x32 PFG_BC6H_UF16
 		glCopyImageSubData( m_compressTargetRes, GL_TEXTURE_2D, 0, 0, 0, 0,  //
-							m_dstTexture, GL_TEXTURE_2D, 0, 0, 0, 0,         //
-							( GLsizei )( getBlockWidth() ), ( GLsizei )( getBlockHeight() ), 1 );
+		                    m_dstTexture, GL_TEXTURE_2D, 0, 0, 0, 0,         //
+		                    (GLsizei)( getBlockWidth() ), (GLsizei)( getBlockHeight() ), 1 );
 	}
 	//-------------------------------------------------------------------------
 	void EncoderBC6H::startDownload()
@@ -80,7 +80,7 @@ namespace betsy
 		if( m_downloadStaging.bufferName )
 			destroyStagingTexture( m_downloadStaging );
 		m_downloadStaging =
-			createStagingTexture( getBlockWidth(), getBlockHeight(), PFG_RG32_UINT, false );
+		    createStagingTexture( getBlockWidth(), getBlockHeight(), PFG_RG32_UINT, false );
 		downloadStagingTexture( m_compressTargetRes, m_downloadStaging );
 	}
 	//-------------------------------------------------------------------------

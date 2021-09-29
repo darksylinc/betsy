@@ -12,21 +12,21 @@ uniform sampler2D srcTex;
 layout( rg32ui, binding = 0 ) uniform restrict writeonly uimage2DArray dstTexture;
 
 layout( local_size_x = 120,  //
-		local_size_y = 4,    //
-		local_size_z = 2 ) in;
+        local_size_y = 4,    //
+        local_size_z = 2 ) in;
 
 /*
 kLocalInvocationToPixIdx table generated with:
-	int main()
-	{
-		for( int pix1 = 0; pix1 < 15; pix1++ )
-		{
-			for( int pix2 = pix1 + 1; pix2 < 16; pix2++ )
-				printf( "uint2( %iu, %iu ), ", pix1, pix2 );
-		}
-		printf( "\n" );
-		return 0;
-	}
+    int main()
+    {
+        for( int pix1 = 0; pix1 < 15; pix1++ )
+        {
+            for( int pix2 = pix1 + 1; pix2 < 16; pix2++ )
+                printf( "uint2( %iu, %iu ), ", pix1, pix2 );
+        }
+        printf( "\n" );
+        return 0;
+    }
 */
 const uint2 kLocalInvocationToPixIdx[120] = {
 	uint2( 0u, 1u ),   uint2( 0u, 2u ),   uint2( 0u, 3u ),   uint2( 0u, 4u ),   uint2( 0u, 5u ),

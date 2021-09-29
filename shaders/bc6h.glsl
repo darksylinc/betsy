@@ -5,21 +5,19 @@
 
 #define QUALITY
 
-//SIGNED macro is WIP
+// SIGNED macro is WIP
 //#define SIGNED
 
 float3 f32tof16( float3 value )
 {
-	return float3( packHalf2x16( float2( value.x, 0.0 ) ),
-				   packHalf2x16( float2( value.y, 0.0 ) ),
-				   packHalf2x16( float2( value.z, 0.0 ) ) );
+	return float3( packHalf2x16( float2( value.x, 0.0 ) ), packHalf2x16( float2( value.y, 0.0 ) ),
+	               packHalf2x16( float2( value.z, 0.0 ) ) );
 }
 
 float3 f16tof32( uint3 value )
 {
-	return float3( unpackHalf2x16( value.x ).x,
-				   unpackHalf2x16( value.y ).x,
-				   unpackHalf2x16( value.z ).x );
+	return float3( unpackHalf2x16( value.x ).x, unpackHalf2x16( value.y ).x,
+	               unpackHalf2x16( value.z ).x );
 }
 
 float f32tof16( float value )
@@ -36,14 +34,15 @@ uniform sampler2D srcTexture;
 
 layout( rgba32ui ) uniform restrict writeonly uimage2D dstTexture;
 
-layout(location = 0) uniform float2 p_textureSizeRcp;
+layout( location = 0 ) uniform float2 p_textureSizeRcp;
 
 const float HALF_MAX = 65504.0f;
 const uint PATTERN_NUM = 32u;
 
 float CalcMSLE( float3 a, float3 b )
 {
-	float3 err = log2( ( b + 1.0f ) / ( a + 1.0f ) );;
+	float3 err = log2( ( b + 1.0f ) / ( a + 1.0f ) );
+	;
 	err = err * err;
 	return err.x + err.y + err.z;
 }
@@ -52,7 +51,7 @@ uint PatternFixupID( uint i )
 {
 	uint ret = 15u;
 	ret = ( ( 3441033216u >> i ) & 0x1u ) != 0 ? 2u : ret;
-	ret = ( ( 845414400u  >> i ) & 0x1u ) != 0 ? 8u : ret;
+	ret = ( ( 845414400u >> i ) & 0x1u ) != 0 ? 8u : ret;
 	return ret;
 }
 
@@ -62,22 +61,22 @@ uint Pattern( uint p, uint i )
 	uint p3 = p - p2 * 2u;
 
 	uint enc = 0u;
-	enc = p2 == 0u  ? 2290666700u : enc;
-	enc = p2 == 1u  ? 3972591342u : enc;
-	enc = p2 == 2u  ? 4276930688u : enc;
-	enc = p2 == 3u  ? 3967876808u : enc;
-	enc = p2 == 4u  ? 4293707776u : enc;
-	enc = p2 == 5u  ? 3892379264u : enc;
-	enc = p2 == 6u  ? 4278255592u : enc;
-	enc = p2 == 7u  ? 4026597360u : enc;
-	enc = p2 == 8u  ? 9369360u    : enc;
-	enc = p2 == 9u  ? 147747072u  : enc;
+	enc = p2 == 0u ? 2290666700u : enc;
+	enc = p2 == 1u ? 3972591342u : enc;
+	enc = p2 == 2u ? 4276930688u : enc;
+	enc = p2 == 3u ? 3967876808u : enc;
+	enc = p2 == 4u ? 4293707776u : enc;
+	enc = p2 == 5u ? 3892379264u : enc;
+	enc = p2 == 6u ? 4278255592u : enc;
+	enc = p2 == 7u ? 4026597360u : enc;
+	enc = p2 == 8u ? 9369360u : enc;
+	enc = p2 == 9u ? 147747072u : enc;
 	enc = p2 == 10u ? 1930428556u : enc;
 	enc = p2 == 11u ? 2362323200u : enc;
-	enc = p2 == 12u ? 823134348u  : enc;
-	enc = p2 == 13u ? 913073766u  : enc;
-	enc = p2 == 14u ? 267393000u  : enc;
-	enc = p2 == 15u ? 966553998u  : enc;
+	enc = p2 == 12u ? 823134348u : enc;
+	enc = p2 == 13u ? 913073766u : enc;
+	enc = p2 == 14u ? 267393000u : enc;
+	enc = p2 == 15u ? 966553998u : enc;
 
 	enc = p3 != 0u ? enc >> 16u : enc;
 	uint ret = ( enc >> i ) & 0x1u;
@@ -85,7 +84,7 @@ uint Pattern( uint p, uint i )
 }
 
 #ifndef SIGNED
-//UF
+// UF
 float3 Quantize7( float3 x )
 {
 	return ( f32tof16( x ) * 128.0f ) / ( 0x7bff + 1.0f );
@@ -118,11 +117,12 @@ float3 Unquantize10( float3 x )
 
 float3 FinishUnquantize( float3 endpoint0Unq, float3 endpoint1Unq, float weight )
 {
-	float3 comp = ( endpoint0Unq * ( 64.0f - weight ) + endpoint1Unq * weight + 32.0f ) * ( 31.0f / 4096.0f );
+	float3 comp =
+	    ( endpoint0Unq * ( 64.0f - weight ) + endpoint1Unq * weight + 32.0f ) * ( 31.0f / 4096.0f );
 	return f16tof32( uint3( comp ) );
 }
 #else
-//SF
+// SF
 
 float3 cmpSign( float3 value )
 {
@@ -186,12 +186,13 @@ float3 Unquantize10( float3 x )
 
 float3 FinishUnquantize( float3 endpoint0Unq, float3 endpoint1Unq, float weight )
 {
-	float3 comp = ( endpoint0Unq * ( 64.0f - weight ) + endpoint1Unq * weight + 32.0f ) * ( 31.0f / 2048.0f );
+	float3 comp =
+	    ( endpoint0Unq * ( 64.0f - weight ) + endpoint1Unq * weight + 32.0f ) * ( 31.0f / 2048.0f );
 	/*float3 signVal;
 	signVal.x = comp.x >= 0.0f ? 0.0f : 0x8000;
 	signVal.y = comp.y >= 0.0f ? 0.0f : 0x8000;
 	signVal.z = comp.z >= 0.0f ? 0.0f : 0x8000;*/
-	//return f16tof32( uint3( signVal + abs( comp ) ) );
+	// return f16tof32( uint3( signVal + abs( comp ) ) );
 	return f16tof32( uint3( comp ) );
 }
 #endif
@@ -231,32 +232,31 @@ void SignExtend( inout float3 v1, uint mask, uint signFlag )
 	v1 = v;
 }
 
-void EncodeP1( inout uint4 block, inout float blockMSLE, float3 texels[ 16 ] )
+void EncodeP1( inout uint4 block, inout float blockMSLE, float3 texels[16] )
 {
 	// compute endpoints (min/max RGB bbox)
-	float3 blockMin = texels[ 0 ];
-	float3 blockMax = texels[ 0 ];
-	for ( uint i = 1u; i < 16u; ++i )
+	float3 blockMin = texels[0];
+	float3 blockMax = texels[0];
+	for( uint i = 1u; i < 16u; ++i )
 	{
-		blockMin = min( blockMin, texels[ i ] );
-		blockMax = max( blockMax, texels[ i ] );
+		blockMin = min( blockMin, texels[i] );
+		blockMax = max( blockMax, texels[i] );
 	}
-
 
 	// refine endpoints in log2 RGB space
 	float3 refinedBlockMin = blockMax;
 	float3 refinedBlockMax = blockMin;
-	for ( uint i = 0u; i < 16u; ++i )
+	for( uint i = 0u; i < 16u; ++i )
 	{
-		refinedBlockMin = min( refinedBlockMin, texels[ i ] == blockMin ? refinedBlockMin : texels[ i ] );
-		refinedBlockMax = max( refinedBlockMax, texels[ i ] == blockMax ? refinedBlockMax : texels[ i ] );
+		refinedBlockMin = min( refinedBlockMin, texels[i] == blockMin ? refinedBlockMin : texels[i] );
+		refinedBlockMax = max( refinedBlockMax, texels[i] == blockMax ? refinedBlockMax : texels[i] );
 	}
 
-	float3 logBlockMax          = log2( blockMax + 1.0f );
-	float3 logBlockMin          = log2( blockMin + 1.0f );
-	float3 logRefinedBlockMax   = log2( refinedBlockMax + 1.0f );
-	float3 logRefinedBlockMin   = log2( refinedBlockMin + 1.0f );
-	float3 logBlockMaxExt       = ( logBlockMax - logBlockMin ) * ( 1.0f / 32.0f );
+	float3 logBlockMax = log2( blockMax + 1.0f );
+	float3 logBlockMin = log2( blockMin + 1.0f );
+	float3 logRefinedBlockMax = log2( refinedBlockMax + 1.0f );
+	float3 logRefinedBlockMin = log2( refinedBlockMin + 1.0f );
+	float3 logBlockMaxExt = ( logBlockMax - logBlockMin ) * ( 1.0f / 32.0f );
 	logBlockMin += min( logRefinedBlockMin - logBlockMin, logBlockMaxExt );
 	logBlockMax -= min( logBlockMax - logRefinedBlockMax, logBlockMaxExt );
 	blockMin = exp2( logBlockMin ) - 1.0f;
@@ -265,41 +265,39 @@ void EncodeP1( inout uint4 block, inout float blockMSLE, float3 texels[ 16 ] )
 	float3 blockDir = blockMax - blockMin;
 	blockDir = blockDir / ( blockDir.x + blockDir.y + blockDir.z );
 
-	float3 endpoint0    = Quantize10( blockMin );
-	float3 endpoint1    = Quantize10( blockMax );
-	float endPoint0Pos  = f32tof16( dot( blockMin, blockDir ) );
-	float endPoint1Pos  = f32tof16( dot( blockMax, blockDir ) );
-
+	float3 endpoint0 = Quantize10( blockMin );
+	float3 endpoint1 = Quantize10( blockMax );
+	float endPoint0Pos = f32tof16( dot( blockMin, blockDir ) );
+	float endPoint1Pos = f32tof16( dot( blockMax, blockDir ) );
 
 	// check if endpoint swap is required
-	float fixupTexelPos = f32tof16( dot( texels[ 0 ], blockDir ) );
+	float fixupTexelPos = f32tof16( dot( texels[0], blockDir ) );
 	uint fixupIndex = ComputeIndex4( fixupTexelPos, endPoint0Pos, endPoint1Pos );
-	if ( fixupIndex > 7 )
+	if( fixupIndex > 7 )
 	{
 		Swap( endPoint0Pos, endPoint1Pos );
 		Swap( endpoint0, endpoint1 );
 	}
 
 	// compute indices
-	uint indices[ 16 ] = { 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u };
-	for ( uint i = 0u; i < 16u; ++i )
+	uint indices[16] = { 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u };
+	for( uint i = 0u; i < 16u; ++i )
 	{
-		float texelPos = f32tof16( dot( texels[ i ], blockDir ) );
-		indices[ i ] = ComputeIndex4( texelPos, endPoint0Pos, endPoint1Pos );
+		float texelPos = f32tof16( dot( texels[i], blockDir ) );
+		indices[i] = ComputeIndex4( texelPos, endPoint0Pos, endPoint1Pos );
 	}
 
 	// compute compression error (MSLE)
 	float3 endpoint0Unq = Unquantize10( endpoint0 );
 	float3 endpoint1Unq = Unquantize10( endpoint1 );
 	float msle = 0.0f;
-	for ( uint i = 0u; i < 16u; ++i )
+	for( uint i = 0u; i < 16u; ++i )
 	{
-		float weight = floor( ( indices[ i ] * 64.0f ) / 15.0f + 0.5f );
+		float weight = floor( ( indices[i] * 64.0f ) / 15.0f + 0.5f );
 		float3 texelUnc = FinishUnquantize( endpoint0Unq, endpoint1Unq, weight );
 
-		msle += CalcMSLE( texels[ i ], texelUnc );
+		msle += CalcMSLE( texels[i], texelUnc );
 	}
-
 
 	// encode block for mode 11
 	blockMSLE = msle;
@@ -316,43 +314,43 @@ void EncodeP1( inout uint4 block, inout float blockMSLE, float3 texels[ 16 ] )
 	block.z |= uint( endpoint1.z ) >> 9u;
 
 	// indices
-	block.z |= indices[ 0 ] << 1u;
-	block.z |= indices[ 1 ] << 4u;
-	block.z |= indices[ 2 ] << 8u;
-	block.z |= indices[ 3 ] << 12u;
-	block.z |= indices[ 4 ] << 16u;
-	block.z |= indices[ 5 ] << 20u;
-	block.z |= indices[ 6 ] << 24u;
-	block.z |= indices[ 7 ] << 28u;
-	block.w |= indices[ 8 ] << 0u;
-	block.w |= indices[ 9 ] << 4u;
-	block.w |= indices[ 10 ] << 8u;
-	block.w |= indices[ 11 ] << 12u;
-	block.w |= indices[ 12 ] << 16u;
-	block.w |= indices[ 13 ] << 20u;
-	block.w |= indices[ 14 ] << 24u;
-	block.w |= indices[ 15 ] << 28u;
+	block.z |= indices[0] << 1u;
+	block.z |= indices[1] << 4u;
+	block.z |= indices[2] << 8u;
+	block.z |= indices[3] << 12u;
+	block.z |= indices[4] << 16u;
+	block.z |= indices[5] << 20u;
+	block.z |= indices[6] << 24u;
+	block.z |= indices[7] << 28u;
+	block.w |= indices[8] << 0u;
+	block.w |= indices[9] << 4u;
+	block.w |= indices[10] << 8u;
+	block.w |= indices[11] << 12u;
+	block.w |= indices[12] << 16u;
+	block.w |= indices[13] << 20u;
+	block.w |= indices[14] << 24u;
+	block.w |= indices[15] << 28u;
 }
 
-void EncodeP2Pattern( inout uint4 block, inout float blockMSLE, uint pattern, float3 texels[ 16 ] )
+void EncodeP2Pattern( inout uint4 block, inout float blockMSLE, uint pattern, float3 texels[16] )
 {
 	float3 p0BlockMin = float3( HALF_MAX, HALF_MAX, HALF_MAX );
 	float3 p0BlockMax = float3( 0.0f, 0.0f, 0.0f );
 	float3 p1BlockMin = float3( HALF_MAX, HALF_MAX, HALF_MAX );
 	float3 p1BlockMax = float3( 0.0f, 0.0f, 0.0f );
 
-	for ( uint i = 0u; i < 16u; ++i )
+	for( uint i = 0u; i < 16u; ++i )
 	{
 		uint paletteID = Pattern( pattern, i );
-		if ( paletteID == 0 )
+		if( paletteID == 0 )
 		{
-			p0BlockMin = min( p0BlockMin, texels[ i ] );
-			p0BlockMax = max( p0BlockMax, texels[ i ] );
+			p0BlockMin = min( p0BlockMin, texels[i] );
+			p0BlockMax = max( p0BlockMax, texels[i] );
 		}
 		else
 		{
-			p1BlockMin = min( p1BlockMin, texels[ i ] );
-			p1BlockMax = max( p1BlockMax, texels[ i ] );
+			p1BlockMin = min( p1BlockMin, texels[i] );
+			p1BlockMax = max( p1BlockMax, texels[i] );
 		}
 	}
 
@@ -361,39 +359,37 @@ void EncodeP2Pattern( inout uint4 block, inout float blockMSLE, uint pattern, fl
 	p0BlockDir = p0BlockDir / ( p0BlockDir.x + p0BlockDir.y + p0BlockDir.z );
 	p1BlockDir = p1BlockDir / ( p1BlockDir.x + p1BlockDir.y + p1BlockDir.z );
 
-
 	float p0Endpoint0Pos = f32tof16( dot( p0BlockMin, p0BlockDir ) );
 	float p0Endpoint1Pos = f32tof16( dot( p0BlockMax, p0BlockDir ) );
 	float p1Endpoint0Pos = f32tof16( dot( p1BlockMin, p1BlockDir ) );
 	float p1Endpoint1Pos = f32tof16( dot( p1BlockMax, p1BlockDir ) );
 
-
 	uint fixupID = PatternFixupID( pattern );
-	float p0FixupTexelPos = f32tof16( dot( texels[ 0 ], p0BlockDir ) );
-	float p1FixupTexelPos = f32tof16( dot( texels[ fixupID ], p1BlockDir ) );
+	float p0FixupTexelPos = f32tof16( dot( texels[0], p0BlockDir ) );
+	float p1FixupTexelPos = f32tof16( dot( texels[fixupID], p1BlockDir ) );
 	uint p0FixupIndex = ComputeIndex3( p0FixupTexelPos, p0Endpoint0Pos, p0Endpoint1Pos );
 	uint p1FixupIndex = ComputeIndex3( p1FixupTexelPos, p1Endpoint0Pos, p1Endpoint1Pos );
-	if ( p0FixupIndex > 3u )
+	if( p0FixupIndex > 3u )
 	{
 		Swap( p0Endpoint0Pos, p0Endpoint1Pos );
 		Swap( p0BlockMin, p0BlockMax );
 	}
-	if ( p1FixupIndex > 3u )
+	if( p1FixupIndex > 3u )
 	{
 		Swap( p1Endpoint0Pos, p1Endpoint1Pos );
 		Swap( p1BlockMin, p1BlockMax );
 	}
 
-	uint indices[ 16 ] = { 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u };
-	for ( uint i = 0u; i < 16u; ++i )
+	uint indices[16] = { 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u };
+	for( uint i = 0u; i < 16u; ++i )
 	{
-		float p0TexelPos = f32tof16( dot( texels[ i ], p0BlockDir ) );
-		float p1TexelPos = f32tof16( dot( texels[ i ], p1BlockDir ) );
+		float p0TexelPos = f32tof16( dot( texels[i], p0BlockDir ) );
+		float p1TexelPos = f32tof16( dot( texels[i], p1BlockDir ) );
 		uint p0Index = ComputeIndex3( p0TexelPos, p0Endpoint0Pos, p0Endpoint1Pos );
 		uint p1Index = ComputeIndex3( p1TexelPos, p1Endpoint0Pos, p1Endpoint1Pos );
 
 		uint paletteID = Pattern( pattern, i );
-		indices[ i ] = paletteID == 0u ? p0Index : p1Index;
+		indices[i] = paletteID == 0u ? p0Index : p1Index;
 	}
 
 	float3 endpoint760 = floor( Quantize7( p0BlockMin ) );
@@ -435,7 +431,7 @@ void EncodeP2Pattern( inout uint4 block, inout float blockMSLE, uint pattern, fl
 
 	float msle76 = 0.0f;
 	float msle95 = 0.0f;
-	for ( uint i = 0u; i < 16u; ++i )
+	for( uint i = 0u; i < 16u; ++i )
 	{
 		uint paletteID = Pattern( pattern, i );
 
@@ -444,12 +440,12 @@ void EncodeP2Pattern( inout uint4 block, inout float blockMSLE, uint pattern, fl
 		float3 tmp950Unq = paletteID == 0u ? endpoint950Unq : endpoint952Unq;
 		float3 tmp951Unq = paletteID == 0u ? endpoint951Unq : endpoint953Unq;
 
-		float weight = floor( ( indices[ i ] * 64.0f ) / 7.0f + 0.5f );
+		float weight = floor( ( indices[i] * 64.0f ) / 7.0f + 0.5f );
 		float3 texelUnc76 = FinishUnquantize( tmp760Unq, tmp761Unq, weight );
 		float3 texelUnc95 = FinishUnquantize( tmp950Unq, tmp951Unq, weight );
 
-		msle76 += CalcMSLE( texels[ i ], texelUnc76 );
-		msle95 += CalcMSLE( texels[ i ], texelUnc95 );
+		msle76 += CalcMSLE( texels[i], texelUnc76 );
+		msle95 += CalcMSLE( texels[i], texelUnc95 );
 	}
 
 	SignExtend( endpoint761, 0x1F, 0x20 );
@@ -462,12 +458,12 @@ void EncodeP2Pattern( inout uint4 block, inout float blockMSLE, uint pattern, fl
 
 	// encode block
 	float p2MSLE = min( msle76, msle95 );
-	if ( p2MSLE < blockMSLE )
+	if( p2MSLE < blockMSLE )
 	{
-		blockMSLE   = p2MSLE;
-		block       = uint4( 0u, 0u, 0u, 0u );
+		blockMSLE = p2MSLE;
+		block = uint4( 0u, 0u, 0u, 0u );
 
-		if ( p2MSLE == msle76 )
+		if( p2MSLE == msle76 )
 		{
 			// 7.6
 			block.x = 0x1u;
@@ -525,70 +521,68 @@ void EncodeP2Pattern( inout uint4 block, inout float blockMSLE, uint pattern, fl
 
 		block.z |= pattern << 13u;
 		uint blockFixupID = PatternFixupID( pattern );
-		if ( blockFixupID == 15u )
+		if( blockFixupID == 15u )
 		{
-			block.z |= indices[ 0 ] << 18u;
-			block.z |= indices[ 1 ] << 20u;
-			block.z |= indices[ 2 ] << 23u;
-			block.z |= indices[ 3 ] << 26u;
-			block.z |= indices[ 4 ] << 29u;
-			block.w |= indices[ 5 ] << 0u;
-			block.w |= indices[ 6 ] << 3u;
-			block.w |= indices[ 7 ] << 6u;
-			block.w |= indices[ 8 ] << 9u;
-			block.w |= indices[ 9 ] << 12u;
-			block.w |= indices[ 10 ] << 15u;
-			block.w |= indices[ 11 ] << 18u;
-			block.w |= indices[ 12 ] << 21u;
-			block.w |= indices[ 13 ] << 24u;
-			block.w |= indices[ 14 ] << 27u;
-			block.w |= indices[ 15 ] << 30u;
+			block.z |= indices[0] << 18u;
+			block.z |= indices[1] << 20u;
+			block.z |= indices[2] << 23u;
+			block.z |= indices[3] << 26u;
+			block.z |= indices[4] << 29u;
+			block.w |= indices[5] << 0u;
+			block.w |= indices[6] << 3u;
+			block.w |= indices[7] << 6u;
+			block.w |= indices[8] << 9u;
+			block.w |= indices[9] << 12u;
+			block.w |= indices[10] << 15u;
+			block.w |= indices[11] << 18u;
+			block.w |= indices[12] << 21u;
+			block.w |= indices[13] << 24u;
+			block.w |= indices[14] << 27u;
+			block.w |= indices[15] << 30u;
 		}
-		else if ( blockFixupID == 2u )
+		else if( blockFixupID == 2u )
 		{
-			block.z |= indices[ 0 ] << 18u;
-			block.z |= indices[ 1 ] << 20u;
-			block.z |= indices[ 2 ] << 23u;
-			block.z |= indices[ 3 ] << 25u;
-			block.z |= indices[ 4 ] << 28u;
-			block.z |= indices[ 5 ] << 31u;
-			block.w |= indices[ 5 ] >> 1u;
-			block.w |= indices[ 6 ] << 2u;
-			block.w |= indices[ 7 ] << 5u;
-			block.w |= indices[ 8 ] << 8u;
-			block.w |= indices[ 9 ] << 11u;
-			block.w |= indices[ 10 ] << 14u;
-			block.w |= indices[ 11 ] << 17u;
-			block.w |= indices[ 12 ] << 20u;
-			block.w |= indices[ 13 ] << 23u;
-			block.w |= indices[ 14 ] << 26u;
-			block.w |= indices[ 15 ] << 29u;
+			block.z |= indices[0] << 18u;
+			block.z |= indices[1] << 20u;
+			block.z |= indices[2] << 23u;
+			block.z |= indices[3] << 25u;
+			block.z |= indices[4] << 28u;
+			block.z |= indices[5] << 31u;
+			block.w |= indices[5] >> 1u;
+			block.w |= indices[6] << 2u;
+			block.w |= indices[7] << 5u;
+			block.w |= indices[8] << 8u;
+			block.w |= indices[9] << 11u;
+			block.w |= indices[10] << 14u;
+			block.w |= indices[11] << 17u;
+			block.w |= indices[12] << 20u;
+			block.w |= indices[13] << 23u;
+			block.w |= indices[14] << 26u;
+			block.w |= indices[15] << 29u;
 		}
 		else
 		{
-			block.z |= indices[ 0 ] << 18u;
-			block.z |= indices[ 1 ] << 20u;
-			block.z |= indices[ 2 ] << 23u;
-			block.z |= indices[ 3 ] << 26u;
-			block.z |= indices[ 4 ] << 29u;
-			block.w |= indices[ 5 ] << 0u;
-			block.w |= indices[ 6 ] << 3u;
-			block.w |= indices[ 7 ] << 6u;
-			block.w |= indices[ 8 ] << 9u;
-			block.w |= indices[ 9 ] << 11u;
-			block.w |= indices[ 10 ] << 14u;
-			block.w |= indices[ 11 ] << 17u;
-			block.w |= indices[ 12 ] << 20u;
-			block.w |= indices[ 13 ] << 23u;
-			block.w |= indices[ 14 ] << 26u;
-			block.w |= indices[ 15 ] << 29u;
+			block.z |= indices[0] << 18u;
+			block.z |= indices[1] << 20u;
+			block.z |= indices[2] << 23u;
+			block.z |= indices[3] << 26u;
+			block.z |= indices[4] << 29u;
+			block.w |= indices[5] << 0u;
+			block.w |= indices[6] << 3u;
+			block.w |= indices[7] << 6u;
+			block.w |= indices[8] << 9u;
+			block.w |= indices[9] << 11u;
+			block.w |= indices[10] << 14u;
+			block.w |= indices[11] << 17u;
+			block.w |= indices[12] << 20u;
+			block.w |= indices[13] << 23u;
+			block.w |= indices[14] << 26u;
+			block.w |= indices[15] << 29u;
 		}
 	}
 }
 
-layout( local_size_x = 8,
-		local_size_y = 8,
-		local_size_z = 1 ) in;
+layout( local_size_x = 8, local_size_y = 8, local_size_z = 1 ) in;
 
 void main()
 {
@@ -597,48 +591,48 @@ void main()
 	// 4 5 6 7
 	// 8 9 10 11
 	// 12 13 14 15
-	float2 uv       = gl_GlobalInvocationID.xy * p_textureSizeRcp * 4.0f - p_textureSizeRcp;
+	float2 uv = gl_GlobalInvocationID.xy * p_textureSizeRcp * 4.0f - p_textureSizeRcp;
 	float2 block0UV = uv;
 	float2 block1UV = uv + float2( 2.0f * p_textureSizeRcp.x, 0.0f );
 	float2 block2UV = uv + float2( 0.0f, 2.0f * p_textureSizeRcp.y );
 	float2 block3UV = uv + float2( 2.0f * p_textureSizeRcp.x, 2.0f * p_textureSizeRcp.y );
-	float4 block0X  = OGRE_GatherRed( srcTexture, pointSampler, block0UV );
-	float4 block1X  = OGRE_GatherRed( srcTexture, pointSampler, block1UV );
-	float4 block2X  = OGRE_GatherRed( srcTexture, pointSampler, block2UV );
-	float4 block3X  = OGRE_GatherRed( srcTexture, pointSampler, block3UV );
-	float4 block0Y  = OGRE_GatherGreen( srcTexture, pointSampler, block0UV );
-	float4 block1Y  = OGRE_GatherGreen( srcTexture, pointSampler, block1UV );
-	float4 block2Y  = OGRE_GatherGreen( srcTexture, pointSampler, block2UV );
-	float4 block3Y  = OGRE_GatherGreen( srcTexture, pointSampler, block3UV );
-	float4 block0Z  = OGRE_GatherBlue( srcTexture, pointSampler, block0UV );
-	float4 block1Z  = OGRE_GatherBlue( srcTexture, pointSampler, block1UV );
-	float4 block2Z  = OGRE_GatherBlue( srcTexture, pointSampler, block2UV );
-	float4 block3Z  = OGRE_GatherBlue( srcTexture, pointSampler, block3UV );
+	float4 block0X = OGRE_GatherRed( srcTexture, pointSampler, block0UV );
+	float4 block1X = OGRE_GatherRed( srcTexture, pointSampler, block1UV );
+	float4 block2X = OGRE_GatherRed( srcTexture, pointSampler, block2UV );
+	float4 block3X = OGRE_GatherRed( srcTexture, pointSampler, block3UV );
+	float4 block0Y = OGRE_GatherGreen( srcTexture, pointSampler, block0UV );
+	float4 block1Y = OGRE_GatherGreen( srcTexture, pointSampler, block1UV );
+	float4 block2Y = OGRE_GatherGreen( srcTexture, pointSampler, block2UV );
+	float4 block3Y = OGRE_GatherGreen( srcTexture, pointSampler, block3UV );
+	float4 block0Z = OGRE_GatherBlue( srcTexture, pointSampler, block0UV );
+	float4 block1Z = OGRE_GatherBlue( srcTexture, pointSampler, block1UV );
+	float4 block2Z = OGRE_GatherBlue( srcTexture, pointSampler, block2UV );
+	float4 block3Z = OGRE_GatherBlue( srcTexture, pointSampler, block3UV );
 
-	float3 texels[ 16 ];
-	texels[ 0 ]     = float3( block0X.w, block0Y.w, block0Z.w );
-	texels[ 1 ]     = float3( block0X.z, block0Y.z, block0Z.z );
-	texels[ 2 ]     = float3( block1X.w, block1Y.w, block1Z.w );
-	texels[ 3 ]     = float3( block1X.z, block1Y.z, block1Z.z );
-	texels[ 4 ]     = float3( block0X.x, block0Y.x, block0Z.x );
-	texels[ 5 ]     = float3( block0X.y, block0Y.y, block0Z.y );
-	texels[ 6 ]     = float3( block1X.x, block1Y.x, block1Z.x );
-	texels[ 7 ]     = float3( block1X.y, block1Y.y, block1Z.y );
-	texels[ 8 ]     = float3( block2X.w, block2Y.w, block2Z.w );
-	texels[ 9 ]     = float3( block2X.z, block2Y.z, block2Z.z );
-	texels[ 10 ]    = float3( block3X.w, block3Y.w, block3Z.w );
-	texels[ 11 ]    = float3( block3X.z, block3Y.z, block3Z.z );
-	texels[ 12 ]    = float3( block2X.x, block2Y.x, block2Z.x );
-	texels[ 13 ]    = float3( block2X.y, block2Y.y, block2Z.y );
-	texels[ 14 ]    = float3( block3X.x, block3Y.x, block3Z.x );
-	texels[ 15 ]    = float3( block3X.y, block3Y.y, block3Z.y );
+	float3 texels[16];
+	texels[0] = float3( block0X.w, block0Y.w, block0Z.w );
+	texels[1] = float3( block0X.z, block0Y.z, block0Z.z );
+	texels[2] = float3( block1X.w, block1Y.w, block1Z.w );
+	texels[3] = float3( block1X.z, block1Y.z, block1Z.z );
+	texels[4] = float3( block0X.x, block0Y.x, block0Z.x );
+	texels[5] = float3( block0X.y, block0Y.y, block0Z.y );
+	texels[6] = float3( block1X.x, block1Y.x, block1Z.x );
+	texels[7] = float3( block1X.y, block1Y.y, block1Z.y );
+	texels[8] = float3( block2X.w, block2Y.w, block2Z.w );
+	texels[9] = float3( block2X.z, block2Y.z, block2Z.z );
+	texels[10] = float3( block3X.w, block3Y.w, block3Z.w );
+	texels[11] = float3( block3X.z, block3Y.z, block3Z.z );
+	texels[12] = float3( block2X.x, block2Y.x, block2Z.x );
+	texels[13] = float3( block2X.y, block2Y.y, block2Z.y );
+	texels[14] = float3( block3X.x, block3Y.x, block3Z.x );
+	texels[15] = float3( block3X.y, block3Y.y, block3Z.y );
 
-	uint4 block     = uint4( 0u, 0u, 0u, 0u );
+	uint4 block = uint4( 0u, 0u, 0u, 0u );
 	float blockMSLE = 0.0f;
 
 	EncodeP1( block, blockMSLE, texels );
 #ifdef QUALITY
-	for ( uint i = 0u; i < 32u; ++i )
+	for( uint i = 0u; i < 32u; ++i )
 	{
 		EncodeP2Pattern( block, blockMSLE, i, texels );
 	}

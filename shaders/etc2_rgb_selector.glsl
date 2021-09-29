@@ -17,8 +17,8 @@
 #include "UavCrossPlatform_piece_all.glsl"
 
 layout( local_size_x = 8,  //
-		local_size_y = 8,  //
-		local_size_z = 1 ) in;
+        local_size_y = 8,  //
+        local_size_z = 1 ) in;
 
 layout( binding = 0 ) uniform sampler2D texErrorEtc1;
 layout( binding = 1 ) uniform sampler2D texErrorTh;

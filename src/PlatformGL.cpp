@@ -1,11 +1,9 @@
 
-#include "GL/gl3w.h"
-
-#include "FreeImage.h"
-#include "SDL.h"
-
 #include <stdio.h>
 #include <stdlib.h>
+
+#include "GL/gl3w.h"
+#include "SDL.h"
 
 namespace betsy
 {
@@ -18,7 +16,7 @@ namespace betsy
 	static SDL_Window *g_sdlWindow = 0;
 
 	static void APIENTRY GLDebugCallback( GLenum source, GLenum type, GLuint id, GLenum severity,
-										  GLsizei length, const GLchar *message, const void *userParam )
+	                                      GLsizei length, const GLchar *message, const void *userParam )
 	{
 		printf( "%s\n", message );
 	}
@@ -31,8 +29,6 @@ namespace betsy
 			SDL_Quit();
 			abort();
 		}
-
-		FreeImage_Initialise( TRUE );
 
 		int width = 1280;
 		int height = 720;
@@ -49,13 +45,13 @@ namespace betsy
 		}
 
 		g_sdlWindow =
-			SDL_CreateWindow( "Betsy Mandatory GL window",  // window title
-							  posX,                         // initial x position
-							  posY,                         // initial y position
-							  width,                        // width, in pixels
-							  height,                       // height, in pixels
-							  SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL |
-								  ( fullscreen ? SDL_WINDOW_FULLSCREEN : 0 ) | SDL_WINDOW_RESIZABLE );
+		    SDL_CreateWindow( "Betsy Mandatory GL window",  // window title
+		                      posX,                         // initial x position
+		                      posY,                         // initial y position
+		                      width,                        // width, in pixels
+		                      height,                       // height, in pixels
+		                      SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL |
+		                          ( fullscreen ? SDL_WINDOW_FULLSCREEN : 0 ) | SDL_WINDOW_RESIZABLE );
 
 		SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 4 );
 		SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 3 );
@@ -98,8 +94,6 @@ namespace betsy
 
 	void shutdownBetsyPlatform()
 	{
-		FreeImage_DeInitialise();
-
 		SDL_GL_DeleteContext( g_glContext );
 		g_glContext = 0;
 		SDL_Quit();

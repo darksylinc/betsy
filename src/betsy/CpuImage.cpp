@@ -5,157 +5,52 @@
 //#include "stb_image.h"
 
 #define FREEIMAGE_LIB
-#include "FreeImage.h"
-
 #include <malloc.h>
 #include <memory.h>
 #include <stdio.h>
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 namespace betsy
 {
 	CpuImage::CpuImage() : data( 0 ), width( 0 ), height( 0 ), format( PFG_RGBA16_FLOAT ) {}
 	//-------------------------------------------------------------------------
 	CpuImage::CpuImage( const char *fullpath ) :
-		data( 0 ),
-		width( 0 ),
-		height( 0 ),
-		format( PFG_RGBA16_FLOAT )
+	    data( 0 ), width( 0 ), height( 0 ), format( PFG_RGBA16_FLOAT )
 	{
-		const FREE_IMAGE_FORMAT fif = FreeImage_GetFIFFromFilename( fullpath );
-
-		FIBITMAP *fiBitmap = FreeImage_Load( fif, fullpath );
-		if( !fiBitmap )
+		bool hdr = stbi_is_hdr( fullpath );
+		int comp = 0;
+		if( hdr )
 		{
-			fprintf( stderr, "Failed to load %s\n", fullpath );
+			format = PFG_RGBA32_FLOAT;
+			data = (uint8_t *)stbi_loadf_from_file( fopen( fullpath, "rb" ), (int *)&width,
+			                                        (int *)&height, &comp, 4 );
+		}
+		else
+		{
+			format = PFG_RGBA8_UNORM_SRGB;
+			data =
+			    stbi_load_from_file( fopen( fullpath, "rb" ), (int *)&width, (int *)&height, &comp, 4 );
+
+			if(comp == 3)
+			{
+				RGB8toRGBA8( data, width * 3 );
+				comp = 4;
+			}
+		}
+		if( comp != 4 )
+		{
+			printf( "Did not get correct amount of components!\n" );
 			return;
 		}
-
-		// Must derive format first, this may perform conversions
-		const FREE_IMAGE_TYPE imageType = FreeImage_GetImageType( fiBitmap );
-		const FREE_IMAGE_COLOR_TYPE colourType = FreeImage_GetColorType( fiBitmap );
-		unsigned bpp = FreeImage_GetBPP( fiBitmap );
-
-		switch( imageType )
-		{
-		case FIT_UNKNOWN:
-		case FIT_COMPLEX:
-		case FIT_DOUBLE:
-			printf( "Unknown or unsupported image format %s\n", fullpath );
-			return;
-		case FIT_BITMAP:
-			// Standard image type
-			// Perform any colour conversions for greyscale
-			if( colourType == FIC_MINISWHITE || colourType == FIC_MINISBLACK )
-			{
-				FIBITMAP *newBitmap = FreeImage_ConvertToGreyscale( fiBitmap );
-				// free old bitmap and replace
-				FreeImage_Unload( fiBitmap );
-				fiBitmap = newBitmap;
-				// get new formats
-				bpp = FreeImage_GetBPP( fiBitmap );
-			}
-			// Perform any colour conversions for RGB
-			else if( bpp < 8 || colourType == FIC_PALETTE || colourType == FIC_CMYK )
-			{
-				FIBITMAP *newBitmap = NULL;
-				if( FreeImage_IsTransparent( fiBitmap ) )
-				{
-					// convert to 32 bit to preserve the transparency
-					// (the alpha byte will be 0 if pixel is transparent)
-					newBitmap = FreeImage_ConvertTo32Bits( fiBitmap );
-				}
-				else
-				{
-					// no transparency - only 3 bytes are needed
-					newBitmap = FreeImage_ConvertTo24Bits( fiBitmap );
-				}
-
-				// free old bitmap and replace
-				FreeImage_Unload( fiBitmap );
-				fiBitmap = newBitmap;
-				// get new formats
-				bpp = FreeImage_GetBPP( fiBitmap );
-			}
-
-			// by this stage, 8-bit is greyscale, 16/24/32 bit are RGB[A]
-			switch( bpp )
-			{
-			case 8:
-				printf( "8 bpp Monochrome textures not supported %s\n", fullpath );
-				return;
-			case 16:
-				printf( "16 bpp textures not supported %s\n", fullpath );
-				return;
-			case 24:
-			case 32:
-				format = PFG_RGBA8_UNORM_SRGB;
-				break;
-			}
-			break;
-		case FIT_UINT16:
-		case FIT_INT16:
-			// 16-bit greyscale
-			printf( "16 bpp Monochrome textures not supported %s\n", fullpath );
-			return;
-		case FIT_UINT32:
-		case FIT_INT32:
-			printf( "32 bpp Monochrome textures not supported %s\n", fullpath );
-			break;
-		case FIT_FLOAT:
-			// Single-component floating point data
-			format = PFG_RGBA32_FLOAT;
-			break;
-		case FIT_RGB16:
-		case FIT_RGBA16:
-			printf( "Texture format not supported %s\n", fullpath );
-			return;
-		case FIT_RGBF:
-			format = PFG_RGBA32_FLOAT;
-			break;
-		case FIT_RGBAF:
-			format = PFG_RGBA32_FLOAT;
-			break;
-		}
-
-		width = FreeImage_GetWidth( fiBitmap );
-		height = FreeImage_GetHeight( fiBitmap );
-
-		const size_t neededBytes = getSizeBytes( width, height, 1u, 1u, format );
-		data = reinterpret_cast<uint8_t *>( malloc( neededBytes ) );
-
-		// Convert data inverting scanlines
-		const size_t bytesPerRow = FreeImage_GetPitch( fiBitmap );
-		const uint8_t *srcData = FreeImage_GetBits( fiBitmap );
-
-		switch( imageType )
-		{
-		case FIT_BITMAP:
-			if( bpp == 24 )
-				RGB8toRGBA8( srcData, bytesPerRow );
-			else if( bpp == 32 )
-				BGRANtoRGBAN( srcData, bytesPerRow );
-			break;
-		case FIT_FLOAT:
-			R32toRGBA32( reinterpret_cast<const uint32_t *>( srcData ), bytesPerRow );
-			break;
-		case FIT_RGBF:
-			RGB32toRGBA32( reinterpret_cast<const uint32_t *>( srcData ), bytesPerRow );
-			break;
-		case FIT_RGBAF:
-			BGRANtoRGBAN<uint32_t>( reinterpret_cast<const uint32_t *>( srcData ), bytesPerRow );
-			break;
-		default:
-			break;
-		}
-
-		FreeImage_Unload( fiBitmap );
 	}
 	//-------------------------------------------------------------------------
 	CpuImage::~CpuImage()
 	{
 		if( data )
 		{
-			free( data );
+			stbi_image_free( data );
 			data = 0;
 		}
 	}
@@ -217,7 +112,7 @@ namespace betsy
 	}
 	//-------------------------------------------------------------------------
 	size_t CpuImage::getSizeBytes( uint32_t width, uint32_t height, uint32_t depth, uint32_t slices,
-								   PixelFormat format, uint32_t rowAlignment )
+	                               PixelFormat format, uint32_t rowAlignment )
 	{
 		size_t retVal;
 
@@ -262,7 +157,7 @@ namespace betsy
 		for( size_t y = 0u; y < imgHeight; ++y )
 		{
 			uint8_t *__restrict dstData =
-				reinterpret_cast<uint8_t *__restrict>( data ) + ( imgHeight - y - 1u ) * imgWidth * 4u;
+			    reinterpret_cast<uint8_t *__restrict>( data ) + ( imgHeight - y - 1u ) * imgWidth * 4u;
 
 			for( size_t x = 0u; x < imgWidth; ++x )
 			{
@@ -287,7 +182,7 @@ namespace betsy
 		for( size_t y = 0u; y < imgHeight; ++y )
 		{
 			uint32_t *__restrict dstData =
-				reinterpret_cast<uint32_t *__restrict>( data ) + ( imgHeight - y - 1u ) * imgWidth * 4u;
+			    reinterpret_cast<uint32_t *__restrict>( data ) + ( imgHeight - y - 1u ) * imgWidth * 4u;
 			for( size_t x = 0u; x < ( bytesPerRow >> 2u ); ++x )
 			{
 				const uint32_t value = *srcData++;
@@ -306,7 +201,7 @@ namespace betsy
 		for( size_t y = 0u; y < imgHeight; ++y )
 		{
 			uint32_t *__restrict dstData =
-				reinterpret_cast<uint32_t *__restrict>( data ) + ( imgHeight - y - 1u ) * imgWidth * 4u;
+			    reinterpret_cast<uint32_t *__restrict>( data ) + ( imgHeight - y - 1u ) * imgWidth * 4u;
 			for( size_t x = 0u; x < ( bytesPerRow >> 2u ) / 3u; ++x )
 			{
 				const uint32_t b = *srcData++;
@@ -328,7 +223,7 @@ namespace betsy
 		for( size_t y = 0u; y < imgHeight; ++y )
 		{
 			T *__restrict dstData =
-				reinterpret_cast<T *__restrict>( data ) + ( imgHeight - y - 1u ) * imgWidth * 4u;
+			    reinterpret_cast<T *__restrict>( data ) + ( imgHeight - y - 1u ) * imgWidth * 4u;
 
 			for( size_t x = 0u; x < imgWidth; ++x )
 			{

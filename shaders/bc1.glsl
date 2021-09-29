@@ -20,8 +20,8 @@ layout( std430, binding = 1 ) readonly restrict buffer globalBuffer
 };
 
 layout( local_size_x = 8,  //
-		local_size_y = 8,  //
-		local_size_z = 1 ) in;
+        local_size_y = 8,  //
+        local_size_z = 1 ) in;
 
 float3 rgb565to888( float rgb565 )
 {
@@ -82,9 +82,9 @@ void EvalColors( out float3 colours[4], float c0, float c1 )
 
 /** The color optimization function. (Clever code, part 1)
 @param outMinEndp16 [out]
-	Minimum endpoint, in RGB565
+    Minimum endpoint, in RGB565
 @param outMaxEndp16 [out]
-	Maximum endpoint, in RGB565
+    Maximum endpoint, in RGB565
 */
 void OptimizeColorsBlock( const uint srcPixelsBlock[16], out float outMinEndp16, out float outMaxEndp16 )
 {
@@ -295,7 +295,7 @@ uint MatchColorsBlock( const uint srcPixelsBlock[16], float3 colour[4] )
 // Tries to optimize colors to suit block contents better.
 // (By solving a least squares system via normal equations+Cramer's rule)
 bool RefineBlock( const uint srcPixelsBlock[16], uint mask, inout float inOutMinEndp16,
-				  inout float inOutMaxEndp16 )
+                  inout float inOutMaxEndp16 )
 {
 	float newMin16, newMax16;
 	const float oldMin = inOutMinEndp16;
@@ -312,11 +312,11 @@ bool RefineBlock( const uint srcPixelsBlock[16], uint mask, inout float inOutMin
 		rgbVal = floor( rgbVal * ( 255.0f / 16.0f ) );
 
 		newMax16 = c_oMatch5[uint( rgbVal.r )][0] * 2048.0f +  //
-				   c_oMatch6[uint( rgbVal.g )][0] * 32.0f +    //
-				   c_oMatch5[uint( rgbVal.b )][0];
+		           c_oMatch6[uint( rgbVal.g )][0] * 32.0f +    //
+		           c_oMatch5[uint( rgbVal.b )][0];
 		newMin16 = c_oMatch5[uint( rgbVal.r )][1] * 2048.0f +  //
-				   c_oMatch6[uint( rgbVal.g )][1] * 32.0f +    //
-				   c_oMatch5[uint( rgbVal.b )][1];
+		           c_oMatch6[uint( rgbVal.g )][1] * 32.0f +    //
+		           c_oMatch5[uint( rgbVal.b )][1];
 	}
 	else
 	{
@@ -354,11 +354,11 @@ bool RefineBlock( const uint srcPixelsBlock[16], uint mask, inout float inOutMin
 
 		// solve.
 		const float3 newMaxVal = clamp( floor( ( at1 * yy - at2 * xy ) * f_rb_g.xyx + 0.5f ),
-										float3( 0.0f, 0.0f, 0.0f ), float3( 31, 63, 31 ) );
+		                                float3( 0.0f, 0.0f, 0.0f ), float3( 31, 63, 31 ) );
 		newMax16 = newMaxVal.x * 2048.0f + newMaxVal.y * 32.0f + newMaxVal.z;
 
 		const float3 newMinVal = clamp( floor( ( at2 * xx - at1 * xy ) * f_rb_g.xyx + 0.5f ),
-										float3( 0.0f, 0.0f, 0.0f ), float3( 31, 63, 31 ) );
+		                                float3( 0.0f, 0.0f, 0.0f ), float3( 31, 63, 31 ) );
 		newMin16 = newMinVal.x * 2048.0f + newMinVal.y * 32.0f + newMinVal.z;
 	}
 
@@ -398,13 +398,13 @@ void DitherBlock( const uint srcPixBlck[16], out uint dthPixBlck[16] )
 
 		srcPixel = unpackUnorm4x8( srcPixBlck[y + 1u] ).xyz * 255.0f;
 		dithPixel = quant(
-			srcPixel + trunc( ( 7 * ep1[0] + 3 * ep2[2] + 5 * ep2[1] + ep2[0] ) * ( 1.0f / 16.0f ) ) );
+		    srcPixel + trunc( ( 7 * ep1[0] + 3 * ep2[2] + 5 * ep2[1] + ep2[0] ) * ( 1.0f / 16.0f ) ) );
 		ep1[1] = srcPixel - dithPixel;
 		dthPixBlck[y + 1u] = packUnorm4x8( float4( dithPixel * ( 1.0f / 255.0f ), 1.0f ) );
 
 		srcPixel = unpackUnorm4x8( srcPixBlck[y + 2u] ).xyz * 255.0f;
 		dithPixel = quant(
-			srcPixel + trunc( ( 7 * ep1[1] + 3 * ep2[3] + 5 * ep2[2] + ep2[1] ) * ( 1.0f / 16.0f ) ) );
+		    srcPixel + trunc( ( 7 * ep1[1] + 3 * ep2[3] + 5 * ep2[2] + ep2[1] ) * ( 1.0f / 16.0f ) ) );
 		ep1[2] = srcPixel - dithPixel;
 		dthPixBlck[y + 2u] = packUnorm4x8( float4( dithPixel * ( 1.0f / 255.0f ), 1.0f ) );
 
@@ -448,9 +448,9 @@ void main()
 		const uint3 rgbVal = uint3( unpackUnorm4x8( srcPixelsBlock[0] ).xyz * 255.0f );
 		mask = 0xAAAAAAAAu;
 		maxEndp16 =
-			c_oMatch5[rgbVal.r][0] * 2048.0f + c_oMatch6[rgbVal.g][0] * 32.0f + c_oMatch5[rgbVal.b][0];
+		    c_oMatch5[rgbVal.r][0] * 2048.0f + c_oMatch6[rgbVal.g][0] * 32.0f + c_oMatch5[rgbVal.b][0];
 		minEndp16 =
-			c_oMatch5[rgbVal.r][1] * 2048.0f + c_oMatch6[rgbVal.g][1] * 32.0f + c_oMatch5[rgbVal.b][1];
+		    c_oMatch5[rgbVal.r][1] * 2048.0f + c_oMatch6[rgbVal.g][1] * 32.0f + c_oMatch5[rgbVal.b][1];
 	}
 	else
 	{

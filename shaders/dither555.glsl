@@ -10,8 +10,8 @@ uniform sampler2D srcTex;
 layout( rgba8 ) uniform restrict writeonly image2D dstTexture;
 
 layout( local_size_x = 8,  //
-		local_size_y = 8,  //
-		local_size_z = 1 ) in;
+        local_size_y = 8,  //
+        local_size_z = 1 ) in;
 
 /// Quantizes 'srcValue' which is originally in 888 (full range),
 /// converting it to 555 and then back to 888 (quantized)
@@ -51,7 +51,7 @@ void main()
 		srcPixel = OGRE_Load2D( srcTex, iUV, 0 ).xyz * 255.0f;
 		bAllColoursEqual = bAllColoursEqual && srcPixel0 == srcPixel;
 		dithPixel = quant(
-			srcPixel + trunc( ( 7 * ep1[0] + 3 * ep2[2] + 5 * ep2[1] + ep2[0] ) * ( 1.0f / 16.0f ) ) );
+		    srcPixel + trunc( ( 7 * ep1[0] + 3 * ep2[2] + 5 * ep2[1] + ep2[0] ) * ( 1.0f / 16.0f ) ) );
 		ep1[1] = srcPixel - dithPixel;
 		imageStore( dstTexture, iUV, float4( dithPixel * ( 1.0f / 255.0f ), 1.0f ) );
 
@@ -59,7 +59,7 @@ void main()
 		srcPixel = OGRE_Load2D( srcTex, iUV, 0 ).xyz * 255.0f;
 		bAllColoursEqual = bAllColoursEqual && srcPixel0 == srcPixel;
 		dithPixel = quant(
-			srcPixel + trunc( ( 7 * ep1[1] + 3 * ep2[3] + 5 * ep2[2] + ep2[1] ) * ( 1.0f / 16.0f ) ) );
+		    srcPixel + trunc( ( 7 * ep1[1] + 3 * ep2[3] + 5 * ep2[2] + ep2[1] ) * ( 1.0f / 16.0f ) ) );
 		ep1[2] = srcPixel - dithPixel;
 		imageStore( dstTexture, iUV, float4( dithPixel * ( 1.0f / 255.0f ), 1.0f ) );
 

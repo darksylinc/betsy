@@ -19,8 +19,8 @@ layout( r32f, binding = 1 ) uniform restrict writeonly image2D dstError;
 layout( rg32ui, binding = 2 ) uniform restrict readonly uimage2DArray c0c1Texture;
 
 layout( local_size_x = 8,    //
-		local_size_y = 120,  // 15 + 14 + 13 + ... + 1
-		local_size_z = 1 ) in;
+        local_size_y = 120,  // 15 + 14 + 13 + ... + 1
+        local_size_z = 1 ) in;
 
 const float kDistances[8] = {  //
 	3.0f / 255.0f,             //
@@ -35,71 +35,71 @@ const float kDistances[8] = {  //
 
 /*
 kTmodeEncoderR table generated with:
-	static const int kSigned3bit[8] = { 0, 1, 2, 3, -4, -3, -2, -1 };
-	int main()
-	{
-		for( int r1_4=0;r1_4<16;++r1_4 )
-		{
-			int R = r1_4 >> 2;
-			int dR = r1_4 & 0x3;
-			for( int Rx = 0; Rx < 8; Rx++ )
-			{
-				for( int dRx = 0; dRx < 2; dRx++ )
-				{
-					int Rtry = R | ( Rx << 2 );
-					int dRtry = dR | ( dRx << 2 );
-					if( ( Rtry + kSigned3bit[dRtry] ) < 0 || ( Rtry + kSigned3bit[dRtry] > 31 ) )
-					{
-						R = Rtry;
-						dR = dRtry;
-						break;
-					}
-				}
-			}
+    static const int kSigned3bit[8] = { 0, 1, 2, 3, -4, -3, -2, -1 };
+    int main()
+    {
+        for( int r1_4=0;r1_4<16;++r1_4 )
+        {
+            int R = r1_4 >> 2;
+            int dR = r1_4 & 0x3;
+            for( int Rx = 0; Rx < 8; Rx++ )
+            {
+                for( int dRx = 0; dRx < 2; dRx++ )
+                {
+                    int Rtry = R | ( Rx << 2 );
+                    int dRtry = dR | ( dRx << 2 );
+                    if( ( Rtry + kSigned3bit[dRtry] ) < 0 || ( Rtry + kSigned3bit[dRtry] > 31 ) )
+                    {
+                        R = Rtry;
+                        dR = dRtry;
+                        break;
+                    }
+                }
+            }
 
-			if( ( R + kSigned3bit[dR] ) >= 0 && ( R + kSigned3bit[dR] <= 31 ) )
-				// this can't happen, should be an assert
-				return -1;
+            if( ( R + kSigned3bit[dR] ) >= 0 && ( R + kSigned3bit[dR] <= 31 ) )
+                // this can't happen, should be an assert
+                return -1;
 
-			printf( "%i, ", ( ( R & 0x1F ) << 3 ) | ( dR & 0x7 ) );
-			printf( "\n" );
-		}
+            printf( "%i, ", ( ( R & 0x1F ) << 3 ) | ( dR & 0x7 ) );
+            printf( "\n" );
+        }
 
-		return 0;
-	}
+        return 0;
+    }
 */
 const float kTmodeEncoderR[16] = { 4, 5, 6, 7, 12, 13, 14, 235, 20, 21, 242, 243, 28, 249, 250, 251 };
 
 /*
 kHmodeEncoderRG table generated with:
-	static const int kSigned3bit[8] = { 0, 1, 2, 3, -4, -3, -2, -1 };
-	int main()
-	{
-		for( int r1_4 = 0; r1_4 < 16; ++r1_4 )
-		{
-			for( int g1_4 = 0; g1_4 < 16; ++g1_4 )
-			{
-				if( !( g1_4 & 0x1 ) )
-				{
-					// R1 + G1a. R + [dR] must be inside [0..31]. Scanning all values. Not smart.
-					int R = r1_4;
-					int dR = g1_4 >> 1;
-					if( ( R + kSigned3bit[dR] ) < 0 || ( R + kSigned3bit[dR] > 31 ) )
-						R |= ( 1 << 4 );
+    static const int kSigned3bit[8] = { 0, 1, 2, 3, -4, -3, -2, -1 };
+    int main()
+    {
+        for( int r1_4 = 0; r1_4 < 16; ++r1_4 )
+        {
+            for( int g1_4 = 0; g1_4 < 16; ++g1_4 )
+            {
+                if( !( g1_4 & 0x1 ) )
+                {
+                    // R1 + G1a. R + [dR] must be inside [0..31]. Scanning all values. Not smart.
+                    int R = r1_4;
+                    int dR = g1_4 >> 1;
+                    if( ( R + kSigned3bit[dR] ) < 0 || ( R + kSigned3bit[dR] > 31 ) )
+                        R |= ( 1 << 4 );
 
-					if( ( R + kSigned3bit[dR] ) < 0 || ( R + kSigned3bit[dR] > 31 ) )
-						return -1;  // wtf?
+                    if( ( R + kSigned3bit[dR] ) < 0 || ( R + kSigned3bit[dR] > 31 ) )
+                        return -1;  // wtf?
 
-					printf( "%i, ", ( ( R & 0x1F ) << 3 ) | ( dR & 0x7 ) );
-				}
-			}
-		}
-		printf( "\n" );
-		return 0;
-	}
+                    printf( "%i, ", ( ( R & 0x1F ) << 3 ) | ( dR & 0x7 ) );
+                }
+            }
+        }
+        printf( "\n" );
+        return 0;
+    }
 */
 const float kHmodeEncoderRG[128] =  //
-	{ 0,   1,   2,   3,   132, 133, 134, 135, 8,   9,   10,  11,  140, 141, 142, 15,  16,  17,  18,
+    { 0,   1,   2,   3,   132, 133, 134, 135, 8,   9,   10,  11,  140, 141, 142, 15,  16,  17,  18,
 	  19,  148, 149, 22,  23,  24,  25,  26,  27,  156, 29,  30,  31,  32,  33,  34,  35,  36,  37,
 	  38,  39,  40,  41,  42,  43,  44,  45,  46,  47,  48,  49,  50,  51,  52,  53,  54,  55,  56,
 	  57,  58,  59,  60,  61,  62,  63,  64,  65,  66,  67,  68,  69,  70,  71,  72,  73,  74,  75,
@@ -109,58 +109,58 @@ const float kHmodeEncoderRG[128] =  //
 
 /*
 kHmodeEncoderGB table generated with:
-	static const int kSigned3bit[8] = { 0, 1, 2, 3, -4, -3, -2, -1 };
-	#define BITS( byteval, lowbit, highbit ) \
-		( ( ( byteval ) >> ( lowbit ) ) & ( ( 1 << ( ( highbit ) - ( lowbit ) + 1 ) ) - 1 ) )
+    static const int kSigned3bit[8] = { 0, 1, 2, 3, -4, -3, -2, -1 };
+    #define BITS( byteval, lowbit, highbit ) \
+        ( ( ( byteval ) >> ( lowbit ) ) & ( ( 1 << ( ( highbit ) - ( lowbit ) + 1 ) ) - 1 ) )
 
-	#define BIT( byteval, bit ) ( ( ( byteval ) >> ( bit ) ) & 0x1 )
+    #define BIT( byteval, bit ) ( ( ( byteval ) >> ( bit ) ) & 0x1 )
 
-	int main()
-	{
-		for( int g1_4 = 0; g1_4 < 2; ++g1_4 )
-		{
-			for( int b1_4 = 0; b1_4 < 16; ++b1_4 )
-			{
-				if( !( b1_4 & 0x1 ) )
-				{
-					// G1b + B1a + B1b[2 msb]. G + dG must be outside the range.
-					int G = ( g1_4 & 0x1 ) << 1;
-					G |= BIT( b1_4, 3 );
-					int dG = BITS( b1_4, 1, 2 );
-					for( int Gx = 0; Gx < 8; Gx++ )
-					{
-						for( int dGx = 0; dGx < 2; dGx++ )
-						{
-							int Gtry = G | ( Gx << 2 );
-							int dGtry = dG | ( dGx << 2 );
-							if( ( Gtry + kSigned3bit[dGtry] ) < 0 || ( Gtry + kSigned3bit[dGtry] > 31 ) )
-							{
-								G = Gtry;
-								dG = dGtry;
-								break;
-							}
-						}
-					}
+    int main()
+    {
+        for( int g1_4 = 0; g1_4 < 2; ++g1_4 )
+        {
+            for( int b1_4 = 0; b1_4 < 16; ++b1_4 )
+            {
+                if( !( b1_4 & 0x1 ) )
+                {
+                    // G1b + B1a + B1b[2 msb]. G + dG must be outside the range.
+                    int G = ( g1_4 & 0x1 ) << 1;
+                    G |= BIT( b1_4, 3 );
+                    int dG = BITS( b1_4, 1, 2 );
+                    for( int Gx = 0; Gx < 8; Gx++ )
+                    {
+                        for( int dGx = 0; dGx < 2; dGx++ )
+                        {
+                            int Gtry = G | ( Gx << 2 );
+                            int dGtry = dG | ( dGx << 2 );
+                            if( ( Gtry + kSigned3bit[dGtry] ) < 0 || ( Gtry + kSigned3bit[dGtry] > 31 ) )
+                            {
+                                G = Gtry;
+                                dG = dGtry;
+                                break;
+                            }
+                        }
+                    }
 
-					if( ( G + kSigned3bit[dG] ) >= 0 && ( G + kSigned3bit[dG] <= 31 ) )
-						return -1;  // wtf?
+                    if( ( G + kSigned3bit[dG] ) >= 0 && ( G + kSigned3bit[dG] <= 31 ) )
+                        return -1;  // wtf?
 
-					printf( "%i, ", ( ( G & 0x1F ) << 3 ) | ( dG & 0x7 ) );
-				}
-			}
-		}
+                    printf( "%i, ", ( ( G & 0x1F ) << 3 ) | ( dG & 0x7 ) );
+                }
+            }
+        }
 
-		printf( "\n" );
-		return 0;
-	}
+        printf( "\n" );
+        return 0;
+    }
 */
 const float kHmodeEncoderGB[16] =  //
-	{ 4, 5, 6, 7, 12, 13, 14, 235, 20, 21, 242, 243, 28, 249, 250, 251 };
+    { 4, 5, 6, 7, 12, 13, 14, 235, 20, 21, 242, 243, 28, 249, 250, 251 };
 
 /*float rgb888to444( float3 rgbValue )
 {
-	rgbValue = floor( rgbValue * 15.0f / 255.0f + 0.5f );
-	return rgbValue.r * 256.0f + rgbValue.g * 16.0f + rgbValue.b;
+    rgbValue = floor( rgbValue * 15.0f / 255.0f + 0.5f );
+    return rgbValue.r * 256.0f + rgbValue.g * 16.0f + rgbValue.b;
 }*/
 float3 rgb888to444( uint packedRgb )
 {
@@ -258,7 +258,7 @@ uint etc2_gen_header_t_mode( const uint c0, const uint c1, const uint distIdx )
 }
 
 uint etc2_gen_header_h_mode( const uint colour0, const uint colour1, const uint distIdx,
-							 out bool bShouldSwap )
+                             out bool bShouldSwap )
 {
 	uint c0, c1;
 	// Note: if c0 == c1, no big deal because H is not the best choice of mode
@@ -383,7 +383,7 @@ void main()
 	const uint distIdx = gl_LocalInvocationID.x;
 
 	const uint2 c0c1 =
-		OGRE_imageLoad2DArray( c0c1Texture, uint3( gl_WorkGroupID.xy, gl_LocalInvocationID.y ) ).xy;
+	    OGRE_imageLoad2DArray( c0c1Texture, uint3( gl_WorkGroupID.xy, gl_LocalInvocationID.y ) ).xy;
 	const uint c0 = c0c1.x;
 	const uint c1 = c0c1.y;
 

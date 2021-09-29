@@ -6,7 +6,6 @@
 const std::string BLANKSTRING = "";
 
 #include "CmdLineParams.h"
-
 #include "CmdLineParamsEnum.h"
 
 namespace Codec
@@ -47,8 +46,7 @@ namespace Codec
 
 	//---------------------------------------------------------------------------------------
 	CodecEnum::EnumData::EnumData( Codec _enumValue, const std::string &_enumString ) :
-		enumValue( _enumValue ),
-		enumString( _enumString )
+	    enumValue( _enumValue ), enumString( _enumString )
 	{
 	}
 	//---------------------------------------------------------------------------------------
@@ -86,7 +84,7 @@ namespace Codec
 	bool CodecEnum::find( const std::string &strValue, Codec &outValue )
 	{
 		const EnumData *itor =
-			std::lower_bound( &mSortedByString[0], &mSortedByString[13], strValue, OrderByStr() );
+		    std::lower_bound( &mSortedByString[0], &mSortedByString[13], strValue, OrderByStr() );
 
 		if( itor != &mSortedByString[13] && itor->enumString == strValue )
 		{

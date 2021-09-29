@@ -41,14 +41,14 @@
 #endif
 
 PotentialSolution storePotentialSolution( const float baseCodeword, const int tableIdx,
-										  const float multiplier )
+                                          const float multiplier )
 {
 	return packUnorm4x8( float4( baseCodeword, float( tableIdx ), multiplier, 0.0f ) *
-						 ( 1.0f / 255.0f ) );
+	                     ( 1.0f / 255.0f ) );
 }
 
 void loadPotentialSolution( PotentialSolution potentialSolution, out float baseCodeword,
-							out uint tableIdx, out float multiplier )
+                            out uint tableIdx, out float multiplier )
 {
 	const float4 val = unpackUnorm4x8( potentialSolution );
 	baseCodeword = val.x * 255.0f;
@@ -92,8 +92,8 @@ uniform sampler2D srcTex;
 layout( rg32ui ) uniform restrict writeonly uimage2D dstTexture;
 
 layout( local_size_x = 256,  //
-		local_size_y = 1,    //
-		local_size_z = 1 ) in;
+        local_size_y = 1,    //
+        local_size_z = 1 ) in;
 
 float calcError( float3 a, float3 b )
 {
@@ -119,7 +119,7 @@ float eac_find_best_error( float baseCodeword, float multiplier, const int table
 		for( int j = 0; j < 8 && bestError > 0; ++j )
 		{
 			const float tryValue =
-				clamp( baseCodeword + kEacModifiers[tableIdx][j] * multiplier, 0.0f, EAC_RANGE );
+			    clamp( baseCodeword + kEacModifiers[tableIdx][j] * multiplier, 0.0f, EAC_RANGE );
 			const float error = abs( realV - tryValue );
 			if( error < bestError )
 				bestError = error;
@@ -152,7 +152,7 @@ void eac_pack( float baseCodeword, float multiplier, const uint tableIdx )
 		for( uint j = 0u; j < 8u && bestError > 0; ++j )
 		{
 			const float tryValue =
-				clamp( baseCodeword + kEacModifiers[tableIdx][j] * multiplier, 0.0f, EAC_RANGE );
+			    clamp( baseCodeword + kEacModifiers[tableIdx][j] * multiplier, 0.0f, EAC_RANGE );
 			const float error = abs( realV - tryValue );
 			if( error < bestError )
 			{
@@ -170,7 +170,7 @@ void eac_pack( float baseCodeword, float multiplier, const uint tableIdx )
 	outputBytes.x |= ( bestIdx[0] << 21u ) | ( bestIdx[1] << 18u ) | ( ( bestIdx[2] & 0x06u ) << 15u );
 	// Bits [24; 32)
 	outputBytes.x |= ( ( bestIdx[2] & 0x01u ) << 31u ) | ( bestIdx[3] << 28u ) | ( bestIdx[4] << 25u ) |
-					 ( ( bestIdx[5] & 0x04u ) << 22u );
+	                 ( ( bestIdx[5] & 0x04u ) << 22u );
 
 	// Bits [0; 8)
 	outputBytes.y = ( ( bestIdx[5] & 0x03u ) << 6u ) | ( bestIdx[6] << 3u ) | bestIdx[7];
@@ -178,10 +178,10 @@ void eac_pack( float baseCodeword, float multiplier, const uint tableIdx )
 	outputBytes.y |= ( bestIdx[8] << 13u ) | ( bestIdx[9] << 10u ) | ( ( bestIdx[10] & 0x06u ) << 7u );
 	// Bits [16; 24)
 	outputBytes.y |= ( ( bestIdx[10] & 0x01u ) << 23u ) | ( bestIdx[11] << 20u ) |
-					 ( bestIdx[12] << 17u ) | ( ( bestIdx[13] & 0x04u ) << 14u );
+	                 ( bestIdx[12] << 17u ) | ( ( bestIdx[13] & 0x04u ) << 14u );
 	// Bits [24; 32)
 	outputBytes.y |=
-		( ( bestIdx[13] & 0x03u ) << 30u ) | ( bestIdx[14] << 27u ) | ( bestIdx[15] << 24u );
+	    ( ( bestIdx[13] & 0x03u ) << 30u ) | ( bestIdx[14] << 27u ) | ( bestIdx[15] << 24u );
 
 	const uint2 dstUV = gl_WorkGroupID.xy;
 	imageStore( dstTexture, int2( dstUV ), uint4( outputBytes.xy, 0u, 0u ) );

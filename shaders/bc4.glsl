@@ -18,8 +18,8 @@ uniform sampler2D srcTex;
 layout( rg32ui ) uniform restrict writeonly uimage2D dstTexture;
 
 layout( local_size_x = 4,  //
-		local_size_y = 4,  //
-		local_size_z = 4 ) in;
+        local_size_y = 4,  //
+        local_size_z = 4 ) in;
 
 /// Each block is 16 pixels
 /// Each thread works on 4 pixels
@@ -139,13 +139,13 @@ void main()
 		if( p_useSNorm != 0.0f )
 		{
 			outputBytes.x =
-				packSnorm4x8( float4( maxVal * ( 1.0f / 255.0f ) * 2.0f - 1.0f,
-									  minVal * ( 1.0f / 255.0f ) * 2.0f - 1.0f, 0.0f, 0.0f ) );
+			    packSnorm4x8( float4( maxVal * ( 1.0f / 255.0f ) * 2.0f - 1.0f,
+			                          minVal * ( 1.0f / 255.0f ) * 2.0f - 1.0f, 0.0f, 0.0f ) );
 		}
 		else
 		{
 			outputBytes.x = packUnorm4x8(
-				float4( maxVal * ( 1.0f / 255.0f ), minVal * ( 1.0f / 255.0f ), 0.0f, 0.0f ) );
+			    float4( maxVal * ( 1.0f / 255.0f ), minVal * ( 1.0f / 255.0f ), 0.0f, 0.0f ) );
 		}
 		outputBytes.x |= g_mask[maskIdxBase].x;
 		outputBytes.y = g_mask[maskIdxBase].y;

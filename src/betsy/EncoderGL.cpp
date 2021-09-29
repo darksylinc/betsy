@@ -25,26 +25,26 @@ namespace betsy
 	}
 	//-------------------------------------------------------------------------
 	TextureParams::TextureParams( uint32_t _width, uint32_t _height, PixelFormat _format,
-								  const char *_debugName, uint32_t _flags, uint32_t _depthOrSlices,
-								  uint8_t _numMipmaps ) :
-		width( _width ),
-		height( _height ),
-		depthOrSlices( _depthOrSlices ),
-		numMipmaps( _numMipmaps ),
-		flags( _flags ),
-		format( _format ),
-		debugName( _debugName )
+	                              const char *_debugName, uint32_t _flags, uint32_t _depthOrSlices,
+	                              uint8_t _numMipmaps ) :
+	    width( _width ),
+	    height( _height ),
+	    depthOrSlices( _depthOrSlices ),
+	    numMipmaps( _numMipmaps ),
+	    flags( _flags ),
+	    format( _format ),
+	    debugName( _debugName )
 	{
 	}
 	//-------------------------------------------------------------------------
 	StagingTexture::StagingTexture() :
-		bufferName( 0 ),
-		bytesPerRow( 0 ),
-		width( 0 ),
-		height( 0 ),
-		pixelFormat( PFG_RGBA16_FLOAT ),
-		data( 0 ),
-		sizeBytes( 0 )
+	    bufferName( 0 ),
+	    bytesPerRow( 0 ),
+	    width( 0 ),
+	    height( 0 ),
+	    pixelFormat( PFG_RGBA16_FLOAT ),
+	    data( 0 ),
+	    sizeBytes( 0 )
 	{
 	}
 	//-------------------------------------------------------------------------
@@ -162,8 +162,8 @@ namespace betsy
 		case PFG_EAC_RG11_UNORM:
 			format = GL_NONE;
 			assert( false &&
-					"This should never happen. Compressed formats must use "
-					"EncoderGL::get instead" );
+			        "This should never happen. Compressed formats must use "
+			        "EncoderGL::get instead" );
 			break;
 		}
 
@@ -200,8 +200,8 @@ namespace betsy
 		case PFG_EAC_RG11_UNORM:
 			format = GL_NONE;
 			assert( false &&
-					"This should never happen. Compressed formats must use "
-					"EncoderGL::get instead" );
+			        "This should never happen. Compressed formats must use "
+			        "EncoderGL::get instead" );
 			break;
 		}
 	}
@@ -228,13 +228,13 @@ namespace betsy
 		if( params.depthOrSlices > 1u )
 		{
 			glTexStorage3D( GL_TEXTURE_2D_ARRAY, GLsizei( params.numMipmaps ), format,  //
-							GLsizei( params.width ), GLsizei( params.height ),
-							GLsizei( params.depthOrSlices ) );
+			                GLsizei( params.width ), GLsizei( params.height ),
+			                GLsizei( params.depthOrSlices ) );
 		}
 		else
 		{
 			glTexStorage2D( GL_TEXTURE_2D, GLsizei( params.numMipmaps ), format,  //
-							GLsizei( params.width ), GLsizei( params.height ) );
+			                GLsizei( params.width ), GLsizei( params.height ) );
 		}
 
 		if( params.debugName )
@@ -246,7 +246,7 @@ namespace betsy
 	void EncoderGL::destroyTexture( GLuint texName ) { glDeleteTextures( 1u, &texName ); }
 	//-------------------------------------------------------------------------
 	StagingTexture EncoderGL::createStagingTexture( uint32_t width, uint32_t height, PixelFormat format,
-													bool forUpload )
+	                                                bool forUpload )
 	{
 		const size_t sizeBytes = CpuImage::getSizeBytes( width, height, 1u, 1u, format );
 
@@ -286,7 +286,7 @@ namespace betsy
 		const size_t bytesPerPixel = CpuImage::getBytesPerPixel( stagingTex.pixelFormat );
 
 		glPixelStorei( GL_UNPACK_ALIGNMENT, 4 );
-		glPixelStorei( GL_UNPACK_ROW_LENGTH, ( GLint )( stagingTex.bytesPerRow / bytesPerPixel ) );
+		glPixelStorei( GL_UNPACK_ROW_LENGTH, (GLint)( stagingTex.bytesPerRow / bytesPerPixel ) );
 		glPixelStorei( GL_UNPACK_IMAGE_HEIGHT, (GLint)stagingTex.height );
 
 		glBindBuffer( GL_PIXEL_UNPACK_BUFFER, stagingTex.bufferName );
@@ -298,7 +298,7 @@ namespace betsy
 		EncoderGL::getFormatAndType( stagingTex.pixelFormat, format, type );
 
 		glTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, (GLsizei)stagingTex.width, (GLsizei)stagingTex.height,
-						 format, type, 0 );
+		                 format, type, 0 );
 
 		glBindBuffer( GL_PIXEL_UNPACK_BUFFER, 0 );
 		glBindTexture( GL_TEXTURE_2D, 0 );
@@ -406,7 +406,7 @@ namespace betsy
 	}
 	//-------------------------------------------------------------------------
 	void EncoderGL::bindUav( uint32_t slot, GLuint textureSrv, PixelFormat pixelFormat,
-							 ResourceAccess::ResourceAccess access )
+	                         ResourceAccess::ResourceAccess access )
 	{
 		const GLenum format = EncoderGL::get( pixelFormat );
 		GLenum accessGl;
@@ -433,6 +433,6 @@ namespace betsy
 	void EncoderGL::bindUavBuffer( uint32_t slot, GLuint buffer, size_t offset, size_t bufferSize )
 	{
 		glBindBufferRange( GL_SHADER_STORAGE_BUFFER, slot, buffer, (GLintptr)offset,
-						   (GLintptr)bufferSize );
+		                   (GLintptr)bufferSize );
 	}
 }  // namespace betsy

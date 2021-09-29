@@ -1,6 +1,5 @@
 # Collect shader input files
 file(GLOB GLSLS ${CMAKE_SOURCE_DIR}/shaders/*)
-message(STATUS "bla: ${GLSLS}")
 
 set(GENERATED_GLSL)
 
@@ -19,12 +18,10 @@ endforeach()
 add_recursive( ${CMAKE_SOURCE_DIR}/src SOURCES )
 add_recursive( ${CMAKE_SOURCE_DIR}/include HEADERS )
 
-add_library( FreeImage_betsy ALIAS FreeImage )
-
 add_executable( ${PROJECT_NAME} ${SOURCES} ${HEADERS} ${RESOURCES} ${GENERATED_GLSL})
 
 find_package(SDL2 REQUIRED)
-target_link_libraries( ${PROJECT_NAME} SDL2::SDL2 dl FreeImage_betsy )
+target_link_libraries( ${PROJECT_NAME} SDL2::SDL2 dl )
 
 target_include_directories( ${PROJECT_NAME} PUBLIC ${CMAKE_SOURCE_DIR}/include )
-target_include_directories( ${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/contrib/FreeImage/Source )
+target_include_directories( ${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/contrib/stb )

@@ -2,16 +2,16 @@
 
 #include "betsy/EncoderETC1.h"
 
-#include "betsy/CpuImage.h"
-#include "betsy/Shaders.h"
-
-#include "ETC1_tables.inl"
-
 #include <assert.h>
 #include <memory.h>
 #include <stdio.h>
+
 #include <algorithm>
 #include <limits>
+
+#include "ETC1_tables.inl"
+#include "betsy/CpuImage.h"
+#include "betsy/Shaders.h"
 
 namespace betsy
 {
@@ -30,14 +30,14 @@ namespace betsy
 	}
 
 	EncoderETC1::EncoderETC1() :
-		m_srcTexture( 0 ),
-		m_ditheredTexture( 0 ),
-		m_compressTargetRes( 0 ),
-		m_etc1Error( 0 ),
-		m_eacTargetRes( 0 ),
-		m_stitchedTarget( 0 ),
-		m_dstTexture( 0 ),
-		m_etc1TablesSsbo( 0 )
+	    m_srcTexture( 0 ),
+	    m_ditheredTexture( 0 ),
+	    m_compressTargetRes( 0 ),
+	    m_etc1Error( 0 ),
+	    m_eacTargetRes( 0 ),
+	    m_stitchedTarget( 0 ),
+	    m_dstTexture( 0 ),
+	    m_etc1TablesSsbo( 0 )
 	{
 	}
 	//-------------------------------------------------------------------------
@@ -80,7 +80,7 @@ namespace betsy
 							}
 						}
 						asFloat[inverse_table_index * 256u + color] =
-							static_cast<float>( best_packed_c | ( best_error << 8u ) );
+						    static_cast<float>( best_packed_c | ( best_error << 8u ) );
 					}
 				}
 			}
@@ -88,9 +88,9 @@ namespace betsy
 
 		const size_t startIdx = sizeof( float ) * 2u * 8u * 4u * 256u;
 		memcpy( data + startIdx, c_color8_to_etc_block_config_0_255,
-				sizeof( c_color8_to_etc_block_config_0_255 ) );
+		        sizeof( c_color8_to_etc_block_config_0_255 ) );
 		memcpy( data + startIdx + sizeof( c_color8_to_etc_block_config_0_255 ),
-				c_color8_to_etc_block_config_1_to_254, sizeof( c_color8_to_etc_block_config_1_to_254 ) );
+		        c_color8_to_etc_block_config_1_to_254, sizeof( c_color8_to_etc_block_config_1_to_254 ) );
 
 		return data;
 	}
@@ -98,20 +98,20 @@ namespace betsy
 	bool EncoderETC1::hasAlpha() const { return m_eacTargetRes != 0; }
 	//-------------------------------------------------------------------------
 	void EncoderETC1::initResources( const CpuImage &srcImage, const bool bCompressAlpha,
-									 const bool bDither, const bool bForEtc2 )
+	                                 const bool bDither, const bool bForEtc2 )
 	{
 		m_width = srcImage.width;
 		m_height = srcImage.height;
 
 		const PixelFormat srcFormat =
-			srcImage.format == PFG_RGBA8_UNORM_SRGB ? PFG_RGBA8_UNORM : srcImage.format;
+		    srcImage.format == PFG_RGBA8_UNORM_SRGB ? PFG_RGBA8_UNORM : srcImage.format;
 
 		m_srcTexture = createTexture( TextureParams( m_width, m_height, srcFormat, "m_srcTexture" ) );
 
 		if( bDither )
 		{
 			m_ditheredTexture = createTexture( TextureParams( m_width, m_height, PFG_RGBA8_UNORM,
-															  "m_ditheredTexture", TextureFlags::Uav ) );
+			                                                  "m_ditheredTexture", TextureFlags::Uav ) );
 			m_ditherPso = createComputePso( dither555_glsl );
 		}
 		else
@@ -120,17 +120,17 @@ namespace betsy
 		}
 
 		m_compressTargetRes =
-			createTexture( TextureParams( getBlockWidth(), getBlockHeight(), PFG_RG32_UINT,
-										  "m_compressTargetRes", TextureFlags::Uav ) );
+		    createTexture( TextureParams( getBlockWidth(), getBlockHeight(), PFG_RG32_UINT,
+		                                  "m_compressTargetRes", TextureFlags::Uav ) );
 
 		if( bForEtc2 )
 		{
 			m_etc1Error = createTexture( TextureParams( getBlockWidth(), getBlockHeight(), PFG_R32_FLOAT,
-														"m_etc1Error", TextureFlags::Uav ) );
+			                                            "m_etc1Error", TextureFlags::Uav ) );
 		}
 
 		m_dstTexture =
-			createTexture( TextureParams( m_width, m_height, PFG_ETC1_RGB8_UNORM, "m_dstTexture" ) );
+		    createTexture( TextureParams( m_width, m_height, PFG_ETC1_RGB8_UNORM, "m_dstTexture" ) );
 
 		{
 			uint8_t *filledTables = createFilledEtc1Tables();
@@ -138,22 +138,21 @@ namespace betsy
 			delete[] filledTables;
 		}
 
-		m_compressPso =
-			createComputePso( bForEtc2 ? etc1_with_error_glsl : etc1_glsl );
+		m_compressPso = createComputePso( bForEtc2 ? etc1_with_error_glsl : etc1_glsl );
 
 		if( bCompressAlpha )
 		{
 			m_eacTargetRes =
-				createTexture( TextureParams( getBlockWidth(), getBlockHeight(), PFG_RG32_UINT,
-											  "m_eacTargetRes", TextureFlags::Uav ) );
+			    createTexture( TextureParams( getBlockWidth(), getBlockHeight(), PFG_RG32_UINT,
+			                                  "m_eacTargetRes", TextureFlags::Uav ) );
 			m_stitchedTarget =
-				createTexture( TextureParams( getBlockWidth(), getBlockHeight(), PFG_RGBA32_UINT,
-											  "m_stitchedTarget", TextureFlags::Uav ) );
+			    createTexture( TextureParams( getBlockWidth(), getBlockHeight(), PFG_RGBA32_UINT,
+			                                  "m_stitchedTarget", TextureFlags::Uav ) );
 			m_eacPso = createComputePso( eac_glsl );
 
 			// ETC2 codec does its own stitching
 			if( !bForEtc2 )
-				m_stitchPso = createComputePso( etc2_rgba_stitch_glsl);
+				m_stitchPso = createComputePso( etc2_rgba_stitch_glsl );
 		}
 
 		StagingTexture stagingTex = createStagingTexture( m_width, m_height, srcImage.format, true );
@@ -163,7 +162,7 @@ namespace betsy
 	}
 	//-------------------------------------------------------------------------
 	void EncoderETC1::initResources( const CpuImage &srcImage, const bool bCompressAlpha,
-									 const bool bDither )
+	                                 const bool bDither )
 	{
 		initResources( srcImage, bCompressAlpha, bDither, false );
 	}
@@ -222,8 +221,8 @@ namespace betsy
 
 		const uint32_t pixelsPerThreadGroup = 4u * 8u;
 		glDispatchCompute( alignToNextMultiple( m_width, pixelsPerThreadGroup ) / pixelsPerThreadGroup,
-						   alignToNextMultiple( m_height, pixelsPerThreadGroup ) / pixelsPerThreadGroup,
-						   1u );
+		                   alignToNextMultiple( m_height, pixelsPerThreadGroup ) / pixelsPerThreadGroup,
+		                   1u );
 
 		glMemoryBarrier( GL_TEXTURE_FETCH_BARRIER_BIT );
 	}
@@ -269,8 +268,8 @@ namespace betsy
 		glUniform4fv( 0, 1u, &params.quality );
 
 		glDispatchCompute( 1u,  //
-						   alignToNextMultiple( m_width, 16u ) / 16u,
-						   alignToNextMultiple( m_height, 16u ) / 16u );
+		                   alignToNextMultiple( m_width, 16u ) / 16u,
+		                   alignToNextMultiple( m_height, 16u ) / 16u );
 
 		if( hasAlpha() )
 		{
@@ -279,7 +278,7 @@ namespace betsy
 			bindUav( 0u, m_eacTargetRes, PFG_RG32_UINT, ResourceAccess::Write );
 			bindComputePso( m_eacPso );
 			glDispatchCompute( alignToNextMultiple( m_width, 4u ) / 4u,
-							   alignToNextMultiple( m_height, 4u ) / 4u, 1u );
+			                   alignToNextMultiple( m_height, 4u ) / 4u, 1u );
 		}
 	}
 	//-------------------------------------------------------------------------
@@ -297,7 +296,7 @@ namespace betsy
 		bindUav( 0u, m_stitchedTarget, PFG_RGBA32_UINT, ResourceAccess::Write );
 		bindComputePso( m_stitchPso );
 		glDispatchCompute( alignToNextMultiple( m_width, 32u ) / 32u,
-						   alignToNextMultiple( m_height, 32u ) / 32u, 1u );
+		                   alignToNextMultiple( m_height, 32u ) / 32u, 1u );
 	}
 	//-------------------------------------------------------------------------
 	void EncoderETC1::execute03()
@@ -307,11 +306,11 @@ namespace betsy
 
 		// Copy "8x8" PFG_RG32_UINT -> 32x32 PFG_ETC1_RGB8_UNORM
 		glCopyImageSubData( m_compressTargetRes, GL_TEXTURE_2D, 0, 0, 0, 0,  //
-							m_dstTexture, GL_TEXTURE_2D, 0, 0, 0, 0,         //
-							( GLsizei )( getBlockWidth() ), ( GLsizei )( getBlockHeight() ), 1 );
+		                    m_dstTexture, GL_TEXTURE_2D, 0, 0, 0, 0,         //
+		                    (GLsizei)( getBlockWidth() ), (GLsizei)( getBlockHeight() ), 1 );
 
 		StagingTexture stagingTex =
-			createStagingTexture( getBlockWidth(), getBlockHeight(), PFG_RG32_UINT, false );
+		    createStagingTexture( getBlockWidth(), getBlockHeight(), PFG_RG32_UINT, false );
 		downloadStagingTexture( m_compressTargetRes, stagingTex );
 		glFinish();
 
@@ -333,7 +332,7 @@ namespace betsy
 		if( m_downloadStaging.bufferName )
 			destroyStagingTexture( m_downloadStaging );
 		m_downloadStaging = createStagingTexture( getBlockWidth(), getBlockHeight(),
-												  hasAlpha() ? PFG_RGBA32_UINT : PFG_RG32_UINT, false );
+		                                          hasAlpha() ? PFG_RGBA32_UINT : PFG_RG32_UINT, false );
 		downloadStagingTexture( hasAlpha() ? m_stitchedTarget : m_compressTargetRes, m_downloadStaging );
 	}
 	//-------------------------------------------------------------------------

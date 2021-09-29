@@ -1,12 +1,12 @@
 
 #include "betsy/EncoderEAC.h"
 
-#include "betsy/CpuImage.h"
-#include "betsy/Shaders.h"
-
 #include <assert.h>
 #include <memory.h>
 #include <stdio.h>
+
+#include "betsy/CpuImage.h"
+#include "betsy/Shaders.h"
 
 namespace betsy
 {
@@ -23,17 +23,17 @@ namespace betsy
 		m_height = srcImage.height;
 
 		const PixelFormat srcFormat =
-			srcImage.format == PFG_RGBA8_UNORM_SRGB ? PFG_RGBA8_UNORM : srcImage.format;
+		    srcImage.format == PFG_RGBA8_UNORM_SRGB ? PFG_RGBA8_UNORM : srcImage.format;
 
 		m_srcTexture = createTexture( TextureParams( m_width, m_height, srcFormat, "m_srcTexture" ) );
 
 		m_eacTargetRes[0] = createTexture( TextureParams(
-			getBlockWidth(), getBlockHeight(), PFG_RG32_UINT, "m_eacTargetRes[0]", TextureFlags::Uav ) );
+		    getBlockWidth(), getBlockHeight(), PFG_RG32_UINT, "m_eacTargetRes[0]", TextureFlags::Uav ) );
 		if( rg11 )
 		{
 			m_eacTargetRes[1] =
-				createTexture( TextureParams( getBlockWidth(), getBlockHeight(), PFG_RG32_UINT,
-											  "m_eacTargetRes[1]", TextureFlags::Uav ) );
+			    createTexture( TextureParams( getBlockWidth(), getBlockHeight(), PFG_RG32_UINT,
+			                                  "m_eacTargetRes[1]", TextureFlags::Uav ) );
 		}
 
 		m_eacPso = createComputePso( eac_r11_glsl );
@@ -41,9 +41,9 @@ namespace betsy
 		if( rg11 )
 		{
 			m_stitchedTarget =
-				createTexture( TextureParams( getBlockWidth(), getBlockHeight(), PFG_RGBA32_UINT,
-											  "m_stitchedTarget", TextureFlags::Uav ) );
-			m_stitchPso = createComputePso(etc2_rgba_stitch_glsl );
+			    createTexture( TextureParams( getBlockWidth(), getBlockHeight(), PFG_RGBA32_UINT,
+			                                  "m_stitchedTarget", TextureFlags::Uav ) );
+			m_stitchPso = createComputePso( etc2_rgba_stitch_glsl );
 		}
 
 		StagingTexture stagingTex = createStagingTexture( m_width, m_height, srcImage.format, true );
@@ -91,7 +91,7 @@ namespace betsy
 			glUniform1f( 0, i == 0u ? 0.0f : 1.0f );
 
 			glDispatchCompute( alignToNextMultiple( m_width, 4u ) / 4u,
-							   alignToNextMultiple( m_height, 4u ) / 4u, 1u );
+			                   alignToNextMultiple( m_height, 4u ) / 4u, 1u );
 		}
 	}
 	//-------------------------------------------------------------------------
@@ -109,7 +109,7 @@ namespace betsy
 		bindUav( 0u, m_stitchedTarget, PFG_RGBA32_UINT, ResourceAccess::Write );
 		bindComputePso( m_stitchPso );
 		glDispatchCompute( alignToNextMultiple( m_width, 32u ) / 32u,
-						   alignToNextMultiple( m_height, 32u ) / 32u, 1u );
+		                   alignToNextMultiple( m_height, 32u ) / 32u, 1u );
 	}
 	//-------------------------------------------------------------------------
 	void EncoderEAC::startDownload()
@@ -119,10 +119,10 @@ namespace betsy
 		if( m_downloadStaging.bufferName )
 			destroyStagingTexture( m_downloadStaging );
 		m_downloadStaging =
-			createStagingTexture( getBlockWidth(), getBlockHeight(),
-								  m_eacTargetRes[1] ? PFG_RGBA32_UINT : PFG_RG32_UINT, false );
+		    createStagingTexture( getBlockWidth(), getBlockHeight(),
+		                          m_eacTargetRes[1] ? PFG_RGBA32_UINT : PFG_RG32_UINT, false );
 		downloadStagingTexture( m_eacTargetRes[1] ? m_stitchedTarget : m_eacTargetRes[0],
-								m_downloadStaging );
+		                        m_downloadStaging );
 	}
 	//-------------------------------------------------------------------------
 	void EncoderEAC::downloadTo( CpuImage &outImage )

@@ -51,8 +51,8 @@ layout( r32f, binding = 2 ) uniform restrict writeonly image2D dstError;
 #endif
 
 layout( local_size_x = 4,  //
-		local_size_y = 4,  //
-		local_size_z = 4 ) in;
+        local_size_y = 4,  //
+        local_size_z = 4 ) in;
 
 const float4 g_etc1_inten_tables[cETC1IntenModifierValues] = {
 	float4( -8, -2, 2, 8 ),       float4( -17, -5, 5, 17 ),    float4( -29, -9, 9, 29 ),
@@ -102,8 +102,8 @@ float calcError( float3 a, float3 b )
 }
 
 bool evaluate_solution( const uint subblockStart, const float3 blockRgbInt, const bool bUseColor4,
-						const float3 baseColor5, const bool constrainAgainstBaseColor5,
-						inout PotentialSolution bestSolution )
+                        const float3 baseColor5, const bool constrainAgainstBaseColor5,
+                        inout PotentialSolution bestSolution )
 {
 	PotentialSolution trialSolution;
 
@@ -112,7 +112,7 @@ bool evaluate_solution( const uint subblockStart, const float3 blockRgbInt, cons
 		const float3 d = blockRgbInt - baseColor5;
 
 		if( ( min3( d.r, d.g, d.b ) < cETC1ColorDeltaMin ) ||  //
-			( max3( d.r, d.g, d.b ) > cETC1ColorDeltaMax ) )
+		    ( max3( d.r, d.g, d.b ) > cETC1ColorDeltaMax ) )
 		{
 			return false;
 		}
@@ -207,48 +207,48 @@ float getScanDelta( const float iDeltai, const float scanDeltaAbsMin, const floa
 @param scanDeltaAbsMax
 @param avgColour
 @param avgColourLS
-	Same as avgColour but in limit space, i.e. range [0; limit]
+    Same as avgColour but in limit space, i.e. range [0; limit]
 @param bUseColor4
 @param baseColor5
 @param constrainAgainstBaseColor5
 @param bestSolution
 @return
-	True if we found a solution
-	False if we failed to find any
+    True if we found a solution
+    False if we failed to find any
 */
 void etc1_optimizer_compute( const float scanDeltaAbsMin, const float scanDeltaAbsMax,
-							 const uint subblockStart, const float3 avgColour, const float3 avgColourLS,
-							 const bool bUseColor4, const float3 baseColor5,
-							 const bool constrainAgainstBaseColor5,
-							 inout PotentialSolution bestSolution )
+                             const uint subblockStart, const float3 avgColour, const float3 avgColourLS,
+                             const bool bUseColor4, const float3 baseColor5,
+                             const bool constrainAgainstBaseColor5,
+                             inout PotentialSolution bestSolution )
 {
 	// const float numSrcPixels = 8;  // Subblock of 2x4 or 4x2
 	const float limit = bUseColor4 ? 15 : 31;
 
 	const float scanDeltaSize =
-		( scanDeltaAbsMax - scanDeltaAbsMin ) * 2.0f + ( scanDeltaAbsMin == 0.0f ? 1.0f : 2.0f );
+	    ( scanDeltaAbsMax - scanDeltaAbsMin ) * 2.0f + ( scanDeltaAbsMin == 0.0f ? 1.0f : 2.0f );
 
 	for( float di = 0; di < scanDeltaSize * scanDeltaSize * scanDeltaSize; ++di )
 	{
 		float3 xyzdi = float3( mod( di, scanDeltaSize ),                           //
-							   mod( floor( di / scanDeltaSize ), scanDeltaSize ),  //
-							   floor( di / ( scanDeltaSize * scanDeltaSize ) ) );
+		                       mod( floor( di / scanDeltaSize ), scanDeltaSize ),  //
+		                       floor( di / ( scanDeltaSize * scanDeltaSize ) ) );
 		float3 blockRgbInt = avgColourLS;
 		blockRgbInt.x = getScanDelta( xyzdi.x, scanDeltaAbsMin, scanDeltaAbsMax );
 		blockRgbInt.y = getScanDelta( xyzdi.y, scanDeltaAbsMin, scanDeltaAbsMax );
 		blockRgbInt.z = getScanDelta( xyzdi.z, scanDeltaAbsMin, scanDeltaAbsMax );
 		const uint maxRefinementTrials =
-			( blockRgbInt.x == 0.0f && blockRgbInt.y == 0.0f && blockRgbInt.z == 0.0f )
-				? p_maxRefinementTrials
-				: 2u;
+		    ( blockRgbInt.x == 0.0f && blockRgbInt.y == 0.0f && blockRgbInt.z == 0.0f )
+		        ? p_maxRefinementTrials
+		        : 2u;
 		blockRgbInt += avgColourLS;
 
 		if( blockRgbInt.x >= 0.0f && blockRgbInt.x <= limit &&  //
-			blockRgbInt.y >= 0.0f && blockRgbInt.y <= limit &&  //
-			blockRgbInt.z >= 0.0f && blockRgbInt.z <= limit )
+		    blockRgbInt.y >= 0.0f && blockRgbInt.y <= limit &&  //
+		    blockRgbInt.z >= 0.0f && blockRgbInt.z <= limit )
 		{
 			bool bSuccess = evaluate_solution( subblockStart, blockRgbInt, bUseColor4, baseColor5,
-											   constrainAgainstBaseColor5, bestSolution );
+			                                   constrainAgainstBaseColor5, bestSolution );
 
 			if( bSuccess )
 			{
@@ -268,7 +268,7 @@ void etc1_optimizer_compute( const float scanDeltaAbsMin, const float scanDeltaA
 				pSelectors[1] = unpackUnorm4x8( bestSolution.selectors[1] ) * 255.0f;
 
 				for( uint refinementTrial = 0u; refinementTrial < maxRefinementTrials && bSuccess;
-					 ++refinementTrial )
+				     ++refinementTrial )
 				{
 					const float4 pIntenTable = g_etc1_inten_tables[bestSolution.intenTable];
 
@@ -286,18 +286,18 @@ void etc1_optimizer_compute( const float scanDeltaAbsMin, const float scanDeltaA
 
 					const float3 avgDelta = deltaSum * 0.125f;
 					const float3 blockRgbInt1 = clamp(
-						floor( ( avgColour - avgDelta ) * limit * ( 1.0f / 255.0f ) + 0.5f ), 0, limit );
+					    floor( ( avgColour - avgDelta ) * limit * ( 1.0f / 255.0f ) + 0.5f ), 0, limit );
 
 					if( ( deltaSum.r == 0.0f && deltaSum.g == 0.0f && deltaSum.b == 0.0f ) ||
-						( blockRgbInt.r == blockRgbInt1.r &&  //
-						  blockRgbInt.g == blockRgbInt1.g &&  //
-						  blockRgbInt.b == blockRgbInt1.b ) ||
-						( bestSolution.rgbIntLS.r == blockRgbInt1.r &&  //
-						  bestSolution.rgbIntLS.g == blockRgbInt1.g &&  //
-						  bestSolution.rgbIntLS.b == blockRgbInt1.b ) ||
-						( avgColourLS.r == blockRgbInt1.r &&  //
-						  avgColourLS.g == blockRgbInt1.g &&  //
-						  avgColourLS.b == blockRgbInt1.b ) )
+					    ( blockRgbInt.r == blockRgbInt1.r &&  //
+					      blockRgbInt.g == blockRgbInt1.g &&  //
+					      blockRgbInt.b == blockRgbInt1.b ) ||
+					    ( bestSolution.rgbIntLS.r == blockRgbInt1.r &&  //
+					      bestSolution.rgbIntLS.g == blockRgbInt1.g &&  //
+					      bestSolution.rgbIntLS.b == blockRgbInt1.b ) ||
+					    ( avgColourLS.r == blockRgbInt1.r &&  //
+					      avgColourLS.g == blockRgbInt1.g &&  //
+					      avgColourLS.b == blockRgbInt1.b ) )
 					{
 						// Skip refinement
 						bSuccess = false;
@@ -305,8 +305,8 @@ void etc1_optimizer_compute( const float scanDeltaAbsMin, const float scanDeltaA
 					else
 					{
 						bSuccess =
-							evaluate_solution( subblockStart, blockRgbInt1, bUseColor4, baseColor5,
-											   constrainAgainstBaseColor5, bestSolution );
+						    evaluate_solution( subblockStart, blockRgbInt1, bUseColor4, baseColor5,
+						                       constrainAgainstBaseColor5, bestSolution );
 					}
 				}  // refinementTrial
 			}
@@ -362,8 +362,8 @@ void pack_etc1_block_solid_color( const float3 srcPixel )
 				float p2 = pBuff_etc1_inverse_lookup[x & 0xFFu][c2];
 
 				const float3 diffVal = float3( c_plus_delta - c0,                //
-											   floor( p1 * ( 1.0f / 256.0f ) ),  //
-											   floor( p2 * ( 1.0f / 256.0f ) ) );
+				                               floor( p1 * ( 1.0f / 256.0f ) ),  //
+				                               floor( p2 * ( 1.0f / 256.0f ) ) );
 				const float trialError = dot( diffVal, diffVal );
 				if( trialError < bestError )
 				{
@@ -397,7 +397,7 @@ void pack_etc1_block_solid_color( const float3 srcPixel )
 	const float etc1Selector = selector_index_to_etc1( float( ( best_x >> 4u ) & 3u ) );
 	outputBytes.x = packUnorm4x8( bytes * ( 1.0f / 255.0f ) );
 	outputBytes.y = ( etc1Selector >= 2u ? 0xFFFFu : 0u ) |
-					( ( etc1Selector == 1.0f || etc1Selector == 3.0f ) ? 0xFFFF0000u : 0u );
+	                ( ( etc1Selector == 1.0f || etc1Selector == 3.0f ) ? 0xFFFF0000u : 0u );
 
 	uint2 dstUV = gl_GlobalInvocationID.yz;
 	imageStore( dstTexture, int2( dstUV ), uint4( outputBytes.xy, 0u, 0u ) );
@@ -408,8 +408,8 @@ void pack_etc1_block_solid_color( const float3 srcPixel )
 }
 
 void pack_etc1_block_solid_color_constrained( const float3 srcPixel, const bool bUseDiff,
-											  const float3 baseColor5,
-											  inout PotentialSolution bestSolution )
+                                              const float3 baseColor5,
+                                              inout PotentialSolution bestSolution )
 {
 	float bestError = FLT_MAX, bestPacked_c1 = 0, bestPacked_c2 = 0;
 	uint best_x = 0u, best_i = 0u;
@@ -455,15 +455,15 @@ void pack_etc1_block_solid_color_constrained( const float3 srcPixel, const bool 
 						const float3 d = blockRgbInt - baseColor5;
 
 						if( ( min3( d.r, d.g, d.b ) < cETC1ColorDeltaMin ) ||  //
-							( max3( d.r, d.g, d.b ) > cETC1ColorDeltaMax ) )
+						    ( max3( d.r, d.g, d.b ) > cETC1ColorDeltaMax ) )
 						{
 							bIsValid = false;
 						}
 					}
 
 					const float3 diffVal = float3( c_plus_delta - c0,                //
-												   floor( p1 * ( 1.0f / 256.0f ) ),  //
-												   floor( p2 * ( 1.0f / 256.0f ) ) );
+					                               floor( p1 * ( 1.0f / 256.0f ) ),  //
+					                               floor( p2 * ( 1.0f / 256.0f ) ) );
 					const float trialError = dot( diffVal, diffVal );
 					if( trialError < bestError && bIsValid )
 					{
@@ -485,10 +485,10 @@ void pack_etc1_block_solid_color_constrained( const float3 srcPixel, const bool 
 		const float bestPacked_c0 = float( ( best_x >> 8 ) & 255u );
 		float3 bestPacked = float3( bestPacked_c0, bestPacked_c1, bestPacked_c2 );
 		bestSolution.rgbIntLS =
-			best_i == 0u ? bestPacked.xyz : ( best_i == 1u ? bestPacked.zxy : bestPacked.yzx );
+		    best_i == 0u ? bestPacked.xyz : ( best_i == 1u ? bestPacked.zxy : bestPacked.yzx );
 
 		bestSolution.selectors[0] =
-			packUnorm4x8( float4( ( ( best_x >> 4u ) & 3u ) * ( 1.0f / 255.0f ) ) );
+		    packUnorm4x8( float4( ( ( best_x >> 4u ) & 3u ) * ( 1.0f / 255.0f ) ) );
 		bestSolution.selectors[1] = bestSolution.selectors[0];
 		bestSolution.intenTable = ( best_x >> 1u ) & 7u;
 	}
@@ -551,7 +551,7 @@ void main()
 
 	const uint pixelsEqualBlockStart = ( gl_LocalInvocationID.y + gl_LocalInvocationID.z * 4u ) * 4u;
 	bool bAllPixelsInThreadEqual =
-		srcPixels0 == srcPixels1 && srcPixels0 == srcPixels2 && srcPixels0 == srcPixels3;
+	    srcPixels0 == srcPixels1 && srcPixels0 == srcPixels2 && srcPixels0 == srcPixels3;
 	g_allPixelsEqual[pixelsEqualBlockStart + blockThreadId] = bAllPixelsInThreadEqual;
 
 	__sharedOnlyBarrier;
@@ -562,7 +562,7 @@ void main()
 		for( uint i = 1u; i < 4u; ++i )
 		{
 			bAllPixelsInThreadEqual =
-				bAllPixelsInThreadEqual && g_allPixelsEqual[pixelsEqualBlockStart + i];
+			    bAllPixelsInThreadEqual && g_allPixelsEqual[pixelsEqualBlockStart + i];
 
 			// All 4 pixels in thread 'i' could be equal. But they may be different from *our* pixels
 			const float3 otherPixels = unpackUnorm4x8( g_srcPixelsBlock[blockStart + i] ).xyz;
@@ -602,7 +602,7 @@ void main()
 		const bool bTmpFlip = blockThreadId >= 2u;
 
 		const uint subblockStart =
-			blockStart + ( bTmpFlip ? 16u : 0u ) + ( subblockIdx == 0u ? 0u : 8u );
+		    blockStart + ( bTmpFlip ? 16u : 0u ) + ( subblockIdx == 0u ? 0u : 8u );
 
 		bool allPixelsInSubblockEqual = true;
 
@@ -643,11 +643,11 @@ void main()
 		avgColour *= 1.0f / 8.0f;
 
 		if( p_quality >= cMediumQuality && ( subblockIdx > 0u || bUseColor4 ) &&
-			g_allPixelsEqual[pixelsEqualBlockStart + subblockIdx + ( bFlip ? 2u : 0u )] )
+		    g_allPixelsEqual[pixelsEqualBlockStart + subblockIdx + ( bFlip ? 2u : 0u )] )
 		{
 			pack_etc1_block_solid_color_constrained(
-				unpackUnorm4x8( g_srcPixelsBlock[subblockStart] ).xyz * 255.0f, bUseColor4, baseColor5,
-				results[subblockIdx] );
+			    unpackUnorm4x8( g_srcPixelsBlock[subblockStart] ).xyz * 255.0f, bUseColor4, baseColor5,
+			    results[subblockIdx] );
 		}
 
 		const float limit = bUseColor4 ? 15 : 31;
@@ -655,8 +655,8 @@ void main()
 		avgColour = avgColour * 255.0f;
 
 		etc1_optimizer_compute( p_scanDeltaAbsMin, p_scanDeltaAbsMax, subblockStart, avgColour,
-								avgColourLS, bUseColor4, baseColor5, constrainAgainstBaseColor5,
-								results[subblockIdx] );
+		                        avgColourLS, bUseColor4, baseColor5, constrainAgainstBaseColor5,
+		                        results[subblockIdx] );
 
 		if( p_quality >= cMediumQuality )
 		{
@@ -680,8 +680,8 @@ void main()
 				}
 
 				etc1_optimizer_compute( scanDeltaAbsMin, scanDeltaAbsMax, subblockStart, avgColour,
-										avgColourLS, bUseColor4, baseColor5, constrainAgainstBaseColor5,
-										results[subblockIdx] );
+				                        avgColourLS, bUseColor4, baseColor5, constrainAgainstBaseColor5,
+				                        results[subblockIdx] );
 			}
 		}
 	}
@@ -723,7 +723,7 @@ void main()
 
 	// Load threadIdx with best error which was written down by thread blockThreadId == 0u
 	const uint blockThreadWithBestError =
-		loadBestBlockThreadIdxFromLds( gl_LocalInvocationIndex & ~0x03u );
+	    loadBestBlockThreadIdxFromLds( gl_LocalInvocationIndex & ~0x03u );
 
 	if( blockThreadWithBestError == blockThreadId && !bAllColoursEqual )
 	{
@@ -748,7 +748,7 @@ void main()
 		}
 
 		bytes.w = ( results[1].intenTable * 4.0f ) + ( results[0].intenTable * 32.0f ) +
-				  ( bUseColor4 ? 0.0f : 2.0f ) + ( bFlip ? 1.0f : 0.0f );
+		          ( bUseColor4 ? 0.0f : 2.0f ) + ( bFlip ? 1.0f : 0.0f );
 
 		uint2 outputBytes;
 		outputBytes.x = packUnorm4x8( bytes * ( 1.0f / 255.0f ) );
@@ -843,7 +843,7 @@ void main()
 		imageStore( dstTexture, int2( dstUV ), uint4( outputBytes.xy, 0u, 0u ) );
 #ifdef OUTPUT_ERROR
 		imageStore( dstError, int2( dstUV ),
-					float4( results[0].error + results[1].error, 0.0f, 0.0f, 0.0f ) );
+		            float4( results[0].error + results[1].error, 0.0f, 0.0f, 0.0f ) );
 #endif
 	}
 }
