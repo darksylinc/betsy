@@ -3,7 +3,7 @@
 #include <stdlib.h>
 
 #include "GL/gl3w.h"
-#include "SDL.h"
+#include <GLFW/glfw3.h>
 
 namespace betsy
 {
@@ -12,8 +12,7 @@ namespace betsy
 	extern void pollPlatformWindow();
 
 	extern bool g_hasDebugObjectLabel;
-	static SDL_GLContext g_glContext = 0;
-	static SDL_Window *g_sdlWindow = 0;
+	static GLFWwindow *g_window = 0;
 
 	static void APIENTRY GLDebugCallback( GLenum source, GLenum type, GLuint id, GLenum severity,
 	                                      GLsizei length, const GLchar *message, const void *userParam )
@@ -23,52 +22,25 @@ namespace betsy
 
 	void initBetsyPlatform()
 	{
-		if( SDL_Init( SDL_INIT_VIDEO ) != 0 )
+		if (!glfwInit())
 		{
-			fprintf( stderr, "Error initializing SDL\n" );
-			SDL_Quit();
+			// Initialization failed
+			fprintf( stderr, "Error initializing GLFW\n" );
 			abort();
 		}
 
-		int width = 1280;
-		int height = 720;
-
-		int screen = 0;
-		int posX = SDL_WINDOWPOS_CENTERED_DISPLAY( screen );
-		int posY = SDL_WINDOWPOS_CENTERED_DISPLAY( screen );
-
-		bool fullscreen = false;
-		if( fullscreen )
-		{
-			posX = SDL_WINDOWPOS_UNDEFINED_DISPLAY( screen );
-			posY = SDL_WINDOWPOS_UNDEFINED_DISPLAY( screen );
-		}
-
-		g_sdlWindow =
-		    SDL_CreateWindow( "Betsy Mandatory GL window",  // window title
-		                      posX,                         // initial x position
-		                      posY,                         // initial y position
-		                      width,                        // width, in pixels
-		                      height,                       // height, in pixels
-		                      SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL |
-		                          ( fullscreen ? SDL_WINDOW_FULLSCREEN : 0 ) | SDL_WINDOW_RESIZABLE );
-
-		SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 4 );
-		SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 3 );
-		SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE );
+		glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #ifdef DEBUG
-		SDL_GL_SetAttribute( SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG );
+		glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, 1 );
 #endif
-
-		// GL 4.3 mandates GL_KHR_debug
-		g_hasDebugObjectLabel = true;
-
-		g_glContext = SDL_GL_CreateContext( g_sdlWindow );
-
-		if( !g_glContext )
+		g_window = glfwCreateWindow(640, 480, "", NULL, NULL);
+		if( !g_window )
 		{
 			fprintf( stderr, "GL Context creation failed.\n" );
-			SDL_Quit();
+			glfwTerminate();
 			abort();
 		}
 		else
@@ -76,7 +48,10 @@ namespace betsy
 			printf( "GL Context creation suceeded.\n" );
 		}
 
-		SDL_GL_SetSwapInterval( 1 );
+		glfwMakeContextCurrent(g_window);
+
+		// GL 4.3 mandates GL_KHR_debug
+		g_hasDebugObjectLabel = true;
 
 		const bool gl3wFailed = gl3wInit() != 0;
 		if( gl3wFailed )
@@ -94,27 +69,13 @@ namespace betsy
 
 	void shutdownBetsyPlatform()
 	{
-		SDL_GL_DeleteContext( g_glContext );
-		g_glContext = 0;
-		SDL_Quit();
+		glfwDestroyWindow(g_window);
+		glfwTerminate();
 	}
 
 	void pollPlatformWindow()
 	{
-		SDL_Event evt;
-		while( SDL_PollEvent( &evt ) )
-		{
-			switch( evt.type )
-			{
-			case SDL_WINDOWEVENT:
-				break;
-			case SDL_QUIT:
-				break;
-			default:
-				break;
-			}
-		}
-
-		SDL_GL_SwapWindow( g_sdlWindow );
+		glfwPollEvents();
+		glfwSwapBuffers(g_window);
 	}
 }  // namespace betsy

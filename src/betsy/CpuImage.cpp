@@ -11,6 +11,8 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
 
 namespace betsy
 {
@@ -24,14 +26,14 @@ namespace betsy
 		if( hdr )
 		{
 			format = PFG_RGBA32_FLOAT;
-			data = (uint8_t *)stbi_loadf_from_file( fopen( fullpath, "rb" ), (int *)&width,
-			                                        (int *)&height, &comp, 4 );
+			data = (uint8_t *)stbi_loadf( fullpath, (int *)&width, (int *)&height, &comp, 0 );
 		}
 		else
 		{
 			format = PFG_RGBA8_UNORM_SRGB;
-			auto tmpData =
-			    stbi_load_from_file( fopen( fullpath, "rb" ), (int *)&width, (int *)&height, &comp, 4 );
+			auto tmpData = stbi_load( fullpath, (int *)&width, (int *)&height, &comp, 0 );
+
+			stbi_write_tga("test2.tga",width,height,comp,tmpData);
 
 			if(comp == 3)
 			{
@@ -49,6 +51,8 @@ namespace betsy
 			printf( "Did not get correct amount of components!\n" );
 			return;
 		}
+
+		stbi_write_tga("test.tga",width,height,comp,data);
 	}
 	//-------------------------------------------------------------------------
 	CpuImage::~CpuImage()

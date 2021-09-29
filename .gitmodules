@@ -1,3 +1,6 @@
 [submodule "contrib/stb"]
 	path = contrib/stb
 	url = https://github.com/nothings/stb
+[submodule "contrib/glfw"]
+	path = contrib/glfw
+	url = https://github.com/glfw/glfw.git

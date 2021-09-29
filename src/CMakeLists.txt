@@ -20,8 +20,8 @@ add_recursive( ${CMAKE_SOURCE_DIR}/include HEADERS )
 
 add_executable( ${PROJECT_NAME} ${SOURCES} ${HEADERS} ${RESOURCES} ${GENERATED_GLSL})
 
-find_package(SDL2 REQUIRED)
-target_link_libraries( ${PROJECT_NAME} SDL2::SDL2 dl )
+find_package(OpenGL REQUIRED)
+target_link_libraries( ${PROJECT_NAME} glfw OpenGL::GL)
 
 target_include_directories( ${PROJECT_NAME} PUBLIC ${CMAKE_SOURCE_DIR}/include )
 target_include_directories( ${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/contrib/stb )
