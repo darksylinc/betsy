@@ -30,14 +30,19 @@ namespace betsy
 		else
 		{
 			format = PFG_RGBA8_UNORM_SRGB;
-			data =
+			auto tmpData =
 			    stbi_load_from_file( fopen( fullpath, "rb" ), (int *)&width, (int *)&height, &comp, 4 );
 
 			if(comp == 3)
 			{
-				RGB8toRGBA8( data, width * 3 );
+				const size_t neededBytes = getSizeBytes( width, height, 1u, 1u, format );
+				data = reinterpret_cast<uint8_t *>( malloc( neededBytes ) );
+				RGB8toRGBA8( tmpData, width * 3 );
 				comp = 4;
+				stbi_image_free( tmpData );
 			}
+			else
+				data = tmpData;
 		}
 		if( comp != 4 )
 		{
@@ -161,9 +166,9 @@ namespace betsy
 
 			for( size_t x = 0u; x < imgWidth; ++x )
 			{
-				const uint8_t b = *srcData++;
-				const uint8_t g = *srcData++;
 				const uint8_t r = *srcData++;
+				const uint8_t g = *srcData++;
+				const uint8_t b = *srcData++;
 				*dstData++ = r;
 				*dstData++ = g;
 				*dstData++ = b;
