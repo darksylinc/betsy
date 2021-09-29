@@ -2,6 +2,7 @@
 #include "betsy/EncoderETC2.h"
 
 #include "betsy/CpuImage.h"
+#include "betsy/Shaders.h"
 
 #include <assert.h>
 
@@ -38,15 +39,10 @@ namespace betsy
 		m_pModeError = createTexture( TextureParams( getBlockWidth(), getBlockHeight(), PFG_R32_FLOAT,
 													 "m_pModeError", TextureFlags::Uav ) );
 
-		m_thModesPso = createComputePsoFromFile( "etc2_th.glsl", "../Data/" );
-		m_thModesFindBestC0C1 =
-			createComputePsoFromFile( "etc2_th_find_best_c0c1_k_means.glsl", "../Data/" );
-		m_pModePso = createComputePsoFromFile( "etc2_p.glsl", "../Data/" );
-
-		if( bCompressAlpha )
-			m_stitchPso = createComputePsoFromFile( "etc2_rgba_selector.glsl", "../Data/" );
-		else
-			m_stitchPso = createComputePsoFromFile( "etc2_rgb_selector.glsl", "../Data/" );
+		m_thModesPso = createComputePso( etc2_th_glsl);
+		m_thModesFindBestC0C1 =	createComputePso( etc2_th_find_best_c0c1_k_means_glsl );
+		m_pModePso = createComputePso( etc2_p_glsl );
+		m_stitchPso = createComputePso( bCompressAlpha ? etc2_rgba_selector_glsl : etc2_rgb_selector_glsl );
 	}
 	//-------------------------------------------------------------------------
 	void EncoderETC2::deinitResources()

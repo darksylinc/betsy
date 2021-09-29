@@ -2,6 +2,7 @@
 #include "betsy/EncoderBC6H.h"
 
 #include "betsy/CpuImage.h"
+#include "betsy/Shaders.h"
 
 #include <assert.h>
 #include <memory.h>
@@ -27,7 +28,7 @@ namespace betsy
 		m_dstTexture =
 			createTexture( TextureParams( m_width, m_height, PFG_BC6H_UF16, "m_dstTexture" ) );
 
-		m_compressPso = createComputePsoFromFile( "bc6h.glsl", "../Data/" );
+		m_compressPso = createComputePso(bc6h_glsl );
 
 		StagingTexture stagingTex = createStagingTexture( m_width, m_height, srcImage.format, true );
 		memcpy( stagingTex.data, srcImage.data, stagingTex.sizeBytes );

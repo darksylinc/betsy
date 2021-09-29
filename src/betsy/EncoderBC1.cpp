@@ -2,6 +2,7 @@
 #include "betsy/EncoderBC1.h"
 
 #include "betsy/CpuImage.h"
+#include "betsy/Shaders.h"
 
 #include "BC1_tables.inl"
 
@@ -67,7 +68,7 @@ namespace betsy
 			m_bc1TablesSsbo = createUavBuffer( sizeof( Bc1Tables ), &bc1Tables );
 		}
 
-		m_bc1Pso = createComputePsoFromFile( bDither ? "bc1_dither.glsl" : "bc1.glsl", "../Data/" );
+		m_bc1Pso = createComputePso( bDither ? bc1_dither_glsl : bc1_glsl );
 
 		if( useBC3 )
 		{
@@ -77,8 +78,8 @@ namespace betsy
 			m_stitchedTarget =
 				createTexture( TextureParams( getBlockWidth(), getBlockHeight(), PFG_RGBA32_UINT,
 											  "m_stitchedTarget", TextureFlags::Uav ) );
-			m_bc4Pso = createComputePsoFromFile( "bc4.glsl", "../Data/" );
-			m_stitchPso = createComputePsoFromFile( "etc2_rgba_stitch.glsl", "../Data/" );
+			m_bc4Pso = createComputePso( bc4_glsl );
+			m_stitchPso = createComputePso( etc2_rgba_stitch_glsl );
 		}
 
 		StagingTexture stagingTex = createStagingTexture( m_width, m_height, srcImage.format, true );

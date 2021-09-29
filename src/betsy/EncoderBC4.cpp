@@ -2,6 +2,7 @@
 #include "betsy/EncoderBC4.h"
 
 #include "betsy/CpuImage.h"
+#include "betsy/Shaders.h"
 
 #include <assert.h>
 #include <memory.h>
@@ -44,14 +45,14 @@ namespace betsy
 											  "m_bc4TargetRes[1]", TextureFlags::Uav ) );
 		}
 
-		m_bc4Pso = createComputePsoFromFile( "bc4.glsl", "../Data/" );
+		m_bc4Pso = createComputePso( bc4_glsl );
 
 		if( redGreen )
 		{
 			m_stitchedTarget =
 				createTexture( TextureParams( getBlockWidth(), getBlockHeight(), PFG_RGBA32_UINT,
 											  "m_stitchedTarget", TextureFlags::Uav ) );
-			m_stitchPso = createComputePsoFromFile( "etc2_rgba_stitch.glsl", "../Data/" );
+			m_stitchPso = createComputePso( etc2_rgba_stitch_glsl );
 
 			m_dstTexture = createTexture( TextureParams(
 				m_width, m_height, m_encodeSNorm ? PFG_BC5_SNORM : PFG_BC5_UNORM, "m_dstTexture" ) );

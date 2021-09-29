@@ -3,16 +3,21 @@
 
 #include "betsy/EncoderGL.h"
 
-#include "sds/sds_fstream.h"
-
 #include <memory.h>
 #include <stdio.h>
+#include <fstream>
 
 #define KTX_ENDIAN_REF ( 0x04030201 )
 #define KTX_ENDIAN_REF_REV ( 0x01020304 )
 
 namespace betsy
 {
+	template <typename T>
+	static inline void write(std::ofstream& fout, const T& v)
+	{
+		fout.write(reinterpret_cast<const char*>(&v), sizeof(T));
+	}
+
 	struct KTXHeader
 	{
 		uint8_t identifier[12];
@@ -33,7 +38,7 @@ namespace betsy
 	//-------------------------------------------------------------------------
 	void FormatKTX::save( const char *fullpath, const CpuImage &cpuImage )
 	{
-		sds::fstream file( fullpath, sds::fstream::OutputDiscard );
+		std::ofstream file( fullpath, std::ios::trunc);
 
 		if( !file.is_open() )
 		{
@@ -51,8 +56,8 @@ namespace betsy
 		header.endianness = KTX_ENDIAN_REF;
 		header.pixelWidth = cpuImage.width;
 		header.pixelHeight = cpuImage.height;
-		header.pixelDepth = 1u;
-		header.numberOfArrayElements = 1u;
+		header.pixelDepth = 0u;
+		header.numberOfArrayElements = 0u;
 		header.numberOfFaces = 1u;
 		header.numberOfMipmapLevels = 1u;
 
@@ -72,14 +77,14 @@ namespace betsy
 			header.glTypeSize = 1u;
 		}
 
-		file.write<KTXHeader>( header );
+		write<KTXHeader>( file, header );
 
 		// Now deal with the data
 		for( uint32_t level = 0u; level < header.numberOfMipmapLevels; ++level )
 		{
 			const size_t imageSize = CpuImage::getSizeBytes( header.pixelWidth, header.pixelHeight, 1u,
 															 1u, cpuImage.format, 4u );
-			file.write<uint32_t>( static_cast<uint32_t>( imageSize ) );
+			write<uint32_t>( file, static_cast<uint32_t>( imageSize ) );
 
 			for( uint32_t face = 0u; face < header.numberOfFaces; ++face )
 				file.write( reinterpret_cast<const char *>( cpuImage.data ), imageSize );

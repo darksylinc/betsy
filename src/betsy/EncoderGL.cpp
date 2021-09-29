@@ -2,7 +2,7 @@
 #include "betsy/EncoderGL.h"
 
 #include "betsy/CpuImage.h"
-#include "betsy/IncludeParser.h"
+// #include "betsy/IncludeParser.h"
 
 #include <assert.h>
 #include <string.h>
@@ -351,19 +351,6 @@ namespace betsy
 	}
 	//-------------------------------------------------------------------------
 	void EncoderGL::destroyUavBuffer( GLuint bufferName ) { glDeleteBuffers( 1u, &bufferName ); }
-	//-------------------------------------------------------------------------
-	ComputePso EncoderGL::createComputePsoFromFile( const char *shaderFilename,
-													const char *relativePath )
-	{
-		IncludeParser parser;
-		parser.loadFromFile( shaderFilename, relativePath );
-
-#ifdef DUMP_SHADER
-		printf( "%s", parser.getFinalSource() );
-#endif
-		ComputePso retVal = createComputePso( parser.getFinalSource() );
-		return retVal;
-	}
 	//-------------------------------------------------------------------------
 	ComputePso EncoderGL::createComputePso( const char *csShader )
 	{

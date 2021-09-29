@@ -2,6 +2,7 @@
 #include "betsy/EncoderEAC.h"
 
 #include "betsy/CpuImage.h"
+#include "betsy/Shaders.h"
 
 #include <assert.h>
 #include <memory.h>
@@ -35,14 +36,14 @@ namespace betsy
 											  "m_eacTargetRes[1]", TextureFlags::Uav ) );
 		}
 
-		m_eacPso = createComputePsoFromFile( "eac_r11.glsl", "../Data/" );
+		m_eacPso = createComputePso( eac_r11_glsl );
 
 		if( rg11 )
 		{
 			m_stitchedTarget =
 				createTexture( TextureParams( getBlockWidth(), getBlockHeight(), PFG_RGBA32_UINT,
 											  "m_stitchedTarget", TextureFlags::Uav ) );
-			m_stitchPso = createComputePsoFromFile( "etc2_rgba_stitch.glsl", "../Data/" );
+			m_stitchPso = createComputePso(etc2_rgba_stitch_glsl );
 		}
 
 		StagingTexture stagingTex = createStagingTexture( m_width, m_height, srcImage.format, true );

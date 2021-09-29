@@ -118,7 +118,6 @@ namespace betsy
 		GLuint createUavBuffer( size_t sizeBytes, void *initialData );
 		void   destroyUavBuffer( GLuint bufferName );
 
-		ComputePso createComputePsoFromFile( const char *shaderFilename, const char *relativePath );
 		ComputePso createComputePso( const char *csShader );
 		void       destroyPso( ComputePso &pso );
 		void       bindComputePso( const ComputePso &pso );

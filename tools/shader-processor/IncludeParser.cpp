@@ -1,18 +1,18 @@
 
-#include "betsy/IncludeParser.h"
+#include "IncludeParser.h"
 
 #include <algorithm>
 #include <fstream>
 
 namespace betsy
 {
-	bool IncludeParser::loadFromFileInto( const char *fullpath, std::string &outSource )
+	bool IncludeParser::loadFromFileInto( const std::filesystem::path& fullpath, std::string &outSource )
 	{
 		std::ifstream file;
 		file.open( fullpath, std::ios_base::binary | std::ios_base::in );
 		if( file.fail() )
 		{
-			printf( "Error opening %s\n", fullpath );
+			printf( "Error opening %s\n", fullpath.c_str() );
 			return false;
 		}
 
@@ -34,17 +34,20 @@ namespace betsy
 
 		return true;
 	}
-	//-------------------------------------------------------------------------
-	bool IncludeParser::loadFromFile( const char *filename, const char *relativePath )
-	{
-		std::string fullpath = relativePath;
-		fullpath += filename;
 
+	bool IncludeParser::loadFromFile( const std::filesystem::path& path)
+	{
+		return loadFromFile(path, path.parent_path());
+	}
+
+	//-------------------------------------------------------------------------
+	bool IncludeParser::loadFromFile( const std::filesystem::path& filename,const std::filesystem::path& relativePath )
+	{
 		std::ifstream file;
-		file.open( fullpath.c_str(), std::ios_base::binary | std::ios_base::in );
+		file.open( filename, std::ios_base::binary | std::ios_base::in );
 		if( file.fail() )
 		{
-			printf( "Error opening %s\n", fullpath.c_str() );
+			printf( "Error opening %s\n", filename.c_str() );
 			return false;
 		}
 
@@ -58,7 +61,7 @@ namespace betsy
 		return parseIncludeFiles( relativePath );
 	}
 	//-------------------------------------------------------------------------
-	bool IncludeParser::parseIncludeFiles( const char *relativePath )
+	bool IncludeParser::parseIncludeFiles( const std::filesystem::path& relativePath )
 	{
 		size_t startPos = 0;
 		std::string includeKeyword = "#include ";
@@ -92,7 +95,7 @@ namespace betsy
 				std::string file = m_source.substr( pos, endPos - pos );
 
 				std::string includeContent;
-				if( loadFromFileInto( ( relativePath + file ).c_str(), includeContent ) )
+				if( loadFromFileInto( relativePath / file , includeContent ) )
 					m_source.replace( startPos, ( endPos + 1u ) - startPos, includeContent );
 				else
 				{

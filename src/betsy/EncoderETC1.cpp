@@ -3,6 +3,7 @@
 #include "betsy/EncoderETC1.h"
 
 #include "betsy/CpuImage.h"
+#include "betsy/Shaders.h"
 
 #include "ETC1_tables.inl"
 
@@ -111,7 +112,7 @@ namespace betsy
 		{
 			m_ditheredTexture = createTexture( TextureParams( m_width, m_height, PFG_RGBA8_UNORM,
 															  "m_ditheredTexture", TextureFlags::Uav ) );
-			m_ditherPso = createComputePsoFromFile( "dither555.glsl", "../Data/" );
+			m_ditherPso = createComputePso( dither555_glsl );
 		}
 		else
 		{
@@ -138,7 +139,7 @@ namespace betsy
 		}
 
 		m_compressPso =
-			createComputePsoFromFile( bForEtc2 ? "etc1_with_error.glsl" : "etc1.glsl", "../Data/" );
+			createComputePso( bForEtc2 ? etc1_with_error_glsl : etc1_glsl );
 
 		if( bCompressAlpha )
 		{
@@ -148,11 +149,11 @@ namespace betsy
 			m_stitchedTarget =
 				createTexture( TextureParams( getBlockWidth(), getBlockHeight(), PFG_RGBA32_UINT,
 											  "m_stitchedTarget", TextureFlags::Uav ) );
-			m_eacPso = createComputePsoFromFile( "eac.glsl", "../Data/" );
+			m_eacPso = createComputePso( eac_glsl );
 
 			// ETC2 codec does its own stitching
 			if( !bForEtc2 )
-				m_stitchPso = createComputePsoFromFile( "etc2_rgba_stitch.glsl", "../Data/" );
+				m_stitchPso = createComputePso( etc2_rgba_stitch_glsl);
 		}
 
 		StagingTexture stagingTex = createStagingTexture( m_width, m_height, srcImage.format, true );
