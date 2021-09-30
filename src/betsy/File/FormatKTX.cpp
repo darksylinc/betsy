@@ -62,7 +62,7 @@ namespace betsy
 		header.numberOfFaces = 1u;
 		header.numberOfMipmapLevels = 1u;
 
-		if( !CpuImage::isCompressed( cpuImage.format ) )
+		if( !gli::is_compressed( cpuImage.format ) )
 		{
 			header.glInternalFormat = EncoderGL::get( cpuImage.format );
 			header.glBaseInternalFormat = EncoderGL::getBaseFormat( cpuImage.format );

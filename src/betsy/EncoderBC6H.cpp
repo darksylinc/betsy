@@ -22,11 +22,11 @@ namespace betsy
 		    createTexture( TextureParams( m_width, m_height, srcImage.format, "m_srcTexture" ) );
 
 		m_compressTargetRes =
-		    createTexture( TextureParams( getBlockWidth(), getBlockHeight(), PFG_RGBA32_UINT,
+		    createTexture( TextureParams( getBlockWidth(), getBlockHeight(), gli::FORMAT_RGBA32_UINT_PACK32,
 		                                  "m_compressTargetRes", TextureFlags::Uav ) );
 
 		m_dstTexture =
-		    createTexture( TextureParams( m_width, m_height, PFG_BC6H_UF16, "m_dstTexture" ) );
+		    createTexture( TextureParams( m_width, m_height, gli::FORMAT_RGB_BP_UFLOAT_BLOCK16, "m_dstTexture" ) );
 
 		m_compressPso = createComputePso( bc6h_glsl );
 
@@ -53,7 +53,7 @@ namespace betsy
 	void EncoderBC6H::execute01()
 	{
 		bindTexture( 0u, m_srcTexture );
-		bindUav( 0u, m_compressTargetRes, PFG_RGBA32_UINT, ResourceAccess::Write );
+		bindUav( 0u, m_compressTargetRes, gli::FORMAT_RGBA32_UINT_PACK32, ResourceAccess::Write );
 		bindComputePso( m_compressPso );
 
 		glUniform2f( 0, 1.0f / m_width, 1.0f / m_height );
@@ -80,7 +80,7 @@ namespace betsy
 		if( m_downloadStaging.bufferName )
 			destroyStagingTexture( m_downloadStaging );
 		m_downloadStaging =
-		    createStagingTexture( getBlockWidth(), getBlockHeight(), PFG_RG32_UINT, false );
+		    createStagingTexture( getBlockWidth(), getBlockHeight(), gli::FORMAT_RG32_UINT_PACK32, false );
 		downloadStagingTexture( m_compressTargetRes, m_downloadStaging );
 	}
 	//-------------------------------------------------------------------------
@@ -89,7 +89,7 @@ namespace betsy
 		glFinish();
 		outImage.width = m_width;
 		outImage.height = m_height;
-		outImage.format = PFG_BC6H_UF16;
+		outImage.format = gli::FORMAT_RGB_BP_UFLOAT_BLOCK16;
 		outImage.data = reinterpret_cast<uint8_t *>( m_downloadStaging.data );
 	}
 }  // namespace betsy

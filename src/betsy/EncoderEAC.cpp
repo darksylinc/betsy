@@ -22,17 +22,16 @@ namespace betsy
 		m_width = srcImage.width;
 		m_height = srcImage.height;
 
-		const PixelFormat srcFormat =
-		    srcImage.format == PFG_RGBA8_UNORM_SRGB ? PFG_RGBA8_UNORM : srcImage.format;
+		const auto srcFormat = srcImage.format;
 
 		m_srcTexture = createTexture( TextureParams( m_width, m_height, srcFormat, "m_srcTexture" ) );
 
 		m_eacTargetRes[0] = createTexture( TextureParams(
-		    getBlockWidth(), getBlockHeight(), PFG_RG32_UINT, "m_eacTargetRes[0]", TextureFlags::Uav ) );
+		    getBlockWidth(), getBlockHeight(), gli::FORMAT_RG32_UINT_PACK32, "m_eacTargetRes[0]", TextureFlags::Uav ) );
 		if( rg11 )
 		{
 			m_eacTargetRes[1] =
-			    createTexture( TextureParams( getBlockWidth(), getBlockHeight(), PFG_RG32_UINT,
+			    createTexture( TextureParams( getBlockWidth(), getBlockHeight(), gli::FORMAT_RG32_UINT_PACK32,
 			                                  "m_eacTargetRes[1]", TextureFlags::Uav ) );
 		}
 
@@ -41,7 +40,7 @@ namespace betsy
 		if( rg11 )
 		{
 			m_stitchedTarget =
-			    createTexture( TextureParams( getBlockWidth(), getBlockHeight(), PFG_RGBA32_UINT,
+			    createTexture( TextureParams( getBlockWidth(), getBlockHeight(), gli::FORMAT_RGBA32_UINT_PACK32,
 			                                  "m_stitchedTarget", TextureFlags::Uav ) );
 			m_stitchPso = createComputePso( etc2_rgba_stitch_glsl );
 		}
@@ -86,7 +85,7 @@ namespace betsy
 		const size_t numChannels = m_eacTargetRes[1] ? 2u : 1u;
 		for( size_t i = 0u; i < numChannels; ++i )
 		{
-			bindUav( 0u, m_eacTargetRes[i], PFG_RG32_UINT, ResourceAccess::Write );
+			bindUav( 0u, m_eacTargetRes[i], gli::FORMAT_RG32_UINT_PACK32, ResourceAccess::Write );
 
 			glUniform1f( 0, i == 0u ? 0.0f : 1.0f );
 
@@ -106,7 +105,7 @@ namespace betsy
 		glMemoryBarrier( GL_TEXTURE_FETCH_BARRIER_BIT );
 		bindTexture( 0u, m_eacTargetRes[1] );
 		bindTexture( 1u, m_eacTargetRes[0] );
-		bindUav( 0u, m_stitchedTarget, PFG_RGBA32_UINT, ResourceAccess::Write );
+		bindUav( 0u, m_stitchedTarget, gli::FORMAT_RGBA32_UINT_PACK32, ResourceAccess::Write );
 		bindComputePso( m_stitchPso );
 		glDispatchCompute( alignToNextMultiple( m_width, 32u ) / 32u,
 		                   alignToNextMultiple( m_height, 32u ) / 32u, 1u );
@@ -120,7 +119,7 @@ namespace betsy
 			destroyStagingTexture( m_downloadStaging );
 		m_downloadStaging =
 		    createStagingTexture( getBlockWidth(), getBlockHeight(),
-		                          m_eacTargetRes[1] ? PFG_RGBA32_UINT : PFG_RG32_UINT, false );
+		                          m_eacTargetRes[1] ? gli::FORMAT_RGBA32_UINT_PACK32 : gli::FORMAT_RG32_UINT_PACK32, false );
 		downloadStagingTexture( m_eacTargetRes[1] ? m_stitchedTarget : m_eacTargetRes[0],
 		                        m_downloadStaging );
 	}
@@ -130,7 +129,7 @@ namespace betsy
 		glFinish();
 		outImage.width = m_width;
 		outImage.height = m_height;
-		outImage.format = m_eacTargetRes[1] ? PFG_EAC_R11_UNORM : PFG_EAC_RG11_UNORM;
+		outImage.format = m_eacTargetRes[1] ? gli::FORMAT_R_EAC_UNORM_BLOCK8 : gli::FORMAT_RG_EAC_UNORM_BLOCK16;
 		outImage.data = reinterpret_cast<uint8_t *>( m_downloadStaging.data );
 	}
 }  // namespace betsy

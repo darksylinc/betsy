@@ -27,16 +27,16 @@ namespace betsy
 		EncoderETC1::initResources( srcImage, bCompressAlpha, bDither, true );
 
 		m_thModesTargetRes =
-		    createTexture( TextureParams( getBlockWidth(), getBlockHeight(), PFG_RG32_UINT,
+		    createTexture( TextureParams( getBlockWidth(), getBlockHeight(), gli::FORMAT_RG32_UINT_PACK32,
 		                                  "m_thModesTargetRes", TextureFlags::Uav ) );
-		m_thModesError = createTexture( TextureParams( getBlockWidth(), getBlockHeight(), PFG_R32_FLOAT,
+		m_thModesError = createTexture( TextureParams( getBlockWidth(), getBlockHeight(), gli::FORMAT_R32_SFLOAT_PACK32,
 		                                               "m_thModesError", TextureFlags::Uav ) );
-		m_thModesC0C1 = createTexture( TextureParams( getBlockWidth(), getBlockHeight(), PFG_RG32_UINT,
+		m_thModesC0C1 = createTexture( TextureParams( getBlockWidth(), getBlockHeight(), gli::FORMAT_RG32_UINT_PACK32,
 		                                              "m_thModesC0C1", TextureFlags::Uav, 120u ) );
 
 		m_pModeTargetRes = createTexture( TextureParams(
-		    getBlockWidth(), getBlockHeight(), PFG_RG32_UINT, "m_pModeTargetRes", TextureFlags::Uav ) );
-		m_pModeError = createTexture( TextureParams( getBlockWidth(), getBlockHeight(), PFG_R32_FLOAT,
+		    getBlockWidth(), getBlockHeight(), gli::FORMAT_RG32_UINT_PACK32, "m_pModeTargetRes", TextureFlags::Uav ) );
+		m_pModeError = createTexture( TextureParams( getBlockWidth(), getBlockHeight(), gli::FORMAT_R32_SFLOAT_PACK32,
 		                                             "m_pModeError", TextureFlags::Uav ) );
 
 		m_thModesPso = createComputePso( etc2_th_glsl );
@@ -68,7 +68,7 @@ namespace betsy
 		EncoderETC1::execute00();
 
 		bindTexture( 0u, m_ditheredTexture );
-		bindUav( 0u, m_thModesC0C1, PFG_RG32_UINT, ResourceAccess::Write );
+		bindUav( 0u, m_thModesC0C1, gli::FORMAT_RG32_UINT_PACK32, ResourceAccess::Write );
 		bindComputePso( m_thModesFindBestC0C1 );
 
 		glDispatchCompute( 1u,  //
@@ -84,15 +84,15 @@ namespace betsy
 		EncoderETC1::execute01( quality );
 
 		bindTexture( 0u, m_ditheredTexture );
-		bindUav( 0u, m_thModesTargetRes, PFG_RG32_UINT, ResourceAccess::Write );
-		bindUav( 1u, m_thModesError, PFG_R32_FLOAT, ResourceAccess::Write );
-		bindUav( 2u, m_thModesC0C1, PFG_RG32_UINT, ResourceAccess::Write );
+		bindUav( 0u, m_thModesTargetRes, gli::FORMAT_RG32_UINT_PACK32, ResourceAccess::Write );
+		bindUav( 1u, m_thModesError, gli::FORMAT_R32_SFLOAT_PACK32, ResourceAccess::Write );
+		bindUav( 2u, m_thModesC0C1, gli::FORMAT_RG32_UINT_PACK32, ResourceAccess::Write );
 		bindComputePso( m_thModesPso );
 		glDispatchCompute( alignToNextMultiple( m_width, 4u ) / 4u,
 		                   alignToNextMultiple( m_height, 4u ) / 4u, 1u );
 
-		bindUav( 0u, m_pModeTargetRes, PFG_RG32_UINT, ResourceAccess::Write );
-		bindUav( 1u, m_pModeError, PFG_R32_FLOAT, ResourceAccess::Write );
+		bindUav( 0u, m_pModeTargetRes, gli::FORMAT_RG32_UINT_PACK32, ResourceAccess::Write );
+		bindUav( 1u, m_pModeError, gli::FORMAT_R32_SFLOAT_PACK32, ResourceAccess::Write );
 		bindComputePso( m_pModePso );
 		glDispatchCompute( alignToNextMultiple( m_width, 8u ) / 8u,
 		                   alignToNextMultiple( m_height, 8u ) / 8u, 1u );
@@ -115,11 +115,11 @@ namespace betsy
 			bindTexture( 5u, m_pModeTargetRes );
 			bindTexture( 6u, m_eacTargetRes );
 
-			bindUav( 0u, m_stitchedTarget, PFG_RGBA32_UINT, ResourceAccess::Write );
+			bindUav( 0u, m_stitchedTarget, gli::FORMAT_RGBA32_UINT_PACK32, ResourceAccess::Write );
 		}
 		else
 		{
-			bindUav( 0u, m_pModeTargetRes, PFG_RG32_UINT, ResourceAccess::ReadWrite );
+			bindUav( 0u, m_pModeTargetRes, gli::FORMAT_RG32_UINT_PACK32, ResourceAccess::ReadWrite );
 		}
 
 		bindComputePso( m_stitchPso );
@@ -137,7 +137,7 @@ namespace betsy
 		                    (GLsizei)( getBlockWidth() ), (GLsizei)( getBlockHeight() ), 1 );
 
 		StagingTexture stagingTex =
-		    createStagingTexture( getBlockWidth(), getBlockHeight(), PFG_RG32_UINT, false );
+		    createStagingTexture( getBlockWidth(), getBlockHeight(), gli::FORMAT_RG32_UINT_PACK32, false );
 		downloadStagingTexture( m_pModeTargetRes, stagingTex );
 		glFinish();
 	}
@@ -149,7 +149,7 @@ namespace betsy
 		if( m_downloadStaging.bufferName )
 			destroyStagingTexture( m_downloadStaging );
 		m_downloadStaging = createStagingTexture( getBlockWidth(), getBlockHeight(),
-		                                          hasAlpha() ? PFG_RGBA32_UINT : PFG_RG32_UINT, false );
+		                                          hasAlpha() ? gli::FORMAT_RGBA32_UINT_PACK32 : gli::FORMAT_RG32_UINT_PACK32, false );
 		downloadStagingTexture( hasAlpha() ? m_stitchedTarget : m_pModeTargetRes, m_downloadStaging );
 	}
 }  // namespace betsy

@@ -11,29 +11,25 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "stb_image_write.h"
 
 namespace betsy
 {
-	CpuImage::CpuImage() : data( 0 ), width( 0 ), height( 0 ), format( PFG_RGBA16_FLOAT ) {}
+	CpuImage::CpuImage() : data( 0 ), width( 0 ), height( 0 ), format( gli::FORMAT_RGBA16_SFLOAT_PACK16 ) {}
 	//-------------------------------------------------------------------------
 	CpuImage::CpuImage( const char *fullpath ) :
-	    data( 0 ), width( 0 ), height( 0 ), format( PFG_RGBA16_FLOAT )
+	    data( 0 ), width( 0 ), height( 0 ), format( gli::FORMAT_RGBA16_SFLOAT_PACK16 )
 	{
 		bool hdr = stbi_is_hdr( fullpath );
 		int comp = 0;
 		if( hdr )
 		{
-			format = PFG_RGBA32_FLOAT;
+			format = gli::FORMAT_RGBA32_SFLOAT_PACK32;
 			data = (uint8_t *)stbi_loadf( fullpath, (int *)&width, (int *)&height, &comp, 0 );
 		}
 		else
 		{
-			format = PFG_RGBA8_UNORM_SRGB;
+			format = gli::FORMAT_RGBA8_UNORM_PACK8;
 			auto tmpData = stbi_load( fullpath, (int *)&width, (int *)&height, &comp, 0 );
-
-			stbi_write_tga("test2.tga",width,height,comp,tmpData);
 
 			if(comp == 3)
 			{
@@ -43,16 +39,16 @@ namespace betsy
 				comp = 4;
 				stbi_image_free( tmpData );
 			}
-			else
+			else if(comp == 4)
+			{
 				data = tmpData;
+			}
 		}
 		if( comp != 4 )
 		{
 			printf( "Did not get correct amount of components!\n" );
 			return;
 		}
-
-		stbi_write_tga("test.tga",width,height,comp,data);
 	}
 	//-------------------------------------------------------------------------
 	CpuImage::~CpuImage()
@@ -60,93 +56,38 @@ namespace betsy
 		if( data )
 		{
 			stbi_image_free( data );
-			data = 0;
+			data = nullptr;
 		}
 	}
 	//-------------------------------------------------------------------------
-	size_t CpuImage::getBytesPerPixel( PixelFormat format )
+	size_t CpuImage::getBytesPerPixel( gli::format format )
 	{
-		switch( format )
+		if(gli::is_compressed(format))
+			return 0;
+		
+		int componentSize = 1;
+
+		switch(format)
 		{
-		case PFG_RGBA32_UINT:
-		case PFG_RGBA32_FLOAT:
-			return 4u * 4u;
-		case PFG_RGBA16_FLOAT:
-			return 2u * 4u;
-		case PFG_R32_FLOAT:
-			return 4u;
-		case PFG_RG32_UINT:
-			return 4u * 2u;
-		case PFG_RGBA8_UNORM:
-		case PFG_RGBA8_UNORM_SRGB:
-			return 1u * 4u;
-		case PFG_RG8_UINT:
-			return 1u * 2u;
-		case PFG_ETC1_RGB8_UNORM:
-		case PFG_ETC2_RGBA8_UNORM:
-		case PFG_EAC_R11_UNORM:
-		case PFG_EAC_RG11_UNORM:
-		case PFG_BC1_UNORM:
-		case PFG_BC3_UNORM:
-		case PFG_BC4_UNORM:
-		case PFG_BC4_SNORM:
-		case PFG_BC5_UNORM:
-		case PFG_BC5_SNORM:
-		case PFG_BC6H_UF16:
-			return 0u;
+			case gli::FORMAT_RGBA8_UINT_PACK32:
+			case gli::FORMAT_RG32_UINT_PACK32:
+			case gli::FORMAT_RGBA32_UINT_PACK32:
+				componentSize = 4;
+				break;
 		}
 
-		return 0u;
-	}
-	//-----------------------------------------------------------------------------------
-	bool CpuImage::isCompressed( PixelFormat pixelFormat )
-	{
-		switch( pixelFormat )
-		{
-		case PFG_BC1_UNORM:
-		case PFG_BC3_UNORM:
-		case PFG_BC4_UNORM:
-		case PFG_BC4_SNORM:
-		case PFG_BC5_UNORM:
-		case PFG_BC5_SNORM:
-		case PFG_BC6H_UF16:
-		case PFG_ETC1_RGB8_UNORM:
-		case PFG_ETC2_RGBA8_UNORM:
-		case PFG_EAC_R11_UNORM:
-		case PFG_EAC_RG11_UNORM:
-			return true;
-		default:
-			return false;
-		}
+		//TODO: fix
+		return gli::component_count(format) * componentSize;
 	}
 	//-------------------------------------------------------------------------
 	size_t CpuImage::getSizeBytes( uint32_t width, uint32_t height, uint32_t depth, uint32_t slices,
-	                               PixelFormat format, uint32_t rowAlignment )
+	                               gli::format format, uint32_t rowAlignment )
 	{
 		size_t retVal;
 
-		if( isCompressed( format ) )
+		if( gli::is_compressed( format ) )
 		{
-			switch( format )
-			{
-			case PFG_BC1_UNORM:
-			case PFG_BC4_UNORM:
-			case PFG_BC4_SNORM:
-			case PFG_ETC1_RGB8_UNORM:
-			case PFG_EAC_R11_UNORM:
-				retVal = ( ( width + 3u ) / 4u ) * ( ( height + 3u ) / 4u ) * 8u * depth * slices;
-				break;
-			case PFG_BC3_UNORM:
-			case PFG_BC5_UNORM:
-			case PFG_BC5_SNORM:
-			case PFG_ETC2_RGBA8_UNORM:
-			case PFG_EAC_RG11_UNORM:
-			case PFG_BC6H_UF16:
-				retVal = ( ( width + 3u ) / 4u ) * ( ( height + 3u ) / 4u ) * 16u * depth * slices;
-				break;
-			default:
-				retVal = 0u;
-			}
+			retVal = ( ( width + 3u ) / 4u ) * ( ( height + 3u ) / 4u ) * gli::block_size(format) * depth * slices;
 		}
 		else
 		{

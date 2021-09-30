@@ -168,7 +168,7 @@ int main( int nargs, char *const argv[] )
 	if( !parseCmdLine( nargs, argv, params ) )
 	{
 		printHelp();
-		return -1;
+		return EXIT_FAILURE;
 	}
 
 	printf( "Initializing API\n" );
@@ -277,5 +277,5 @@ int main( int nargs, char *const argv[] )
 	printf( "Shutting down\n" );
 	betsy::shutdownBetsyPlatform();
 
-	return 0;
+	return EXIT_SUCCESS;
 }

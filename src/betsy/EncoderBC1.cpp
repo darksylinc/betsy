@@ -52,15 +52,14 @@ namespace betsy
 		m_width = srcImage.width;
 		m_height = srcImage.height;
 
-		const PixelFormat srcFormat =
-		    srcImage.format == PFG_RGBA8_UNORM_SRGB ? PFG_RGBA8_UNORM : srcImage.format;
+		const auto srcFormat = srcImage.format;
 
 		m_srcTexture = createTexture( TextureParams( m_width, m_height, srcFormat, "m_srcTexture" ) );
 
-		m_bc1TargetRes = createTexture( TextureParams( getBlockWidth(), getBlockHeight(), PFG_RG32_UINT,
+		m_bc1TargetRes = createTexture( TextureParams( getBlockWidth(), getBlockHeight(), gli::format::FORMAT_RG32_UINT_PACK32,
 		                                               "m_bc1TargetRes", TextureFlags::Uav ) );
 		m_dstTexture = createTexture(
-		    TextureParams( m_width, m_height, useBC3 ? PFG_BC3_UNORM : PFG_BC1_UNORM, "m_dstTexture" ) );
+		    TextureParams( m_width, m_height, useBC3 ? gli::format::FORMAT_RGBA_DXT5_UNORM_BLOCK16 : gli::format::FORMAT_RGBA_DXT1_UNORM_BLOCK8, "m_dstTexture" ) );
 
 		{
 			Bc1Tables bc1Tables = getBc1Tables();
@@ -72,10 +71,10 @@ namespace betsy
 		if( useBC3 )
 		{
 			m_bc4TargetRes =
-			    createTexture( TextureParams( getBlockWidth(), getBlockHeight(), PFG_RG32_UINT,
+			    createTexture( TextureParams( getBlockWidth(), getBlockHeight(), gli::FORMAT_RG32_UINT_PACK32,
 			                                  "m_bc4TargetRes", TextureFlags::Uav ) );
 			m_stitchedTarget =
-			    createTexture( TextureParams( getBlockWidth(), getBlockHeight(), PFG_RGBA32_UINT,
+			    createTexture( TextureParams( getBlockWidth(), getBlockHeight(), gli::FORMAT_RGBA32_UINT_PACK32,
 			                                  "m_stitchedTarget", TextureFlags::Uav ) );
 			m_bc4Pso = createComputePso( bc4_glsl );
 			m_stitchPso = createComputePso( etc2_rgba_stitch_glsl );
@@ -116,7 +115,7 @@ namespace betsy
 	{
 		bindTexture( 0u, m_srcTexture );
 		bindComputePso( m_bc1Pso );
-		bindUav( 0u, m_bc1TargetRes, PFG_RG32_UINT, ResourceAccess::Write );
+		bindUav( 0u, m_bc1TargetRes, gli::FORMAT_RG32_UINT_PACK32, ResourceAccess::Write );
 		bindUavBuffer( 1u, m_bc1TablesSsbo, 0u, sizeof( Bc1Tables ) );
 
 		glUniform1ui( 0, 2u );
@@ -128,7 +127,7 @@ namespace betsy
 		{
 			// Compress Alpha too (using BC4)
 			bindComputePso( m_bc4Pso );
-			bindUav( 0u, m_bc4TargetRes, PFG_RG32_UINT, ResourceAccess::Write );
+			bindUav( 0u, m_bc4TargetRes, gli::FORMAT_RG32_UINT_PACK32, ResourceAccess::Write );
 
 			// p_channelIdx, p_useSNorm
 			glUniform2f( 0, 3.0f, 0.0f );
@@ -147,7 +146,7 @@ namespace betsy
 		glMemoryBarrier( GL_TEXTURE_FETCH_BARRIER_BIT );
 		bindTexture( 0u, m_bc1TargetRes );
 		bindTexture( 1u, m_bc4TargetRes );
-		bindUav( 0u, m_stitchedTarget, PFG_RGBA32_UINT, ResourceAccess::Write );
+		bindUav( 0u, m_stitchedTarget, gli::FORMAT_RGBA32_UINT_PACK32, ResourceAccess::Write );
 		bindComputePso( m_stitchPso );
 		glDispatchCompute( alignToNextMultiple( m_width, 32u ) / 32u,
 		                   alignToNextMultiple( m_height, 32u ) / 32u, 1u );
@@ -174,7 +173,7 @@ namespace betsy
 			destroyStagingTexture( m_downloadStaging );
 		m_downloadStaging =
 		    createStagingTexture( getBlockWidth(), getBlockHeight(),
-		                          m_stitchedTarget ? PFG_RGBA32_UINT : PFG_RG32_UINT, false );
+		                          m_stitchedTarget ? gli::FORMAT_RGBA32_UINT_PACK32 : gli::FORMAT_RG32_UINT_PACK32, false );
 		downloadStagingTexture( m_stitchedTarget ? m_stitchedTarget : m_bc1TargetRes,
 		                        m_downloadStaging );
 	}
@@ -184,7 +183,7 @@ namespace betsy
 		glFinish();
 		outImage.width = m_width;
 		outImage.height = m_height;
-		outImage.format = m_stitchedTarget ? PFG_BC3_UNORM : PFG_BC1_UNORM;
+		outImage.format = m_stitchedTarget ? gli::format::FORMAT_RGBA_DXT5_UNORM_BLOCK16 : gli::format::FORMAT_RGBA_DXT1_UNORM_BLOCK8;
 		outImage.data = reinterpret_cast<uint8_t *>( m_downloadStaging.data );
 	}
 }  // namespace betsy

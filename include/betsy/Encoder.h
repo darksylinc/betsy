@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <gli/gli.hpp>
 
 namespace betsy
 {

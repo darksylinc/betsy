@@ -7,31 +7,6 @@
 
 namespace betsy
 {
-	enum PixelFormat
-	{
-		PFG_RGBA32_UINT,
-		PFG_RGBA32_FLOAT,
-		PFG_RGBA16_FLOAT,
-		PFG_R32_FLOAT,
-		PFG_RG32_UINT,
-		PFG_RGBA8_UNORM,
-		PFG_RGBA8_UNORM_SRGB,
-		PFG_RG8_UINT,
-		PFG_BC1_UNORM,
-		PFG_BC3_UNORM,
-		PFG_BC4_UNORM,
-		PFG_BC4_SNORM,
-		PFG_BC5_UNORM,
-		PFG_BC5_SNORM,
-		/// BC6H format (unsigned 16 bit float)
-		PFG_BC6H_UF16,
-		/// ETC1 (Ericsson Texture Compression)
-		PFG_ETC1_RGB8_UNORM,
-		PFG_ETC2_RGBA8_UNORM,
-		PFG_EAC_R11_UNORM,
-		PFG_EAC_RG11_UNORM
-	};
-
 	namespace ResourceAccess
 	{
 		/// Enum identifying the texture access privilege
@@ -63,11 +38,11 @@ namespace betsy
 		uint8_t  numMipmaps;  /// numMipmaps = 0 is invalid
 		uint32_t flags;       /// See TextureFlags::TextureFlags
 
-		PixelFormat format;
+		gli::format format;
 
 		const char *debugName;
 
-		TextureParams( uint32_t _width, uint32_t _height, PixelFormat _format,
+		TextureParams( uint32_t _width, uint32_t _height, gli::format _format,
 					   const char *_debugName = 0, uint32_t _flags = 0u, uint32_t _depthOrSlices = 1u,
 					   uint8_t _numMipmaps = 1u );
 	};
@@ -78,7 +53,7 @@ namespace betsy
 		size_t      bytesPerRow;
 		uint32_t    width;
 		uint32_t    height;
-		PixelFormat pixelFormat;
+		gli::format pixelFormat;
 		void *      data;
 		size_t      sizeBytes;
 		StagingTexture();
@@ -101,15 +76,15 @@ namespace betsy
 	class EncoderGL : public Encoder
 	{
 	public:
-		static GLenum get( PixelFormat format );
-		static GLenum getBaseFormat( PixelFormat format );
-		static void   getFormatAndType( PixelFormat pixelFormat, GLenum &format, GLenum &type );
+		static GLenum get( gli::format format );
+		static GLenum getBaseFormat( gli::format format );
+		static void   getFormatAndType( gli::format pixelFormat, GLenum &format, GLenum &type );
 
 	protected:
 		GLuint createTexture( const TextureParams &params );
 		void   destroyTexture( GLuint texName );
 
-		StagingTexture createStagingTexture( uint32_t width, uint32_t height, PixelFormat format,
+		StagingTexture createStagingTexture( uint32_t width, uint32_t height, gli::format format,
 											 bool forUpload );
 		void           uploadStagingTexture( const StagingTexture &stagingTex, GLuint dstTexture );
 		void           downloadStagingTexture( GLuint srcTexture, const StagingTexture &stagingTex );
@@ -123,7 +98,7 @@ namespace betsy
 		void       bindComputePso( const ComputePso &pso );
 
 		void bindTexture( uint32_t slot, GLuint textureSrv );
-		void bindUav( uint32_t slot, GLuint textureSrv, PixelFormat pixelFormat,
+		void bindUav( uint32_t slot, GLuint textureSrv, gli::format pixelFormat,
 					  ResourceAccess::ResourceAccess access );
 		void bindUavBuffer( uint32_t slot, GLuint buffer, size_t offset, size_t bufferSize );
 	};

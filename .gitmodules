@@ -4,3 +4,6 @@
 [submodule "contrib/glfw"]
 	path = contrib/glfw
 	url = https://github.com/glfw/glfw.git
+[submodule "contrib/gli"]
+	path = contrib/gli
+	url = https://github.com/g-truc/gli.git

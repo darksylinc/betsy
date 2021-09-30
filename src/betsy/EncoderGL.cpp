@@ -2,15 +2,13 @@
 #include "betsy/EncoderGL.h"
 
 #include "betsy/CpuImage.h"
-// #include "betsy/IncludeParser.h"
 
 #include <assert.h>
 #include <string.h>
 
-//#define DUMP_SHADER
 //#define DEBUG_LINK_ERRORS
 
-#if defined( DUMP_SHADER ) || defined( DEBUG_LINK_ERRORS )
+#if defined( DEBUG_LINK_ERRORS )
 #	include <stdio.h>
 #endif
 
@@ -18,13 +16,13 @@ namespace betsy
 {
 	extern bool g_hasDebugObjectLabel;
 	bool g_hasDebugObjectLabel = false;
-	void ogreGlObjectLabel( GLenum identifier, GLuint name, const GLchar *label )
+	void setObjectLabel( GLenum identifier, GLuint name, const GLchar *label )
 	{
 		if( g_hasDebugObjectLabel )
 			glObjectLabel( identifier, name, (GLsizei)strlen( label ), label );
 	}
 	//-------------------------------------------------------------------------
-	TextureParams::TextureParams( uint32_t _width, uint32_t _height, PixelFormat _format,
+	TextureParams::TextureParams( uint32_t _width, uint32_t _height, gli::format _format,
 	                              const char *_debugName, uint32_t _flags, uint32_t _depthOrSlices,
 	                              uint8_t _numMipmaps ) :
 	    width( _width ),
@@ -42,7 +40,7 @@ namespace betsy
 	    bytesPerRow( 0 ),
 	    width( 0 ),
 	    height( 0 ),
-	    pixelFormat( PFG_RGBA16_FLOAT ),
+	    pixelFormat( gli::FORMAT_RGBA16_SFLOAT_PACK16 ),
 	    data( 0 ),
 	    sizeBytes( 0 )
 	{
@@ -52,159 +50,57 @@ namespace betsy
 	//-------------------------------------------------------------------------
 	//-------------------------------------------------------------------------
 	//-------------------------------------------------------------------------
-	GLenum EncoderGL::get( PixelFormat format )
+	GLenum EncoderGL::get( gli::format pixFmt )
 	{
-		switch( format )
-		{
-		case PFG_RGBA32_UINT:
-			return GL_RGBA32UI;
-		case PFG_RGBA32_FLOAT:
-			return GL_RGBA32F;
-		case PFG_RGBA16_FLOAT:
-			return GL_RGBA16F;
-		case PFG_R32_FLOAT:
-			return GL_R32F;
-		case PFG_RG32_UINT:
-			return GL_RG32UI;
-		case PFG_RGBA8_UNORM:
-			return GL_RGBA8;
-		case PFG_RGBA8_UNORM_SRGB:
-			return GL_SRGB8_ALPHA8;
-		case PFG_RG8_UINT:
-			return GL_RG8UI;
-		case PFG_BC1_UNORM:
-			return GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
-		case PFG_BC3_UNORM:
-			return GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
-		case PFG_BC4_UNORM:
-			return GL_COMPRESSED_RED_RGTC1;
-		case PFG_BC4_SNORM:
-			return GL_COMPRESSED_SIGNED_RED_RGTC1;
-		case PFG_BC5_UNORM:
-			return GL_COMPRESSED_RG_RGTC2;
-		case PFG_BC5_SNORM:
-			return GL_COMPRESSED_SIGNED_RG_RGTC2;
-		case PFG_BC6H_UF16:
-			return GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT_ARB;
-		case PFG_ETC1_RGB8_UNORM:
-			return GL_COMPRESSED_RGB8_ETC2;
-		case PFG_ETC2_RGBA8_UNORM:
-			return GL_COMPRESSED_RGBA8_ETC2_EAC;
-		case PFG_EAC_R11_UNORM:
-			return GL_COMPRESSED_R11_EAC;
-		case PFG_EAC_RG11_UNORM:
-			return GL_COMPRESSED_RG11_EAC;
-		}
-		return GL_NONE;
+		gli::gl GL(gli::gl::PROFILE_GL33);
+		gli::gl::format const glFormat = GL.translate(pixFmt, gli::swizzles());
+		return glFormat.Internal;
 	}
-	//-----------------------------------------------------------------------------------
-	GLenum EncoderGL::getBaseFormat( PixelFormat format )
-	{
-		switch( format )
-		{
-		case PFG_RGBA32_UINT:
-		case PFG_RGBA32_FLOAT:
-		case PFG_RGBA16_FLOAT:
-		case PFG_RGBA8_UNORM:
-		case PFG_RGBA8_UNORM_SRGB:
-		case PFG_BC3_UNORM:
-		case PFG_ETC2_RGBA8_UNORM:
-			return GL_RGBA;
-		case PFG_RG32_UINT:
-		case PFG_RG8_UINT:
-		case PFG_BC5_UNORM:
-		case PFG_BC5_SNORM:
-		case PFG_EAC_RG11_UNORM:
-			return GL_RG;
-		case PFG_BC1_UNORM:
-		case PFG_BC6H_UF16:
-		case PFG_ETC1_RGB8_UNORM:
-			return GL_RGB;
-		case PFG_R32_FLOAT:
-		case PFG_BC4_UNORM:
-		case PFG_BC4_SNORM:
-		case PFG_EAC_R11_UNORM:
-			return GL_RED;
-		}
-		return GL_NONE;
-	}
-	//-----------------------------------------------------------------------------------
-	void EncoderGL::getFormatAndType( PixelFormat pixelFormat, GLenum &format, GLenum &type )
-	{
-		switch( pixelFormat )
-		{
-		case PFG_RGBA32_UINT:
-			format = GL_RGBA_INTEGER;
-			break;
-		case PFG_R32_FLOAT:
-			format = GL_RED;
-			break;
-		case PFG_RG32_UINT:
-		case PFG_RG8_UINT:
-			format = GL_RG_INTEGER;
-			break;
-		case PFG_RGBA32_FLOAT:
-		case PFG_RGBA16_FLOAT:
-		case PFG_RGBA8_UNORM:
-		case PFG_RGBA8_UNORM_SRGB:
-			format = GL_RGBA;
-			break;
-		case PFG_BC1_UNORM:
-		case PFG_BC3_UNORM:
-		case PFG_BC4_UNORM:
-		case PFG_BC4_SNORM:
-		case PFG_BC5_UNORM:
-		case PFG_BC5_SNORM:
-		case PFG_BC6H_UF16:
-		case PFG_ETC1_RGB8_UNORM:
-		case PFG_ETC2_RGBA8_UNORM:
-		case PFG_EAC_R11_UNORM:
-		case PFG_EAC_RG11_UNORM:
-			format = GL_NONE;
-			assert( false &&
-			        "This should never happen. Compressed formats must use "
-			        "EncoderGL::get instead" );
-			break;
-		}
 
-		switch( pixelFormat )
+	//-----------------------------------------------------------------------------------
+	GLenum EncoderGL::getBaseFormat( gli::format pixFmt )
+	{
+		GLenum baseFormat = GL_NONE;;
+
+		switch (pixFmt)
 		{
-		case PFG_RGBA16_FLOAT:
-			type = GL_HALF_FLOAT;
+		case gli::FORMAT_RGBA_ETC2_UNORM_BLOCK8:
+		case gli::FORMAT_RGBA_DXT5_UNORM_BLOCK16:
+		case gli::FORMAT_RGBA8_UNORM_PACK8:
+		case gli::FORMAT_RGBA16_SFLOAT_PACK16:
+		case gli::FORMAT_RGBA32_UINT_PACK32:
+			baseFormat = GL_RGBA;
 			break;
-		case PFG_R32_FLOAT:
-		case PFG_RGBA32_FLOAT:
-			type = GL_FLOAT;
+		case gli::FORMAT_RGB_ETC2_UNORM_BLOCK8:
+		case gli::FORMAT_RGB_BP_UFLOAT_BLOCK16:
+		case gli::FORMAT_RGB_ETC_UNORM_BLOCK8:
+		case gli::FORMAT_RGBA_DXT1_UNORM_BLOCK8:
+			baseFormat = GL_RGB;
 			break;
-		case PFG_RGBA32_UINT:
-		case PFG_RG32_UINT:
-			type = GL_UNSIGNED_INT;
+		case gli::FORMAT_RG_EAC_UNORM_BLOCK16:
+		case gli::FORMAT_RG_ATI2N_UNORM_BLOCK16:
+			baseFormat = GL_RG;
 			break;
-		case PFG_RGBA8_UNORM:
-		case PFG_RGBA8_UNORM_SRGB:
-			type = GL_UNSIGNED_INT_8_8_8_8_REV;
+		case gli::FORMAT_R_EAC_UNORM_BLOCK8:
+		case gli::FORMAT_R_ATI1N_UNORM_BLOCK8:
+			baseFormat = GL_RED;
 			break;
-		case PFG_RG8_UINT:
-			type = GL_UNSIGNED_BYTE;
-			break;
-		case PFG_BC1_UNORM:
-		case PFG_BC3_UNORM:
-		case PFG_BC4_UNORM:
-		case PFG_BC4_SNORM:
-		case PFG_BC5_UNORM:
-		case PFG_BC5_SNORM:
-		case PFG_BC6H_UF16:
-		case PFG_ETC1_RGB8_UNORM:
-		case PFG_ETC2_RGBA8_UNORM:
-		case PFG_EAC_R11_UNORM:
-		case PFG_EAC_RG11_UNORM:
-			format = GL_NONE;
-			assert( false &&
-			        "This should never happen. Compressed formats must use "
-			        "EncoderGL::get instead" );
-			break;
+		default:
+			printf("Missing: %i\n", pixFmt);
 		}
+		
+		return baseFormat;
 	}
+
+	//-----------------------------------------------------------------------------------
+	void EncoderGL::getFormatAndType( gli::format pixFmt, GLenum &format, GLenum &type )
+	{
+		gli::gl GL(gli::gl::PROFILE_GL33);
+		gli::gl::format const glFormat = GL.translate(pixFmt, gli::swizzles());
+		format = glFormat.External;
+		type = glFormat.Type;
+	}
+
 	//-------------------------------------------------------------------------
 	GLuint EncoderGL::createTexture( const TextureParams &params )
 	{
@@ -238,17 +134,17 @@ namespace betsy
 		}
 
 		if( params.debugName )
-			ogreGlObjectLabel( GL_TEXTURE, textureName, params.debugName );
+			setObjectLabel( GL_TEXTURE, textureName, params.debugName );
 
 		return textureName;
 	}
 	//-------------------------------------------------------------------------
 	void EncoderGL::destroyTexture( GLuint texName ) { glDeleteTextures( 1u, &texName ); }
 	//-------------------------------------------------------------------------
-	StagingTexture EncoderGL::createStagingTexture( uint32_t width, uint32_t height, PixelFormat format,
+	StagingTexture EncoderGL::createStagingTexture( uint32_t width, uint32_t height, gli::format pixFmt,
 	                                                bool forUpload )
 	{
-		const size_t sizeBytes = CpuImage::getSizeBytes( width, height, 1u, 1u, format );
+		const size_t sizeBytes = CpuImage::getSizeBytes( width, height, 1u, 1u, pixFmt );
 
 		StagingTexture retVal;
 		glGenBuffers( 1u, &retVal.bufferName );
@@ -269,8 +165,8 @@ namespace betsy
 		else
 			mapFlags |= GL_MAP_READ_BIT;
 
-		retVal.pixelFormat = format;
-		retVal.bytesPerRow = CpuImage::getSizeBytes( width, 1u, 1u, 1u, format );
+		retVal.pixelFormat = pixFmt;
+		retVal.bytesPerRow = CpuImage::getSizeBytes( width, 1u, 1u, 1u, pixFmt );
 		retVal.width = width;
 		retVal.height = height;
 		retVal.sizeBytes = sizeBytes;
@@ -321,7 +217,7 @@ namespace betsy
 		glBindBuffer( GL_PIXEL_PACK_BUFFER, stagingTex.bufferName );
 
 		// We can use glGetTexImage & glGetCompressedTexImage (cubemaps need a special path)
-		if( !CpuImage::isCompressed( stagingTex.pixelFormat ) )
+		if( !gli::is_compressed( stagingTex.pixelFormat ) )
 		{
 			GLenum format, type;
 			EncoderGL::getFormatAndType( stagingTex.pixelFormat, format, type );
@@ -405,10 +301,10 @@ namespace betsy
 		glActiveTexture( GL_TEXTURE0 );
 	}
 	//-------------------------------------------------------------------------
-	void EncoderGL::bindUav( uint32_t slot, GLuint textureSrv, PixelFormat pixelFormat,
+	void EncoderGL::bindUav( uint32_t slot, GLuint textureSrv, gli::format pixFmt,
 	                         ResourceAccess::ResourceAccess access )
 	{
-		const GLenum format = EncoderGL::get( pixelFormat );
+		const GLenum format = EncoderGL::get( pixFmt );
 		GLenum accessGl;
 		switch( access )
 		{

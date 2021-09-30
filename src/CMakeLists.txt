@@ -20,8 +20,9 @@ add_recursive( ${CMAKE_SOURCE_DIR}/include HEADERS )
 
 add_executable( ${PROJECT_NAME} ${SOURCES} ${HEADERS} ${RESOURCES} ${GENERATED_GLSL})
 
+set(OpenGL_GL_PREFERENCE GLVND)
 find_package(OpenGL REQUIRED)
 target_link_libraries( ${PROJECT_NAME} glfw OpenGL::GL)
 
 target_include_directories( ${PROJECT_NAME} PUBLIC ${CMAKE_SOURCE_DIR}/include )
-target_include_directories( ${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/contrib/stb )
+target_include_directories( ${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/contrib/stb ${CMAKE_SOURCE_DIR}/contrib/gli  ${CMAKE_SOURCE_DIR}/contrib/gli/external )
