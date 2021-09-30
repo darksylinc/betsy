@@ -51,8 +51,8 @@ namespace betsy
 		header.endianness = KTX_ENDIAN_REF;
 		header.pixelWidth = cpuImage.width;
 		header.pixelHeight = cpuImage.height;
-		header.pixelDepth = 1u;
-		header.numberOfArrayElements = 1u;
+		header.pixelDepth = 0u;             // KTX spec says it must be 0 for 2D
+		header.numberOfArrayElements = 0u;  // KTX spec says it must be 0 for 2D
 		header.numberOfFaces = 1u;
 		header.numberOfMipmapLevels = 1u;
 
