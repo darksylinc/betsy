@@ -1,7 +1,7 @@
 
 #pragma once
-
-#include "betsy/Encoder.h"
+#include <stdint.h>
+#include "Encoder.h"
 
 namespace betsy
 {
