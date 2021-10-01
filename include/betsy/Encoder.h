@@ -1,8 +1,9 @@
 
 #pragma once
 
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
+
 #include <gli/gli.hpp>
 
 namespace betsy
@@ -21,11 +22,11 @@ namespace betsy
 	/// alignToNextMultiple( 1, 3 ) = 3;
 	inline uint32_t alignToNextMultiple( uint32_t offset, uint32_t alignment )
 	{
-		return ( (offset + alignment - 1u) / alignment ) * alignment;
+		return ( ( offset + alignment - 1u ) / alignment ) * alignment;
 	}
 	inline size_t alignToNextMultiple( size_t offset, size_t alignment )
 	{
-		return ( (offset + alignment - 1u) / alignment ) * alignment;
+		return ( ( offset + alignment - 1u ) / alignment ) * alignment;
 	}
 
 	class Encoder

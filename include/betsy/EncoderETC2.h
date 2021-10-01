@@ -1,9 +1,8 @@
 
 #pragma once
 
-#include "betsy/EncoderETC1.h"
-
 #include "GL/glcorearb.h"
+#include "betsy/EncoderETC1.h"
 
 namespace betsy
 {
@@ -30,11 +29,11 @@ namespace betsy
 
 		/** Initialize resources. Must be called before execute*()
 		@param srcImage
-			Source Image should be RGBA8888, and should NOT be sRGB
+		    Source Image should be RGBA8888, and should NOT be sRGB
 		@param bCompressAlpha
-			When true, compresses to ETC2_RGBA
+		    When true, compresses to ETC2_RGBA
 		@param bDither
-			Use Floyd-steinberg dithering. Anti-banding method.
+		    Use Floyd-steinberg dithering. Anti-banding method.
 		*/
 		void initResources( const CpuImage &srcImage, const bool bCompressAlpha, const bool bDither );
 		void deinitResources();

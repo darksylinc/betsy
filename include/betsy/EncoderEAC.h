@@ -1,9 +1,8 @@
 
 #pragma once
 
-#include "betsy/EncoderGL.h"
-
 #include "GL/glcorearb.h"
+#include "betsy/EncoderGL.h"
 
 namespace betsy
 {
@@ -34,7 +33,7 @@ namespace betsy
 		/** Initialize resources. Must be called before execute*()
 		@param srcImage
 		@param rg11
-			When true, compresses to two-channel RG11 instead of one-channel R11
+		    When true, compresses to two-channel RG11 instead of one-channel R11
 		*/
 		void initResources( const CpuImage &srcImage, const bool rg11 );
 		void deinitResources();

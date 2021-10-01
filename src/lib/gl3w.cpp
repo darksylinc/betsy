@@ -31,7 +31,7 @@
 #include <GL/gl3w.h>
 #include <stdlib.h>
 
-#define ARRAY_SIZE(x)	(sizeof(x) / sizeof((x)[0]))
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN 1
@@ -41,22 +41,22 @@ static HMODULE libgl;
 
 static void open_libgl(void)
 {
-    libgl = LoadLibraryA("opengl32.dll");
+  libgl = LoadLibraryA("opengl32.dll");
 }
 
 static void close_libgl(void)
 {
-    FreeLibrary(libgl);
+  FreeLibrary(libgl);
 }
 
 static GL3WglProc get_proc(const char *proc)
 {
-    GL3WglProc res;
+  GL3WglProc res;
 
-    res = (GL3WglProc)wglGetProcAddress(proc);
-    if (!res)
-        res = (GL3WglProc)GetProcAddress(libgl, proc);
-    return res;
+  res = (GL3WglProc)wglGetProcAddress(proc);
+  if (!res)
+    res = (GL3WglProc)GetProcAddress(libgl, proc);
+  return res;
 }
 #elif defined(__APPLE__)
 #include <dlfcn.h>
@@ -65,20 +65,20 @@ static void *libgl;
 
 static void open_libgl(void)
 {
-    libgl = dlopen("/System/Library/Frameworks/OpenGL.framework/OpenGL", RTLD_LAZY | RTLD_GLOBAL);
+  libgl = dlopen("/System/Library/Frameworks/OpenGL.framework/OpenGL", RTLD_LAZY | RTLD_GLOBAL);
 }
 
 static void close_libgl(void)
 {
-    dlclose(libgl);
+  dlclose(libgl);
 }
 
 static GL3WglProc get_proc(const char *proc)
 {
-    GL3WglProc res;
+  GL3WglProc res;
 
-        *(void **)(&res) = dlsym(libgl, proc);
-    return res;
+  *(void **)(&res) = dlsym(libgl, proc);
+  return res;
 }
 #else
 #include <dlfcn.h>
@@ -89,73 +89,74 @@ static PFNGLXGETPROCADDRESSPROC glx_get_proc_address;
 
 static void open_libgl(void)
 {
-    libgl = dlopen("libGL.so.1", RTLD_LAZY | RTLD_GLOBAL);
-    *(void **)(&glx_get_proc_address) = dlsym(libgl, "glXGetProcAddressARB");
+  libgl = dlopen("libGL.so.1", RTLD_LAZY | RTLD_GLOBAL);
+  *(void **)(&glx_get_proc_address) = dlsym(libgl, "glXGetProcAddressARB");
 }
 
 static void close_libgl(void)
 {
-    dlclose(libgl);
+  dlclose(libgl);
 }
 
 static GL3WglProc get_proc(const char *proc)
 {
-    GL3WglProc res;
+  GL3WglProc res;
 
-    res = glx_get_proc_address((const GLubyte *)proc);
-    if (!res)
-        *(void **)(&res) = dlsym(libgl, proc);
-    return res;
+  res = glx_get_proc_address((const GLubyte *)proc);
+  if (!res)
+    *(void **)(&res) = dlsym(libgl, proc);
+  return res;
 }
 #endif
 
-static struct {
-    int major, minor;
+static struct
+{
+  int major, minor;
 } version;
 
 static int parse_version(void)
 {
-    if (!glGetIntegerv)
-        return -1;
+  if (!glGetIntegerv)
+    return -1;
 
-    glGetIntegerv(GL_MAJOR_VERSION, &version.major);
-    glGetIntegerv(GL_MINOR_VERSION, &version.minor);
+  glGetIntegerv(GL_MAJOR_VERSION, &version.major);
+  glGetIntegerv(GL_MINOR_VERSION, &version.minor);
 
-    if (version.major < 3)
-        return -1;
-    return 0;
+  if (version.major < 3)
+    return -1;
+  return 0;
 }
 
 static void load_procs(GL3WGetProcAddressProc proc);
 
 int gl3wInit(void)
 {
-    open_libgl();
-    atexit(close_libgl);
-    load_procs(get_proc);
-    return parse_version();
+  open_libgl();
+  atexit(close_libgl);
+  load_procs(get_proc);
+  return parse_version();
 }
 
 int gl3wInit2(GL3WGetProcAddressProc proc)
 {
-    open_libgl();
-    atexit(close_libgl);
-    load_procs(proc);
-    return parse_version();
+  open_libgl();
+  atexit(close_libgl);
+  load_procs(proc);
+  return parse_version();
 }
 
 int gl3wIsSupported(int major, int minor)
 {
-    if (major < 3)
-        return 0;
-    if (version.major == major)
-        return version.minor >= minor;
-    return version.major >= major;
+  if (major < 3)
+    return 0;
+  if (version.major == major)
+    return version.minor >= minor;
+  return version.major >= major;
 }
 
 GL3WglProc gl3wGetProcAddress(const char *proc)
 {
-    return get_proc(proc);
+  return get_proc(proc);
 }
 
 static const char *proc_names[] = {
@@ -937,7 +938,7 @@ union GL3WProcs gl3wProcs;
 
 static void load_procs(GL3WGetProcAddressProc proc)
 {
-    size_t i;
-    for (i = 0; i < ARRAY_SIZE(proc_names); i++)
-        gl3wProcs.ptr[i] = proc(proc_names[i]);
+  size_t i;
+  for (i = 0; i < ARRAY_SIZE(proc_names); i++)
+    gl3wProcs.ptr[i] = proc(proc_names[i]);
 }

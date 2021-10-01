@@ -1,9 +1,8 @@
 
 #pragma once
 
-#include "betsy/EncoderGL.h"
-
 #include "GL/glcorearb.h"
+#include "betsy/EncoderGL.h"
 
 namespace betsy
 {

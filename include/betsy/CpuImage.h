@@ -1,6 +1,7 @@
 
 #pragma once
 #include <stdint.h>
+
 #include "Encoder.h"
 
 namespace betsy
@@ -20,7 +21,7 @@ namespace betsy
 		static size_t getBytesPerPixel( gli::format format );
 
 		static size_t getSizeBytes( uint32_t width, uint32_t height, uint32_t depth, uint32_t slices,
-									gli::format format, uint32_t rowAlignment = 4u );
+		                            gli::format format, uint32_t rowAlignment = 4u );
 
 	protected:
 		void RGB8toRGBA8( uint8_t const *__restrict srcData, size_t bytesPerRow );

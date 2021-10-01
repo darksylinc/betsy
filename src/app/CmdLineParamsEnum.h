@@ -9,55 +9,60 @@ namespace Codec
 class CodecEnum
 {
 public:
-	struct EnumData
-	{
-		Codec	enumValue;
-		std::string			enumString;
+  struct EnumData
+  {
+    Codec enumValue;
+    std::string enumString;
 
-		EnumData( Codec	_enumValue, const std::string &_enumString );
-	};
+    EnumData(Codec _enumValue, const std::string &_enumString);
+  };
 
 private:
-	static EnumData mSortedByEnum[13+1];
-	static EnumData mSortedByString[13+1];
+  static EnumData mSortedByEnum[13 + 1];
+  static EnumData mSortedByString[13 + 1];
 
-	struct OrderByEnum;
-	struct OrderByStr;
+  struct OrderByEnum;
+  struct OrderByStr;
 
 public:
-	static const EnumData* begin()		{ return &mSortedByEnum[0]; }
-	static const EnumData* end()		{ return &mSortedByEnum[13]; }
+  static const EnumData *begin()
+  {
+    return &mSortedByEnum[0];
+  }
+  static const EnumData *end()
+  {
+    return &mSortedByEnum[13];
+  }
 
-	/// Returns the min value reached by this enumerator
-	static int minValue();
+  /// Returns the min value reached by this enumerator
+  static int minValue();
 
-	/// Returns the max value reached by this enumerator
-	static int maxValue();
+  /// Returns the max value reached by this enumerator
+  static int maxValue();
 
-	/// Returns the number of elements in the enum
-	static size_t count();
+  /// Returns the number of elements in the enum
+  static size_t count();
 
-	/// Returns true if integer value can be represented by the enum.
-	/// O(1) if enum is contiguous, O(log N) otherwise
-	static bool isValidValue( int value );
+  /// Returns true if integer value can be represented by the enum.
+  /// O(1) if enum is contiguous, O(log N) otherwise
+  static bool isValidValue(int value);
 
-	/// Only available if the enum is contiguous. Otherwise it's a compiler error
-	/// It's O(1)
-	/// Returns empty string if value is not a valid enum value
-	static const std::string& get( Codec value );
+  /// Only available if the enum is contiguous. Otherwise it's a compiler error
+  /// It's O(1)
+  /// Returns empty string if value is not a valid enum value
+  static const std::string &get(Codec value);
 
-	/// Always available. O(1) if enum is contiguous, O(log N) otherwise
-	/// Returns empty string if value is not a valid enum value
-	static const std::string& find( Codec value );
+  /// Always available. O(1) if enum is contiguous, O(log N) otherwise
+  /// Returns empty string if value is not a valid enum value
+  static const std::string &find(Codec value);
 
-	/// Will find the enumerator value based on its string representation.
-	/// Returns false if the string doesn't match any value, leaving the output
-	/// 'outValue' untouched (i.e. left uninitialized).
-	static bool find( const std::string &strValue, Codec &outValue );
+  /// Will find the enumerator value based on its string representation.
+  /// Returns false if the string doesn't match any value, leaving the output
+  /// 'outValue' untouched (i.e. left uninitialized).
+  static bool find(const std::string &strValue, Codec &outValue);
 
-	/// Will find the enumerator value based on its string representation.
-	/// Throws if the string doesn't match any value.
-	static Codec find( const std::string &strValue );
+  /// Will find the enumerator value based on its string representation.
+  /// Throws if the string doesn't match any value.
+  static Codec find(const std::string &strValue);
 };
-}
-
+} // namespace Codec

@@ -9,18 +9,18 @@
 #include "CrossPlatformSettings_piece_all.glsl"
 #include "UavCrossPlatform_piece_all.glsl"
 
-layout( local_size_x = 8,  //
-        local_size_y = 8,  //
-        local_size_z = 1 ) in;
+layout(local_size_x = 8, //
+       local_size_y = 8, //
+       local_size_z = 1) in;
 
-layout( binding = 0 ) uniform usampler2D srcRGB;
-layout( binding = 1 ) uniform usampler2D srcAlpha;
-layout( rgba32ui ) uniform restrict writeonly uimage2D dstTexture;
+layout(binding = 0) uniform usampler2D srcRGB;
+layout(binding = 1) uniform usampler2D srcAlpha;
+layout(rgba32ui) uniform restrict writeonly uimage2D dstTexture;
 
 void main()
 {
-	uint2 etcRgb = OGRE_Load2D( srcRGB, int2( gl_GlobalInvocationID.xy ), 0 ).xy;
-	uint2 etcAlpha = OGRE_Load2D( srcAlpha, int2( gl_GlobalInvocationID.xy ), 0 ).xy;
+  uint2 etcRgb = OGRE_Load2D(srcRGB, int2(gl_GlobalInvocationID.xy), 0).xy;
+  uint2 etcAlpha = OGRE_Load2D(srcAlpha, int2(gl_GlobalInvocationID.xy), 0).xy;
 
-	imageStore( dstTexture, int2( gl_GlobalInvocationID.xy ), uint4( etcAlpha.xy, etcRgb.xy ) );
+  imageStore(dstTexture, int2(gl_GlobalInvocationID.xy), uint4(etcAlpha.xy, etcRgb.xy));
 }

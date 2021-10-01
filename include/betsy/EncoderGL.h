@@ -1,9 +1,8 @@
 
 #pragma once
 
-#include "betsy/Encoder.h"
-
 #include "GL/gl3w.h"
+#include "betsy/Encoder.h"
 
 namespace betsy
 {
@@ -43,8 +42,8 @@ namespace betsy
 		const char *debugName;
 
 		TextureParams( uint32_t _width, uint32_t _height, gli::format _format,
-					   const char *_debugName = 0, uint32_t _flags = 0u, uint32_t _depthOrSlices = 1u,
-					   uint8_t _numMipmaps = 1u );
+		               const char *_debugName = 0, uint32_t _flags = 0u, uint32_t _depthOrSlices = 1u,
+		               uint8_t _numMipmaps = 1u );
 	};
 
 	struct StagingTexture
@@ -85,7 +84,7 @@ namespace betsy
 		void   destroyTexture( GLuint texName );
 
 		StagingTexture createStagingTexture( uint32_t width, uint32_t height, gli::format format,
-											 bool forUpload );
+		                                     bool forUpload );
 		void           uploadStagingTexture( const StagingTexture &stagingTex, GLuint dstTexture );
 		void           downloadStagingTexture( GLuint srcTexture, const StagingTexture &stagingTex );
 		void           destroyStagingTexture( const StagingTexture &stagingTex );
@@ -99,7 +98,7 @@ namespace betsy
 
 		void bindTexture( uint32_t slot, GLuint textureSrv );
 		void bindUav( uint32_t slot, GLuint textureSrv, gli::format pixelFormat,
-					  ResourceAccess::ResourceAccess access );
+		              ResourceAccess::ResourceAccess access );
 		void bindUavBuffer( uint32_t slot, GLuint buffer, size_t offset, size_t bufferSize );
 	};
 }  // namespace betsy

@@ -10,4 +10,4 @@ namespace betsy
 	public:
 		static void save( const char *fullpath, const CpuImage &cpuImage );
 	};
-}
+}  // namespace betsy

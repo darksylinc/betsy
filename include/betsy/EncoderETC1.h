@@ -1,9 +1,8 @@
 
 #pragma once
 
-#include "betsy/EncoderGL.h"
-
 #include "GL/glcorearb.h"
+#include "betsy/EncoderGL.h"
 
 namespace betsy
 {
@@ -49,7 +48,7 @@ namespace betsy
 		bool hasAlpha() const;
 
 		void initResources( const CpuImage &srcImage, const bool bCompressAlpha, const bool bDither,
-							const bool bForEtc2 );
+		                    const bool bForEtc2 );
 
 		uint32_t getBlockWidth() const { return ( m_width + 3u ) >> 2u; }
 		uint32_t getBlockHeight() const { return ( m_height + 3u ) >> 2u; }
@@ -60,11 +59,11 @@ namespace betsy
 
 		/** Initialize resources. Must be called before execute*()
 		@param srcImage
-			Source Image should be RGBA8888, and should NOT be sRGB
+		    Source Image should be RGBA8888, and should NOT be sRGB
 		@param bCompressAlpha
-			When true, compresses to ETC2_RGBA
+		    When true, compresses to ETC2_RGBA
 		@param bDither
-			Use Floyd-steinberg dithering. Anti-banding method.
+		    Use Floyd-steinberg dithering. Anti-banding method.
 		*/
 		void initResources( const CpuImage &srcImage, const bool bCompressAlpha, const bool bDither );
 		void deinitResources();

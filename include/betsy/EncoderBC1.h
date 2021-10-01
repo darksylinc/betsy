@@ -1,9 +1,8 @@
 
 #pragma once
 
-#include "betsy/EncoderGL.h"
-
 #include "GL/glcorearb.h"
+#include "betsy/EncoderGL.h"
 
 namespace betsy
 {
@@ -11,7 +10,7 @@ namespace betsy
 
 	/**
 	@brief The EncoderBC1 class
-		Supports BC1 (565) and BC3 (BC1 565 RGB + Alpha encoded using BC4)
+	    Supports BC1 (565) and BC3 (BC1 565 RGB + Alpha encoded using BC4)
 	*/
 	class EncoderBC1 : public EncoderGL
 	{
@@ -43,11 +42,11 @@ namespace betsy
 
 		/** Initialize resources. Must be called before execute*()
 		@param srcImage
-			Source Image should be RGBA8888, and should NOT be sRGB
+		    Source Image should be RGBA8888, and should NOT be sRGB
 		@param bCompressAlpha
-			When true, compresses to BC3
+		    When true, compresses to BC3
 		@param bDither
-			Use Floyd-steinberg dithering. Anti-banding method.
+		    Use Floyd-steinberg dithering. Anti-banding method.
 		*/
 		void initResources( const CpuImage &srcImage, const bool useBC3, const bool bDither );
 		void deinitResources();
