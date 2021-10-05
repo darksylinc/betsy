@@ -1,5 +1,5 @@
 
-#include "betsy/EncoderGL.h"
+#include "betsy/GL/EncoderGL.h"
 
 #include "betsy/CpuImage.h"
 
@@ -52,7 +52,6 @@ GLenum EncoderGL::get(gli::format pixFmt)
 GLenum EncoderGL::getBaseFormat(gli::format pixFmt)
 {
   GLenum baseFormat = GL_NONE;
-  ;
 
   switch (pixFmt)
   {

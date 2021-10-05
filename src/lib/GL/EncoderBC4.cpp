@@ -1,12 +1,12 @@
 
-#include "betsy/EncoderBC4.h"
+#include "betsy/GL/EncoderBC4.h"
 
 #include <assert.h>
 #include <memory.h>
 #include <stdio.h>
 
 #include "betsy/CpuImage.h"
-#include "betsy/Shaders.h"
+#include "betsy/GL/Shaders.h"
 
 namespace betsy
 {

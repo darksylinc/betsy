@@ -305,7 +305,7 @@ typedef void( APIENTRYP PFNGLGETDOUBLEVPROC )( GLenum pname, GLdouble *data );
 typedef GLenum( APIENTRYP PFNGLGETERRORPROC )( void );
 typedef void( APIENTRYP PFNGLGETFLOATVPROC )( GLenum pname, GLfloat *data );
 typedef void( APIENTRYP PFNGLGETINTEGERVPROC )( GLenum pname, GLint *data );
-typedef const GLubyte *(APIENTRYP PFNGLGETSTRINGPROC)( GLenum name );
+typedef const GLubyte *( APIENTRYP PFNGLGETSTRINGPROC )( GLenum name );
 typedef void( APIENTRYP PFNGLGETTEXIMAGEPROC )( GLenum target, GLint level, GLenum format, GLenum type,
                                                 void *pixels );
 typedef void( APIENTRYP PFNGLGETTEXPARAMETERFVPROC )( GLenum target, GLenum pname, GLfloat *params );
@@ -744,7 +744,7 @@ typedef void( APIENTRYP PFNGLBUFFERSUBDATAPROC )( GLenum target, GLintptr offset
                                                   const void *data );
 typedef void( APIENTRYP PFNGLGETBUFFERSUBDATAPROC )( GLenum target, GLintptr offset, GLsizeiptr size,
                                                      void *data );
-typedef void *(APIENTRYP PFNGLMAPBUFFERPROC)( GLenum target, GLenum access );
+typedef void *( APIENTRYP PFNGLMAPBUFFERPROC )( GLenum target, GLenum access );
 typedef GLboolean( APIENTRYP PFNGLUNMAPBUFFERPROC )( GLenum target );
 typedef void( APIENTRYP PFNGLGETBUFFERPARAMETERIVPROC )( GLenum target, GLenum pname, GLint *params );
 typedef void( APIENTRYP PFNGLGETBUFFERPOINTERVPROC )( GLenum target, GLenum pname, void **params );
@@ -1430,7 +1430,7 @@ typedef void( APIENTRYP PFNGLCLEARBUFFERFVPROC )( GLenum buffer, GLint drawbuffe
                                                   const GLfloat *value );
 typedef void( APIENTRYP PFNGLCLEARBUFFERFIPROC )( GLenum buffer, GLint drawbuffer, GLfloat depth,
                                                   GLint stencil );
-typedef const GLubyte *(APIENTRYP PFNGLGETSTRINGIPROC)( GLenum name, GLuint index );
+typedef const GLubyte *( APIENTRYP PFNGLGETSTRINGIPROC )( GLenum name, GLuint index );
 typedef GLboolean( APIENTRYP PFNGLISRENDERBUFFERPROC )( GLuint renderbuffer );
 typedef void( APIENTRYP PFNGLBINDRENDERBUFFERPROC )( GLenum target, GLuint renderbuffer );
 typedef void( APIENTRYP PFNGLDELETERENDERBUFFERSPROC )( GLsizei n, const GLuint *renderbuffers );
@@ -1465,8 +1465,8 @@ typedef void( APIENTRYP PFNGLRENDERBUFFERSTORAGEMULTISAMPLEPROC )( GLenum target
                                                                    GLsizei height );
 typedef void( APIENTRYP PFNGLFRAMEBUFFERTEXTURELAYERPROC )( GLenum target, GLenum attachment,
                                                             GLuint texture, GLint level, GLint layer );
-typedef void *(APIENTRYP PFNGLMAPBUFFERRANGEPROC)( GLenum target, GLintptr offset, GLsizeiptr length,
-                                                   GLbitfield access );
+typedef void *( APIENTRYP PFNGLMAPBUFFERRANGEPROC )( GLenum target, GLintptr offset, GLsizeiptr length,
+                                                     GLbitfield access );
 typedef void( APIENTRYP PFNGLFLUSHMAPPEDBUFFERRANGEPROC )( GLenum target, GLintptr offset,
                                                            GLsizeiptr length );
 typedef void( APIENTRYP PFNGLBINDVERTEXARRAYPROC )( GLuint array );
@@ -3257,9 +3257,9 @@ typedef void( APIENTRYP PFNGLCLEARNAMEDBUFFERSUBDATAPROC )( GLuint buffer, GLenu
                                                             GLintptr offset, GLsizeiptr size,
                                                             GLenum format, GLenum type,
                                                             const void *data );
-typedef void *(APIENTRYP PFNGLMAPNAMEDBUFFERPROC)( GLuint buffer, GLenum access );
-typedef void *(APIENTRYP PFNGLMAPNAMEDBUFFERRANGEPROC)( GLuint buffer, GLintptr offset,
-                                                        GLsizeiptr length, GLbitfield access );
+typedef void *( APIENTRYP PFNGLMAPNAMEDBUFFERPROC )( GLuint buffer, GLenum access );
+typedef void *( APIENTRYP PFNGLMAPNAMEDBUFFERRANGEPROC )( GLuint buffer, GLintptr offset,
+                                                          GLsizeiptr length, GLbitfield access );
 typedef GLboolean( APIENTRYP PFNGLUNMAPNAMEDBUFFERPROC )( GLuint buffer );
 typedef void( APIENTRYP PFNGLFLUSHMAPPEDNAMEDBUFFERRANGEPROC )( GLuint buffer, GLintptr offset,
                                                                 GLsizeiptr length );
@@ -5144,7 +5144,7 @@ typedef void( APIENTRYP PFNGLNAMEDBUFFERDATAEXTPROC )( GLuint buffer, GLsizeiptr
                                                        GLenum usage );
 typedef void( APIENTRYP PFNGLNAMEDBUFFERSUBDATAEXTPROC )( GLuint buffer, GLintptr offset,
                                                           GLsizeiptr size, const void *data );
-typedef void *(APIENTRYP PFNGLMAPNAMEDBUFFEREXTPROC)( GLuint buffer, GLenum access );
+typedef void *( APIENTRYP PFNGLMAPNAMEDBUFFEREXTPROC )( GLuint buffer, GLenum access );
 typedef GLboolean( APIENTRYP PFNGLUNMAPNAMEDBUFFEREXTPROC )( GLuint buffer );
 typedef void( APIENTRYP PFNGLGETNAMEDBUFFERPARAMETERIVEXTPROC )( GLuint buffer, GLenum pname,
                                                                  GLint *params );
@@ -5390,8 +5390,8 @@ typedef void( APIENTRYP PFNGLGETVERTEXARRAYINTEGERI_VEXTPROC )( GLuint vaobj, GL
                                                                 GLint *param );
 typedef void( APIENTRYP PFNGLGETVERTEXARRAYPOINTERI_VEXTPROC )( GLuint vaobj, GLuint index, GLenum pname,
                                                                 void **param );
-typedef void *(APIENTRYP PFNGLMAPNAMEDBUFFERRANGEEXTPROC)( GLuint buffer, GLintptr offset,
-                                                           GLsizeiptr length, GLbitfield access );
+typedef void *( APIENTRYP PFNGLMAPNAMEDBUFFERRANGEEXTPROC )( GLuint buffer, GLintptr offset,
+                                                             GLsizeiptr length, GLbitfield access );
 typedef void( APIENTRYP PFNGLFLUSHMAPPEDNAMEDBUFFERRANGEEXTPROC )( GLuint buffer, GLintptr offset,
                                                                    GLsizeiptr length );
 typedef void( APIENTRYP PFNGLNAMEDBUFFERSTORAGEEXTPROC )( GLuint buffer, GLsizeiptr size,

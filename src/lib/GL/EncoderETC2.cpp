@@ -1,10 +1,10 @@
 
-#include "betsy/EncoderETC2.h"
+#include "betsy/GL/EncoderETC2.h"
 
 #include <assert.h>
 
 #include "betsy/CpuImage.h"
-#include "betsy/Shaders.h"
+#include "betsy/GL/Shaders.h"
 
 #define TODO_better_barrier
 

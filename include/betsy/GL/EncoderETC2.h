@@ -1,8 +1,8 @@
 
 #pragma once
 
+#include "EncoderETC1.h"
 #include "GL/glcorearb.h"
-#include "betsy/EncoderETC1.h"
 
 namespace betsy
 {

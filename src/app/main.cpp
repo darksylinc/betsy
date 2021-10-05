@@ -10,12 +10,12 @@
 #include "CmdLineParams.h"
 #include "CmdLineParamsEnum.h"
 #include "betsy/CpuImage.h"
-#include "betsy/EncoderBC1.h"
-#include "betsy/EncoderBC4.h"
-#include "betsy/EncoderBC6H.h"
-#include "betsy/EncoderEAC.h"
-#include "betsy/EncoderETC1.h"
-#include "betsy/EncoderETC2.h"
+#include "betsy/GL/EncoderBC1.h"
+#include "betsy/GL/EncoderBC4.h"
+#include "betsy/GL/EncoderBC6H.h"
+#include "betsy/GL/EncoderEAC.h"
+#include "betsy/GL/EncoderETC1.h"
+#include "betsy/GL/EncoderETC2.h"
 #include "betsy/File/FormatKTX.h"
 
 namespace betsy

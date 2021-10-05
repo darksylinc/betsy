@@ -1,6 +1,6 @@
 #define NOMINMAX
 
-#include "betsy/EncoderETC1.h"
+#include "betsy/GL/EncoderETC1.h"
 
 #include <assert.h>
 #include <memory.h>
@@ -9,9 +9,9 @@
 #include <algorithm>
 #include <limits>
 
-#include "ETC1_tables.inl"
+#include "../ETC1_tables.inl"
 #include "betsy/CpuImage.h"
-#include "betsy/Shaders.h"
+#include "betsy/GL/Shaders.h"
 
 namespace betsy
 {
