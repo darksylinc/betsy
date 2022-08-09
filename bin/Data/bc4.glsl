@@ -85,8 +85,8 @@ void main()
 	float dist = maxVal - minVal;
 	float dist4 = dist * 4.0f;
 	float dist2 = dist * 2.0f;
-	float bias = ( dist < 8 ) ? ( dist - 1 ) : ( trunc( dist * 0.5f ) + 2 );
-	bias -= minVal * 7;
+	float bias = ( dist < 8.0f ) ? ( dist - 1.0f ) : ( trunc( dist * 0.5f ) + 2.0f );
+	bias -= minVal * 7.0f;
 
 	uint mask0 = 0u, mask1 = 0u;
 

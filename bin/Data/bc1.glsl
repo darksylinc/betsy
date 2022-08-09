@@ -117,7 +117,7 @@ void OptimizeColorsBlock( const uint srcPixelsBlock[16], out float outMinEndp16,
 	// determine covariance matrix
 	float cov[6];
 	for( int i = 0; i < 6; ++i )
-		cov[i] = 0;
+		cov[i] = 0.0f;
 
 	for( int i = 0; i < 16; ++i )
 	{
@@ -243,10 +243,10 @@ uint MatchColorsBlock( const uint srcPixelsBlock[16], float3 colour[4] )
 		float3 currColour;
 		float dotValue;
 
-		currColour = unpackUnorm4x8( srcPixelsBlock[y * 4 + 0] ).xyz * 255.0f;
+		currColour = unpackUnorm4x8( srcPixelsBlock[y * 4u + 0u] ).xyz * 255.0f;
 		dotValue = dot( currColour, dir );
 
-		ditherDot = ( dotValue * 16.0f ) + ( 3 * ep2[1] + 5 * ep2[0] );
+		ditherDot = ( dotValue * 16.0f ) + ( 3.0f * ep2[1] + 5.0f * ep2[0] );
 		if( ditherDot < halfPoint )
 			step = ( ditherDot < c0Point ) ? 1u : 3u;
 		else
@@ -254,10 +254,10 @@ uint MatchColorsBlock( const uint srcPixelsBlock[16], float3 colour[4] )
 		ep1[0] = dotValue - stops[step];
 		lmask = step;
 
-		currColour = unpackUnorm4x8( srcPixelsBlock[y * 4 + 1] ).xyz * 255.0f;
+		currColour = unpackUnorm4x8( srcPixelsBlock[y * 4u + 1u] ).xyz * 255.0f;
 		dotValue = dot( currColour, dir );
 
-		ditherDot = ( dotValue * 16.0f ) + ( 7 * ep1[0] + 3 * ep2[2] + 5 * ep2[1] + ep2[0] );
+		ditherDot = ( dotValue * 16.0f ) + ( 7.0f * ep1[0] + 3.0f * ep2[2] + 5.0f * ep2[1] + ep2[0] );
 		if( ditherDot < halfPoint )
 			step = ( ditherDot < c0Point ) ? 1u : 3u;
 		else
@@ -265,10 +265,10 @@ uint MatchColorsBlock( const uint srcPixelsBlock[16], float3 colour[4] )
 		ep1[1] = dotValue - stops[step];
 		lmask |= step << 2u;
 
-		currColour = unpackUnorm4x8( srcPixelsBlock[y * 4 + 2] ).xyz * 255.0f;
+		currColour = unpackUnorm4x8( srcPixelsBlock[y * 4u + 2u] ).xyz * 255.0f;
 		dotValue = dot( currColour, dir );
 
-		ditherDot = ( dotValue * 16.0f ) + ( 7 * ep1[1] + 3 * ep2[3] + 5 * ep2[2] + ep2[1] );
+		ditherDot = ( dotValue * 16.0f ) + ( 7.0f * ep1[1] + 3.0f * ep2[3] + 5.0f * ep2[2] + ep2[1] );
 		if( ditherDot < halfPoint )
 			step = ( ditherDot < c0Point ) ? 1u : 3u;
 		else
@@ -276,10 +276,10 @@ uint MatchColorsBlock( const uint srcPixelsBlock[16], float3 colour[4] )
 		ep1[2] = dotValue - stops[step];
 		lmask |= step << 4u;
 
-		currColour = unpackUnorm4x8( srcPixelsBlock[y * 4 + 2] ).xyz * 255.0f;
+		currColour = unpackUnorm4x8( srcPixelsBlock[y * 4u + 2u] ).xyz * 255.0f;
 		dotValue = dot( currColour, dir );
 
-		ditherDot = ( dotValue * 16.0f ) + ( 7 * ep1[2] + 5 * ep2[3] + ep2[2] );
+		ditherDot = ( dotValue * 16.0f ) + ( 7.0f * ep1[2] + 5.0f * ep2[3] + ep2[2] );
 		if( ditherDot < halfPoint )
 			step = ( ditherDot < c0Point ) ? 1u : 3u;
 		else
@@ -328,7 +328,7 @@ bool RefineBlock( const uint srcPixelsBlock[16], uint mask, inout float inOutMin
 	}
 	else
 	{
-		const float w1Tab[4] = { 3, 0, 2, 1 };
+		const float w1Tab[4] = { 3.0f, 0.0f, 2.0f, 1.0f };
 		const float prods[4] = { 589824.0f, 2304.0f, 262402.0f, 66562.0f };
 		// ^some magic to save a lot of multiplies in the accumulating loop...
 		// (precomputed products of weights for least squares system, accumulated inside one 32-bit
@@ -400,24 +400,24 @@ void DitherBlock( const uint srcPixBlck[16], out uint dthPixBlck[16] )
 		float3 srcPixel, dithPixel;
 
 		srcPixel = unpackUnorm4x8( srcPixBlck[y + 0u] ).xyz * 255.0f;
-		dithPixel = quant( srcPixel + trunc( ( 3 * ep2[1] + 5 * ep2[0] ) * ( 1.0f / 16.0f ) ) );
+		dithPixel = quant( srcPixel + trunc( ( 3.0f * ep2[1] + 5.0f * ep2[0] ) * ( 1.0f / 16.0f ) ) );
 		ep1[0] = srcPixel - dithPixel;
 		dthPixBlck[y + 0u] = packUnorm4x8( float4( dithPixel * ( 1.0f / 255.0f ), 1.0f ) );
 
 		srcPixel = unpackUnorm4x8( srcPixBlck[y + 1u] ).xyz * 255.0f;
 		dithPixel = quant(
-			srcPixel + trunc( ( 7 * ep1[0] + 3 * ep2[2] + 5 * ep2[1] + ep2[0] ) * ( 1.0f / 16.0f ) ) );
+			srcPixel + trunc( ( 7.0f * ep1[0] + 3.0f * ep2[2] + 5.0f * ep2[1] + ep2[0] ) * ( 1.0f / 16.0f ) ) );
 		ep1[1] = srcPixel - dithPixel;
 		dthPixBlck[y + 1u] = packUnorm4x8( float4( dithPixel * ( 1.0f / 255.0f ), 1.0f ) );
 
 		srcPixel = unpackUnorm4x8( srcPixBlck[y + 2u] ).xyz * 255.0f;
 		dithPixel = quant(
-			srcPixel + trunc( ( 7 * ep1[1] + 3 * ep2[3] + 5 * ep2[2] + ep2[1] ) * ( 1.0f / 16.0f ) ) );
+			srcPixel + trunc( ( 7.0f * ep1[1] + 3.0f * ep2[3] + 5.0f * ep2[2] + ep2[1] ) * ( 1.0f / 16.0f ) ) );
 		ep1[2] = srcPixel - dithPixel;
 		dthPixBlck[y + 2u] = packUnorm4x8( float4( dithPixel * ( 1.0f / 255.0f ), 1.0f ) );
 
 		srcPixel = unpackUnorm4x8( srcPixBlck[y + 3u] ).xyz * 255.0f;
-		dithPixel = quant( srcPixel + trunc( ( 7 * ep1[2] + 5 * ep2[3] + ep2[2] ) * ( 1.0f / 16.0f ) ) );
+		dithPixel = quant( srcPixel + trunc( ( 7.0f * ep1[2] + 5.0f * ep2[3] + ep2[2] ) * ( 1.0f / 16.0f ) ) );
 		ep1[3] = srcPixel - dithPixel;
 		dthPixBlck[y + 3u] = packUnorm4x8( float4( dithPixel * ( 1.0f / 255.0f ), 1.0f ) );
 
