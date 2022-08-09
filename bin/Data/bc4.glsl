@@ -1,5 +1,13 @@
 #version 430 core
 
+#if defined(GL_ES) && GL_ES == 1
+	// Desktop GLSL allows the const keyword for either compile-time or
+	// run-time constants. GLSL ES only allows the keyword for compile-time
+	// constants. Since we use const on run-time constants, define it to
+	// nothing.
+	#define const
+#endif
+
 // #include "/media/matias/Datos/SyntaxHighlightingMisc.h"
 
 #include "CrossPlatformSettings_piece_all.glsl"
