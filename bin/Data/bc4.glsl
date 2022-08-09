@@ -1,4 +1,4 @@
-#version 430 core
+#version 310 es
 
 #if defined(GL_ES) && GL_ES == 1
 	// Desktop GLSL allows the const keyword for either compile-time or
