@@ -23,7 +23,7 @@ layout( location = 0 ) uniform uint2 params;
 
 uniform sampler2D srcTex;
 
-layout( rg32ui ) uniform restrict writeonly highp uimage2D dstTexture;
+layout( rgba16ui ) uniform restrict writeonly mediump uimage2D dstTexture;
 
 layout( local_size_x = 4,  //
 		local_size_y = 4,  //
@@ -142,7 +142,7 @@ void main()
 	if( blockThreadId == 0u )
 	{
 		// Save data
-		uint2 outputBytes;
+		uint4 outputBytes;
 
 		if( p_useSNorm != 0u )
 		{
@@ -155,10 +155,11 @@ void main()
 			outputBytes.x = packUnorm4x8(
 				float4( maxVal * ( 1.0f / 255.0f ), minVal * ( 1.0f / 255.0f ), 0.0f, 0.0f ) );
 		}
-		outputBytes.x |= g_mask[maskIdxBase].x;
-		outputBytes.y = g_mask[maskIdxBase].y;
+		outputBytes.y = g_mask[maskIdxBase].x >> 16u;
+		outputBytes.z = g_mask[maskIdxBase].y & 0xFFFFu;
+		outputBytes.w = g_mask[maskIdxBase].y >> 16u;
 
 		uint2 dstUV = gl_GlobalInvocationID.yz;
-		imageStore( dstTexture, int2( dstUV ), uint4( outputBytes.xy, 0u, 0u ) );
+		imageStore( dstTexture, int2( dstUV ), outputBytes );
 	}
 }

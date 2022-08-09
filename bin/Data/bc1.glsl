@@ -19,7 +19,7 @@ layout( location = 0 ) uniform uint p_numRefinements;
 
 uniform sampler2D srcTex;
 
-layout( rg32ui ) uniform restrict writeonly highp uimage2D dstTexture;
+layout( rgba16ui ) uniform restrict writeonly mediump uimage2D dstTexture;
 
 layout( std430, binding = 1 ) readonly restrict buffer globalBuffer
 {
@@ -513,10 +513,12 @@ void main()
 		mask ^= 0x55555555u;
 	}
 
-	uint2 outputBytes;
-	outputBytes.x = uint( maxEndp16 ) | ( uint( minEndp16 ) << 16u );
-	outputBytes.y = mask;
+	uint4 outputBytes;
+	outputBytes.x = uint( maxEndp16 );
+	outputBytes.y = uint( minEndp16 );
+	outputBytes.z = mask & 0xFFFFu;
+	outputBytes.w = mask >> 16u;
 
 	uint2 dstUV = gl_GlobalInvocationID.xy;
-	imageStore( dstTexture, int2( dstUV ), uint4( outputBytes.xy, 0u, 0u ) );
+	imageStore( dstTexture, int2( dstUV ), outputBytes );
 }

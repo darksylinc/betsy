@@ -116,7 +116,7 @@ namespace betsy
 	{
 		bindTexture( 0u, m_srcTexture );
 		bindComputePso( m_bc1Pso );
-		bindUav( 0u, m_bc1TargetRes, PFG_RG32_UINT, ResourceAccess::Write );
+		bindUav( 0u, m_bc1TargetRes, PFG_RGBA16_UINT, ResourceAccess::Write );
 		bindUavBuffer( 1u, m_bc1TablesSsbo, 0u, sizeof( Bc1Tables ) );
 
 		glUniform1ui( 0, 2u );
@@ -128,7 +128,7 @@ namespace betsy
 		{
 			// Compress Alpha too (using BC4)
 			bindComputePso( m_bc4Pso );
-			bindUav( 0u, m_bc4TargetRes, PFG_RG32_UINT, ResourceAccess::Write );
+			bindUav( 0u, m_bc4TargetRes, PFG_RGBA16_UINT, ResourceAccess::Write );
 
 			// p_channelIdx, p_useSNorm
 			glUniform2ui( 0, 3u, 0u );
