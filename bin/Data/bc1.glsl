@@ -7,7 +7,7 @@
 
 #define FLT_MAX 340282346638528859811704183484516925440.0f
 
-uniform uint p_numRefinements;
+layout( location = 0 ) uniform uint p_numRefinements;
 
 uniform sampler2D srcTex;
 
