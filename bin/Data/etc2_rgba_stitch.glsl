@@ -13,9 +13,9 @@ layout( local_size_x = 8,  //
 		local_size_y = 8,  //
 		local_size_z = 1 ) in;
 
-layout( binding = 0 ) uniform usampler2D srcRGB;
-layout( binding = 1 ) uniform usampler2D srcAlpha;
-layout( rgba32ui ) uniform restrict writeonly uimage2D dstTexture;
+layout( binding = 0 ) uniform highp usampler2D srcRGB;
+layout( binding = 1 ) uniform highp usampler2D srcAlpha;
+layout( rgba32ui ) uniform restrict writeonly highp uimage2D dstTexture;
 
 void main()
 {

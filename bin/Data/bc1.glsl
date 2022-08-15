@@ -19,7 +19,7 @@ layout( location = 0 ) uniform uint p_numRefinements;
 
 uniform sampler2D srcTex;
 
-layout( rg32ui ) uniform restrict writeonly uimage2D dstTexture;
+layout( rg32ui ) uniform restrict writeonly highp uimage2D dstTexture;
 
 layout( std430, binding = 1 ) readonly restrict buffer globalBuffer
 {

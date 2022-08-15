@@ -23,7 +23,7 @@ layout( location = 0 ) uniform uint2 params;
 
 uniform sampler2D srcTex;
 
-layout( rg32ui ) uniform restrict writeonly uimage2D dstTexture;
+layout( rg32ui ) uniform restrict writeonly highp uimage2D dstTexture;
 
 layout( local_size_x = 4,  //
 		local_size_y = 4,  //
