@@ -328,8 +328,8 @@ bool RefineBlock( const uint srcPixelsBlock[16], uint mask, inout float inOutMin
 	}
 	else
 	{
-		const float w1Tab[4] = { 3.0f, 0.0f, 2.0f, 1.0f };
-		const float prods[4] = { 589824.0f, 2304.0f, 262402.0f, 66562.0f };
+		const float w1Tab[4] = float[4]( 3.0f, 0.0f, 2.0f, 1.0f );
+		const float prods[4] = float[4]( 589824.0f, 2304.0f, 262402.0f, 66562.0f );
 		// ^some magic to save a lot of multiplies in the accumulating loop...
 		// (precomputed products of weights for least squares system, accumulated inside one 32-bit
 		// register)
@@ -392,8 +392,8 @@ float3 quant( float3 srcValue )
 
 void DitherBlock( const uint srcPixBlck[16], out uint dthPixBlck[16] )
 {
-	float3 ep1[4] = { float3( 0, 0, 0 ), float3( 0, 0, 0 ), float3( 0, 0, 0 ), float3( 0, 0, 0 ) };
-	float3 ep2[4] = { float3( 0, 0, 0 ), float3( 0, 0, 0 ), float3( 0, 0, 0 ), float3( 0, 0, 0 ) };
+	float3 ep1[4] = float3[4]( float3( 0, 0, 0 ), float3( 0, 0, 0 ), float3( 0, 0, 0 ), float3( 0, 0, 0 ) );
+	float3 ep2[4] = float3[4]( float3( 0, 0, 0 ), float3( 0, 0, 0 ), float3( 0, 0, 0 ), float3( 0, 0, 0 ) );
 
 	for( uint y = 0u; y < 16u; y += 4u )
 	{
