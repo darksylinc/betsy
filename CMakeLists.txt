@@ -8,6 +8,8 @@ set( EXECUTABLE_OUTPUT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/bin/${CMAKE_BUILD_TYPE}
 
 include( CMake/Bootstrap.cmake )
 
+set( CMAKE_CXX_STANDARD 11 )
+
 if( WIN32 )
 	set( SDL2_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Dependencies/SDL/Windows/include" )
 	set( ARCH_SUFFIX "x64" )
