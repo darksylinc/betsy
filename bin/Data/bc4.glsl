@@ -16,7 +16,7 @@
 shared float2 g_minMaxValues[4u * 4u * 4u];
 shared uint2 g_mask[4u * 4u];
 
-layout( location = 0 ) uniform float2 params;
+layout( location = 0 ) uniform uint2 params;
 
 #define p_channelIdx params.x
 #define p_useSNorm params.y
@@ -55,7 +55,7 @@ void main()
 		const uint2 pixelsToLoad = pixelsToLoadBase + uint2( i, blockThreadId );
 
 		const float4 value = OGRE_Load2D( srcTex, int2( pixelsToLoad ), 0 ).xyzw;
-		srcPixel[i] = p_channelIdx == 0 ? value.x : ( p_channelIdx == 1 ? value.y : value.w );
+		srcPixel[i] = p_channelIdx == 0u ? value.x : ( p_channelIdx == 1u ? value.y : value.w );
 		srcPixel[i] *= 255.0f;
 	}
 
@@ -144,7 +144,7 @@ void main()
 		// Save data
 		uint2 outputBytes;
 
-		if( p_useSNorm != 0.0f )
+		if( p_useSNorm != 0u )
 		{
 			outputBytes.x =
 				packSnorm4x8( float4( maxVal * ( 1.0f / 255.0f ) * 2.0f - 1.0f,

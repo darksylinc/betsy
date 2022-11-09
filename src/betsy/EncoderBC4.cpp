@@ -110,7 +110,7 @@ namespace betsy
 			bindUav( 0u, m_bc4TargetRes[i], PFG_RG32_UINT, ResourceAccess::Write );
 
 			// p_channelIdx, p_useSNorm
-			glUniform2f( 0, i == 0u ? 0.0f : 1.0f, m_encodeSNorm ? 1.0f : 0.0f );
+			glUniform2ui( 0, i, m_encodeSNorm ? 1u : 0u );
 
 			glDispatchCompute( 1u,  //
 							   alignToNextMultiple( m_width, 16u ) / 16u,
