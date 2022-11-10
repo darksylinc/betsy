@@ -1,4 +1,12 @@
-#version 430 core
+#version 310 es
+
+#if defined(GL_ES) && GL_ES == 1
+	// Desktop GLSL allows the const keyword for either compile-time or
+	// run-time constants. GLSL ES only allows the keyword for compile-time
+	// constants. Since we use const on run-time constants, define it to
+	// nothing.
+	#define const
+#endif
 
 // #include "/media/matias/Datos/SyntaxHighlightingMisc.h"
 
@@ -11,7 +19,7 @@ layout( location = 0 ) uniform uint p_numRefinements;
 
 uniform sampler2D srcTex;
 
-layout( rg32ui ) uniform restrict writeonly uimage2D dstTexture;
+layout( rgba16ui ) uniform restrict writeonly mediump uimage2D dstTexture;
 
 layout( std430, binding = 1 ) readonly restrict buffer globalBuffer
 {
@@ -109,7 +117,7 @@ void OptimizeColorsBlock( const uint srcPixelsBlock[16], out float outMinEndp16,
 	// determine covariance matrix
 	float cov[6];
 	for( int i = 0; i < 6; ++i )
-		cov[i] = 0;
+		cov[i] = 0.0f;
 
 	for( int i = 0; i < 16; ++i )
 	{
@@ -235,10 +243,10 @@ uint MatchColorsBlock( const uint srcPixelsBlock[16], float3 colour[4] )
 		float3 currColour;
 		float dotValue;
 
-		currColour = unpackUnorm4x8( srcPixelsBlock[y * 4 + 0] ).xyz * 255.0f;
+		currColour = unpackUnorm4x8( srcPixelsBlock[y * 4u + 0u] ).xyz * 255.0f;
 		dotValue = dot( currColour, dir );
 
-		ditherDot = ( dotValue * 16.0f ) + ( 3 * ep2[1] + 5 * ep2[0] );
+		ditherDot = ( dotValue * 16.0f ) + ( 3.0f * ep2[1] + 5.0f * ep2[0] );
 		if( ditherDot < halfPoint )
 			step = ( ditherDot < c0Point ) ? 1u : 3u;
 		else
@@ -246,10 +254,10 @@ uint MatchColorsBlock( const uint srcPixelsBlock[16], float3 colour[4] )
 		ep1[0] = dotValue - stops[step];
 		lmask = step;
 
-		currColour = unpackUnorm4x8( srcPixelsBlock[y * 4 + 1] ).xyz * 255.0f;
+		currColour = unpackUnorm4x8( srcPixelsBlock[y * 4u + 1u] ).xyz * 255.0f;
 		dotValue = dot( currColour, dir );
 
-		ditherDot = ( dotValue * 16.0f ) + ( 7 * ep1[0] + 3 * ep2[2] + 5 * ep2[1] + ep2[0] );
+		ditherDot = ( dotValue * 16.0f ) + ( 7.0f * ep1[0] + 3.0f * ep2[2] + 5.0f * ep2[1] + ep2[0] );
 		if( ditherDot < halfPoint )
 			step = ( ditherDot < c0Point ) ? 1u : 3u;
 		else
@@ -257,10 +265,10 @@ uint MatchColorsBlock( const uint srcPixelsBlock[16], float3 colour[4] )
 		ep1[1] = dotValue - stops[step];
 		lmask |= step << 2u;
 
-		currColour = unpackUnorm4x8( srcPixelsBlock[y * 4 + 2] ).xyz * 255.0f;
+		currColour = unpackUnorm4x8( srcPixelsBlock[y * 4u + 2u] ).xyz * 255.0f;
 		dotValue = dot( currColour, dir );
 
-		ditherDot = ( dotValue * 16.0f ) + ( 7 * ep1[1] + 3 * ep2[3] + 5 * ep2[2] + ep2[1] );
+		ditherDot = ( dotValue * 16.0f ) + ( 7.0f * ep1[1] + 3.0f * ep2[3] + 5.0f * ep2[2] + ep2[1] );
 		if( ditherDot < halfPoint )
 			step = ( ditherDot < c0Point ) ? 1u : 3u;
 		else
@@ -268,10 +276,10 @@ uint MatchColorsBlock( const uint srcPixelsBlock[16], float3 colour[4] )
 		ep1[2] = dotValue - stops[step];
 		lmask |= step << 4u;
 
-		currColour = unpackUnorm4x8( srcPixelsBlock[y * 4 + 2] ).xyz * 255.0f;
+		currColour = unpackUnorm4x8( srcPixelsBlock[y * 4u + 2u] ).xyz * 255.0f;
 		dotValue = dot( currColour, dir );
 
-		ditherDot = ( dotValue * 16.0f ) + ( 7 * ep1[2] + 5 * ep2[3] + ep2[2] );
+		ditherDot = ( dotValue * 16.0f ) + ( 7.0f * ep1[2] + 5.0f * ep2[3] + ep2[2] );
 		if( ditherDot < halfPoint )
 			step = ( ditherDot < c0Point ) ? 1u : 3u;
 		else
@@ -320,8 +328,8 @@ bool RefineBlock( const uint srcPixelsBlock[16], uint mask, inout float inOutMin
 	}
 	else
 	{
-		const float w1Tab[4] = { 3, 0, 2, 1 };
-		const float prods[4] = { 589824.0f, 2304.0f, 262402.0f, 66562.0f };
+		const float w1Tab[4] = float[4]( 3.0f, 0.0f, 2.0f, 1.0f );
+		const float prods[4] = float[4]( 589824.0f, 2304.0f, 262402.0f, 66562.0f );
 		// ^some magic to save a lot of multiplies in the accumulating loop...
 		// (precomputed products of weights for least squares system, accumulated inside one 32-bit
 		// register)
@@ -384,32 +392,32 @@ float3 quant( float3 srcValue )
 
 void DitherBlock( const uint srcPixBlck[16], out uint dthPixBlck[16] )
 {
-	float3 ep1[4] = { float3( 0, 0, 0 ), float3( 0, 0, 0 ), float3( 0, 0, 0 ), float3( 0, 0, 0 ) };
-	float3 ep2[4] = { float3( 0, 0, 0 ), float3( 0, 0, 0 ), float3( 0, 0, 0 ), float3( 0, 0, 0 ) };
+	float3 ep1[4] = float3[4]( float3( 0, 0, 0 ), float3( 0, 0, 0 ), float3( 0, 0, 0 ), float3( 0, 0, 0 ) );
+	float3 ep2[4] = float3[4]( float3( 0, 0, 0 ), float3( 0, 0, 0 ), float3( 0, 0, 0 ), float3( 0, 0, 0 ) );
 
 	for( uint y = 0u; y < 16u; y += 4u )
 	{
 		float3 srcPixel, dithPixel;
 
 		srcPixel = unpackUnorm4x8( srcPixBlck[y + 0u] ).xyz * 255.0f;
-		dithPixel = quant( srcPixel + trunc( ( 3 * ep2[1] + 5 * ep2[0] ) * ( 1.0f / 16.0f ) ) );
+		dithPixel = quant( srcPixel + trunc( ( 3.0f * ep2[1] + 5.0f * ep2[0] ) * ( 1.0f / 16.0f ) ) );
 		ep1[0] = srcPixel - dithPixel;
 		dthPixBlck[y + 0u] = packUnorm4x8( float4( dithPixel * ( 1.0f / 255.0f ), 1.0f ) );
 
 		srcPixel = unpackUnorm4x8( srcPixBlck[y + 1u] ).xyz * 255.0f;
 		dithPixel = quant(
-			srcPixel + trunc( ( 7 * ep1[0] + 3 * ep2[2] + 5 * ep2[1] + ep2[0] ) * ( 1.0f / 16.0f ) ) );
+			srcPixel + trunc( ( 7.0f * ep1[0] + 3.0f * ep2[2] + 5.0f * ep2[1] + ep2[0] ) * ( 1.0f / 16.0f ) ) );
 		ep1[1] = srcPixel - dithPixel;
 		dthPixBlck[y + 1u] = packUnorm4x8( float4( dithPixel * ( 1.0f / 255.0f ), 1.0f ) );
 
 		srcPixel = unpackUnorm4x8( srcPixBlck[y + 2u] ).xyz * 255.0f;
 		dithPixel = quant(
-			srcPixel + trunc( ( 7 * ep1[1] + 3 * ep2[3] + 5 * ep2[2] + ep2[1] ) * ( 1.0f / 16.0f ) ) );
+			srcPixel + trunc( ( 7.0f * ep1[1] + 3.0f * ep2[3] + 5.0f * ep2[2] + ep2[1] ) * ( 1.0f / 16.0f ) ) );
 		ep1[2] = srcPixel - dithPixel;
 		dthPixBlck[y + 2u] = packUnorm4x8( float4( dithPixel * ( 1.0f / 255.0f ), 1.0f ) );
 
 		srcPixel = unpackUnorm4x8( srcPixBlck[y + 3u] ).xyz * 255.0f;
-		dithPixel = quant( srcPixel + trunc( ( 7 * ep1[2] + 5 * ep2[3] + ep2[2] ) * ( 1.0f / 16.0f ) ) );
+		dithPixel = quant( srcPixel + trunc( ( 7.0f * ep1[2] + 5.0f * ep2[3] + ep2[2] ) * ( 1.0f / 16.0f ) ) );
 		ep1[3] = srcPixel - dithPixel;
 		dthPixBlck[y + 3u] = packUnorm4x8( float4( dithPixel * ( 1.0f / 255.0f ), 1.0f ) );
 
@@ -505,10 +513,12 @@ void main()
 		mask ^= 0x55555555u;
 	}
 
-	uint2 outputBytes;
-	outputBytes.x = uint( maxEndp16 ) | ( uint( minEndp16 ) << 16u );
-	outputBytes.y = mask;
+	uint4 outputBytes;
+	outputBytes.x = uint( maxEndp16 );
+	outputBytes.y = uint( minEndp16 );
+	outputBytes.z = mask & 0xFFFFu;
+	outputBytes.w = mask >> 16u;
 
 	uint2 dstUV = gl_GlobalInvocationID.xy;
-	imageStore( dstTexture, int2( dstUV ), uint4( outputBytes.xy, 0u, 0u ) );
+	imageStore( dstTexture, int2( dstUV ), outputBytes );
 }

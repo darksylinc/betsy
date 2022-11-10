@@ -1,4 +1,12 @@
-#version 430 core
+#version 310 es
+
+#if defined(GL_ES) && GL_ES == 1
+	// Desktop GLSL allows the const keyword for either compile-time or
+	// run-time constants. GLSL ES only allows the keyword for compile-time
+	// constants. Since we use const on run-time constants, define it to
+	// nothing.
+	#define const
+#endif
 
 // #include "/media/matias/Datos/SyntaxHighlightingMisc.h"
 
@@ -8,14 +16,14 @@
 shared float2 g_minMaxValues[4u * 4u * 4u];
 shared uint2 g_mask[4u * 4u];
 
-layout( location = 0 ) uniform float2 params;
+layout( location = 0 ) uniform uint2 params;
 
 #define p_channelIdx params.x
 #define p_useSNorm params.y
 
 uniform sampler2D srcTex;
 
-layout( rg32ui ) uniform restrict writeonly uimage2D dstTexture;
+layout( rgba16ui ) uniform restrict writeonly mediump uimage2D dstTexture;
 
 layout( local_size_x = 4,  //
 		local_size_y = 4,  //
@@ -47,7 +55,7 @@ void main()
 		const uint2 pixelsToLoad = pixelsToLoadBase + uint2( i, blockThreadId );
 
 		const float4 value = OGRE_Load2D( srcTex, int2( pixelsToLoad ), 0 ).xyzw;
-		srcPixel[i] = p_channelIdx == 0 ? value.x : ( p_channelIdx == 1 ? value.y : value.w );
+		srcPixel[i] = p_channelIdx == 0u ? value.x : ( p_channelIdx == 1u ? value.y : value.w );
 		srcPixel[i] *= 255.0f;
 	}
 
@@ -77,8 +85,8 @@ void main()
 	float dist = maxVal - minVal;
 	float dist4 = dist * 4.0f;
 	float dist2 = dist * 2.0f;
-	float bias = ( dist < 8 ) ? ( dist - 1 ) : ( trunc( dist * 0.5f ) + 2 );
-	bias -= minVal * 7;
+	float bias = ( dist < 8.0f ) ? ( dist - 1.0f ) : ( trunc( dist * 0.5f ) + 2.0f );
+	bias -= minVal * 7.0f;
 
 	uint mask0 = 0u, mask1 = 0u;
 
@@ -134,9 +142,9 @@ void main()
 	if( blockThreadId == 0u )
 	{
 		// Save data
-		uint2 outputBytes;
+		uint4 outputBytes;
 
-		if( p_useSNorm != 0.0f )
+		if( p_useSNorm != 0u )
 		{
 			outputBytes.x =
 				packSnorm4x8( float4( maxVal * ( 1.0f / 255.0f ) * 2.0f - 1.0f,
@@ -147,10 +155,11 @@ void main()
 			outputBytes.x = packUnorm4x8(
 				float4( maxVal * ( 1.0f / 255.0f ), minVal * ( 1.0f / 255.0f ), 0.0f, 0.0f ) );
 		}
-		outputBytes.x |= g_mask[maskIdxBase].x;
-		outputBytes.y = g_mask[maskIdxBase].y;
+		outputBytes.y = g_mask[maskIdxBase].x >> 16u;
+		outputBytes.z = g_mask[maskIdxBase].y & 0xFFFFu;
+		outputBytes.w = g_mask[maskIdxBase].y >> 16u;
 
 		uint2 dstUV = gl_GlobalInvocationID.yz;
-		imageStore( dstTexture, int2( dstUV ), uint4( outputBytes.xy, 0u, 0u ) );
+		imageStore( dstTexture, int2( dstUV ), outputBytes );
 	}
 }

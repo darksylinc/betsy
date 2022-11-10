@@ -69,9 +69,17 @@ namespace betsy
 
 		g_glContext = SDL_GL_CreateContext( g_sdlWindow );
 
+		const SDL_bool has_required_extensions = SDL_GL_ExtensionSupported( "GL_ARB_ES3_1_compatibility" );
+
 		if( !g_glContext )
 		{
 			fprintf( stderr, "GL Context creation failed.\n" );
+			SDL_Quit();
+			abort();
+		}
+		else if ( has_required_extensions == SDL_FALSE )
+		{
+			fprintf( stderr, "GL Context lacks required extensions.\n" );
 			SDL_Quit();
 			abort();
 		}

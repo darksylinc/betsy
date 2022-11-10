@@ -167,6 +167,7 @@ namespace betsy
 		case PFG_RGBA32_UINT:
 		case PFG_RGBA32_FLOAT:
 			return 4u * 4u;
+		case PFG_RGBA16_UINT:
 		case PFG_RGBA16_FLOAT:
 			return 2u * 4u;
 		case PFG_R32_FLOAT:
